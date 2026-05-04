@@ -1,0 +1,103 @@
+/* D Express — Checkout autocomplete styles */
+
+.dexpress-ac-wrap {
+    position: relative;
+    display: block;
+}
+
+.dexpress-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 9999;
+    background: #fff;
+    border: 1px solid #ccc;
+    border-top: none;
+    border-radius: 0 0 4px 4px;
+    max-height: 260px;
+    overflow-y: auto;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, .1);
+    display: none;
+}
+
+.dx-dd-item {
+    padding: 9px 12px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #333;
+    border-bottom: 1px solid #f0f0f0;
+    line-height: 1.4;
+    transition: background .1s;
+}
+
+.dx-dd-item:last-child {
+    border-bottom: none;
+}
+
+.dx-dd-item:hover,
+.dx-dd-item:focus {
+    background: #f0f4ff;
+    color: #1a1a1a;
+}
+
+.dx-dd-empty {
+    padding: 10px 12px;
+    font-size: 13px;
+    color: #888;
+    font-style: italic;
+}
+
+/* Street field disabled until town is selected — classic & block */
+#billing_address_1:disabled,
+#shipping_address_1:disabled,
+#billing-address_1:disabled,
+#shipping-address_1:disabled {
+    background-color: #f8f8f8;
+    cursor: not-allowed;
+    color: #aaa;
+    border-color: #ddd;
+}
+
+/* Postcode auto-filled from town — readonly, visually muted */
+#billing_postcode[readonly],
+#shipping_postcode[readonly],
+#billing-postcode[readonly],
+#shipping-postcode[readonly] {
+    background-color: #f8f8f8;
+    cursor: default;
+    color: #666;
+}
+
+/* Block checkout: body-appended dropdowns need high z-index */
+body > .dexpress-dropdown {
+    z-index: 999999;
+}
+
+/* Hide internal ID fields registered for block checkout Store API transport */
+.wc-block-components-address-form__dexpress-town-id,
+.wc-block-components-address-form__dexpress-street-id {
+    display: none !important;
+}
+
+/* Visual disabled state for street field in block checkout (React fights .prop('disabled')) */
+.dx-field-disabled {
+    opacity: .55;
+    pointer-events: none;
+}
+.dx-field-disabled input {
+    cursor: not-allowed;
+    background-color: #f8f8f8;
+}
+
+/* Inline phone format hint */
+.dexpress-phone-hint {
+    display: block;
+    margin-top: 4px;
+    font-size: 12px;
+    color: #c00;
+    line-height: 1.4;
+}
