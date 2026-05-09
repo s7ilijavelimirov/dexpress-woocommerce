@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace S7codedesign\DExpress\Infrastructure\Persistence\Sync;
 
+use S7codedesign\DExpress\Application\Sync\RowChangeStats;
 use S7codedesign\DExpress\Infrastructure\StringNormalizer;
 use wpdb;
 
@@ -20,16 +21,15 @@ final class TownRepository
      * Upserts a batch of town records.
      *
      * @param array<int, array<string, mixed>> $rows
-     * @return int number of rows affected
      */
-    public function upsertBatch(array $rows): int
+    public function upsertBatch(array $rows): RowChangeStats
     {
         if (empty($rows)) {
-            return 0;
+            return new RowChangeStats();
         }
 
-        $now       = current_time('mysql');
-        $affected  = 0;
+        $now   = current_time('mysql');
+        $stats = new RowChangeStats();
 
         foreach ($rows as $row) {
             $nameSearchable = StringNormalizer::toSearchable((string) ($row['Name'] ?? ''));
@@ -67,10 +67,10 @@ final class TownRepository
             );
 
             if ($result !== false) {
-                $affected++;
+                $stats = UpsertOutcome::mergeStats($stats, $this->wpdb);
             }
         }
 
-        return $affected;
+        return $stats;
     }
 }

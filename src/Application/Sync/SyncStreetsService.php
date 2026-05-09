@@ -24,12 +24,12 @@ final class SyncStreetsService
         try {
             $since = $this->options->getString(self::SYNC_KEY, self::FIRST_SYNC_DATE);
             $rows  = $this->apiClient->get('/data/streets', ['date' => $since]);
-            $count = $this->repository->upsertBatch($rows);
+            $stats = $this->repository->upsertBatch($rows);
 
             $this->options->set(self::SYNC_KEY, current_time('YmdHis'));
             $this->options->save();
 
-            return SyncResult::success('streets', $count);
+            return SyncResult::success('streets', $stats);
         } catch (\Throwable $e) {
             return SyncResult::failure('streets', $e->getMessage());
         }

@@ -10,42 +10,47 @@ defined('ABSPATH') || exit;
 $syncTypes = [
     'towns'          => [
         'label'     => __('Gradovi', 'dexpress-woocommerce'),
-        'freq'      => __('Mesečno', 'dexpress-woocommerce'),
+        'freq'      => __('Jednom mesečno', 'dexpress-woocommerce'),
         'last_key'  => 'sync.last_towns',
     ],
     'streets'        => [
         'label'     => __('Ulice', 'dexpress-woocommerce'),
-        'freq'      => __('Nedeljno', 'dexpress-woocommerce'),
+        'freq'      => __('Jednom mesečno', 'dexpress-woocommerce'),
         'last_key'  => 'sync.last_streets',
     ],
     'municipalities' => [
         'label'     => __('Opštine', 'dexpress-woocommerce'),
-        'freq'      => __('Mesečno', 'dexpress-woocommerce'),
+        'freq'      => __('Jednom mesečno', 'dexpress-woocommerce'),
         'last_key'  => 'sync.last_municipalities',
     ],
     'status_codes'   => [
         'label'     => __('Statusni kodovi', 'dexpress-woocommerce'),
-        'freq'      => __('Nedeljno', 'dexpress-woocommerce'),
+        'freq'      => __('Na 6 meseci', 'dexpress-woocommerce'),
         'last_key'  => 'sync.last_status_codes',
     ],
     'dispensers'     => [
         'label'     => __('Paketomat', 'dexpress-woocommerce'),
-        'freq'      => __('Dnevno', 'dexpress-woocommerce'),
+        'freq'      => __('Svakog dana', 'dexpress-woocommerce'),
         'last_key'  => 'sync.last_dispensers',
     ],
     'locations'      => [
         'label'     => __('Lokacije', 'dexpress-woocommerce'),
-        'freq'      => __('Dnevno', 'dexpress-woocommerce'),
+        'freq'      => __('Svakog dana', 'dexpress-woocommerce'),
         'last_key'  => 'sync.last_locations',
+    ],
+    'payments'       => [
+        'label'     => __('Otkupnine', 'dexpress-woocommerce'),
+        'freq'      => __('Ručno', 'dexpress-woocommerce'),
+        'last_key'  => 'sync.last_payments',
     ],
     'centres'        => [
         'label'     => __('Centri', 'dexpress-woocommerce'),
-        'freq'      => __('Nedeljno', 'dexpress-woocommerce'),
+        'freq'      => __('Jednom mesečno', 'dexpress-woocommerce'),
         'last_key'  => 'sync.last_centres',
     ],
     'shops'          => [
         'label'     => __('Prodavnice', 'dexpress-woocommerce'),
-        'freq'      => __('Nedeljno', 'dexpress-woocommerce'),
+        'freq'      => __('Na 3 meseca', 'dexpress-woocommerce'),
         'last_key'  => 'sync.last_shops',
     ],
 ];
@@ -86,7 +91,7 @@ $hasCredentials = $options->getString('api.username') !== '';
     <thead>
         <tr>
             <th><?php esc_html_e('Šifarnik', 'dexpress-woocommerce'); ?></th>
-            <th><?php esc_html_e('Automatska učestalost', 'dexpress-woocommerce'); ?></th>
+            <th><?php esc_html_e('Automatsko ažuriranje', 'dexpress-woocommerce'); ?></th>
             <th><?php esc_html_e('Poslednja sinhronizacija', 'dexpress-woocommerce'); ?></th>
             <th><?php esc_html_e('Ručno', 'dexpress-woocommerce'); ?></th>
         </tr>
@@ -94,8 +99,11 @@ $hasCredentials = $options->getString('api.username') !== '';
     <tbody>
         <?php foreach ($syncTypes as $type => $info) : ?>
             <?php $lastSync = $options->getString($info['last_key'], ''); ?>
-            <tr>
-                <td><strong><?php echo esc_html($info['label']); ?></strong></td>
+            <tr data-sync-type="<?php echo esc_attr($type); ?>">
+                <td>
+                    <strong><?php echo esc_html($info['label']); ?></strong>
+                    <span class="dexpress-sync-status" aria-live="polite"></span>
+                </td>
                 <td><?php echo esc_html($info['freq']); ?></td>
                 <td>
                     <?php if ($lastSync !== '') : ?>

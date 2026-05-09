@@ -8,10 +8,14 @@ use S7codedesign\DExpress\Container\Container;
 use S7codedesign\DExpress\Container\ServiceProvider;
 use S7codedesign\DExpress\Infrastructure\Logging\Logger;
 use S7codedesign\DExpress\Infrastructure\Persistence\AddressSearchRepository;
+use S7codedesign\DExpress\Infrastructure\Persistence\DispenserBrowserRepository;
 use S7codedesign\DExpress\Presentation\Frontend\Ajax\AutocompleteController;
+use S7codedesign\DExpress\Presentation\Frontend\Ajax\PackageShopDispenserController;
 use S7codedesign\DExpress\Application\Address\RecipientAddressCheckService;
 use S7codedesign\DExpress\Presentation\Frontend\Checkout\CheckoutFields;
+use S7codedesign\DExpress\Presentation\Frontend\Checkout\PackageShopInfoPanel;
 use S7codedesign\DExpress\Presentation\Frontend\Checkout\CheckoutValidator;
+use S7codedesign\DExpress\Presentation\Frontend\Shipping\DexpressPackageShopShippingMethod;
 use S7codedesign\DExpress\Presentation\Frontend\Shipping\DexpressShippingMethod;
 use S7codedesign\DExpress\Presentation\Frontend\Tracking\MyAccountTrackingTab;
 use S7codedesign\DExpress\Infrastructure\Options\OptionsRepository;
@@ -30,10 +34,26 @@ final class FrontendServiceProvider implements ServiceProvider
         );
 
         $container->singleton(
+            DispenserBrowserRepository::class,
+            static function (): DispenserBrowserRepository {
+                global $wpdb;
+                return new DispenserBrowserRepository($wpdb);
+            },
+        );
+
+        $container->singleton(
+            PackageShopDispenserController::class,
+            static fn (Container $c) => new PackageShopDispenserController(
+                $c->get(DispenserBrowserRepository::class),
+            ),
+        );
+
+        $container->singleton(
             CheckoutFields::class,
             static fn (Container $c) => new CheckoutFields(
                 $c->get(Logger::class),
                 $c->get(AddressSearchRepository::class),
+                $c->get(DispenserBrowserRepository::class),
             ),
         );
 
@@ -42,6 +62,11 @@ final class FrontendServiceProvider implements ServiceProvider
             static fn (Container $c): CheckoutValidator => new CheckoutValidator(
                 $c->get(RecipientAddressCheckService::class),
             ),
+        );
+
+        $container->singleton(
+            PackageShopInfoPanel::class,
+            static fn (): PackageShopInfoPanel => new PackageShopInfoPanel(),
         );
 
         $container->singleton(
@@ -56,6 +81,7 @@ final class FrontendServiceProvider implements ServiceProvider
         // Register D Express as a WooCommerce shipping method
         add_filter('woocommerce_shipping_methods', static function (array $methods): array {
             $methods['dexpress'] = DexpressShippingMethod::class;
+            $methods['dexpress_package_shop'] = DexpressPackageShopShippingMethod::class;
             return $methods;
         });
     }

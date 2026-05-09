@@ -1,0 +1,263 @@
+/* D Express — Admin Dashboard */
+
+/* ── Stat cards ─────────────────────────────────────────────── */
+.dex-dash-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--dex-space-4);
+  margin: var(--dex-space-4) 0 var(--dex-space-6);
+}
+
+.dex-stat-card {
+  background: #fff;
+  border: var(--dex-border);
+  border-radius: var(--dex-radius-lg);
+  padding: var(--dex-space-4) var(--dex-space-6);
+  box-shadow: var(--dex-shadow-sm);
+}
+
+.dex-stat-card__label {
+  font-size: var(--dex-text-sm);
+  color: var(--dex-gray-500);
+  margin: 0 0 var(--dex-space-2);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.dex-stat-card__value {
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--dex-gray-900);
+  line-height: 1;
+  margin: 0;
+}
+
+.dex-stat-card--delivered .dex-stat-card__value { color: var(--dex-success); }
+.dex-stat-card--transit   .dex-stat-card__value { color: var(--dex-info); }
+.dex-stat-card--problem   .dex-stat-card__value { color: var(--dex-error); }
+
+/* ── Two-column layout ──────────────────────────────────────── */
+.dex-dash-body {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: var(--dex-space-6);
+  align-items: start;
+}
+
+/* ── Cards ──────────────────────────────────────────────────── */
+.dex-dash-card {
+  background: #fff;
+  border: var(--dex-border);
+  border-radius: var(--dex-radius-lg);
+  box-shadow: var(--dex-shadow-sm);
+  overflow: hidden;
+  margin-bottom: var(--dex-space-4);
+}
+
+.dex-dash-card__head {
+  padding: var(--dex-space-3) var(--dex-space-4);
+  border-bottom: var(--dex-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--dex-gray-50);
+}
+
+.dex-dash-card__title {
+  font-size: var(--dex-text-base);
+  font-weight: 600;
+  color: var(--dex-gray-900);
+  margin: 0;
+}
+
+.dex-dash-card__body {
+  padding: var(--dex-space-4);
+}
+
+/* ── Recent shipments table ─────────────────────────────────── */
+.dex-dash-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--dex-text-sm);
+}
+
+.dex-dash-table th {
+  text-align: left;
+  padding: var(--dex-space-2) var(--dex-space-3);
+  font-size: var(--dex-text-xs);
+  font-weight: 600;
+  color: var(--dex-gray-500);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  border-bottom: var(--dex-border);
+  background: var(--dex-gray-50);
+}
+
+.dex-dash-table td {
+  padding: var(--dex-space-2) var(--dex-space-3);
+  border-bottom: var(--dex-border);
+  color: var(--dex-gray-700);
+  vertical-align: middle;
+}
+
+.dex-dash-table tr:last-child td { border-bottom: 0; }
+.dex-dash-table tr:hover td      { background: var(--dex-gray-50); }
+
+.dex-dash-table .dex-code {
+  font-family: monospace;
+  font-size: var(--dex-text-xs);
+  color: var(--dex-gray-700);
+  letter-spacing: .04em;
+}
+
+/* ── Status badges ──────────────────────────────────────────── */
+.dex-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 99px;
+  font-size: var(--dex-text-xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.dex-badge--delivered { background: var(--dex-success-light); color: var(--dex-success); }
+.dex-badge--transit   { background: var(--dex-info-light);    color: var(--dex-info); }
+.dex-badge--problem   { background: var(--dex-error-light);   color: var(--dex-error); }
+.dex-badge--other     { background: var(--dex-gray-100);      color: var(--dex-gray-500); }
+.dex-badge--pending   { background: var(--dex-warning-light); color: var(--dex-warning); }
+
+/* ── Bar chart ──────────────────────────────────────────────── */
+.dex-bar-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--dex-space-2);
+  height: 80px;
+  margin-bottom: var(--dex-space-1);
+}
+
+.dex-bar-chart__col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  justify-content: flex-end;
+}
+
+.dex-bar {
+  width: 100%;
+  background: var(--dex-primary);
+  opacity: .65;
+  border-radius: var(--dex-radius-sm) var(--dex-radius-sm) 0 0;
+  min-height: 2px;
+  height: var(--bar-h, 2px);
+  transition: opacity var(--dex-transition);
+}
+
+.dex-bar:hover  { opacity: 1; }
+.dex-bar--zero  { background: var(--dex-gray-200); opacity: 1; }
+
+.dex-bar-chart__label {
+  font-size: 10px;
+  color: var(--dex-gray-500);
+  margin-top: var(--dex-space-1);
+  white-space: nowrap;
+}
+
+/* ── Quick actions ──────────────────────────────────────────── */
+.dex-quick-actions {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--dex-space-2);
+}
+
+.dex-quick-actions li a {
+  display: flex;
+  align-items: center;
+  gap: var(--dex-space-2);
+  padding: var(--dex-space-2) var(--dex-space-3);
+  border: var(--dex-border);
+  border-radius: var(--dex-radius);
+  color: var(--dex-gray-700);
+  text-decoration: none;
+  font-size: var(--dex-text-sm);
+  transition: background var(--dex-transition), color var(--dex-transition);
+}
+
+.dex-quick-actions li a:hover {
+  background: var(--dex-primary-light);
+  color: var(--dex-primary);
+  border-color: var(--dex-primary);
+}
+
+.dex-quick-actions .dashicons {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  color: var(--dex-gray-500);
+  flex-shrink: 0;
+}
+
+.dex-quick-actions li a:hover .dashicons { color: var(--dex-primary); }
+
+/* ── System status list ─────────────────────────────────────── */
+.dex-status-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.dex-status-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: var(--dex-space-2) 0;
+  border-bottom: var(--dex-border);
+  font-size: var(--dex-text-sm);
+  gap: var(--dex-space-2);
+}
+
+.dex-status-list li:last-child { border-bottom: 0; }
+
+.dex-status-list__key {
+  color: var(--dex-gray-500);
+  flex-shrink: 0;
+  padding-top: 1px;
+}
+
+.dex-status-list__val {
+  color: var(--dex-gray-700);
+  text-align: right;
+  font-size: var(--dex-text-xs);
+  word-break: break-all;
+}
+
+.dex-status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 3px;
+  vertical-align: middle;
+}
+
+.dex-status-dot--ok   { background: var(--dex-success); }
+.dex-status-dot--warn { background: var(--dex-warning); }
+.dex-status-dot--err  { background: var(--dex-error); }
+
+/* ── Responsive ─────────────────────────────────────────────── */
+@media (max-width: 1280px) {
+  .dex-dash-stats { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 960px) {
+  .dex-dash-body { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 600px) {
+  .dex-dash-stats { grid-template-columns: 1fr 1fr; }
+}

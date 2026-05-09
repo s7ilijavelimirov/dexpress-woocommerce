@@ -162,6 +162,29 @@ final class DExpressApiClient
     }
 
     /**
+     * GET /data/viewpayments?PaymentReference={ref}
+     *
+     * @return array<int, array<string, mixed>>
+     * @throws ApiException|ApiUnauthorizedException
+     */
+    public function viewPayments(string $paymentReference): array
+    {
+        $reference = trim($paymentReference);
+        if ($reference === '') {
+            throw new ApiException(
+                'D Express API: PaymentReference je obavezan za viewpayments.'
+            );
+        }
+
+        /** @var array<int, array<string, mixed>> $rows */
+        $rows = $this->get('/data/viewpayments', [
+            'PaymentReference' => $reference,
+        ]);
+
+        return $rows;
+    }
+
+    /**
      * @return array<string, string>
      */
     private function buildHeaders(): array

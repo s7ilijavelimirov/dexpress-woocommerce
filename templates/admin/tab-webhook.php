@@ -9,6 +9,39 @@ defined('ABSPATH') || exit;
 
 $passcode    = $options->getString('webhook.passcode');
 $webhookUrl  = rest_url('dexpress/v1/notify');
+$allowedIp   = $options->getString('webhook.ip_address', '');
+
+$currentIp = '';
+$ipCandidates = [];
+if (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+    $forwarded = trim((string) wp_unslash($_SERVER['HTTP_X_FORWARDED_FOR']));
+    if ($forwarded !== '') {
+        foreach (explode(',', $forwarded) as $part) {
+            $ip = trim($part);
+            if ($ip !== '') {
+                $ipCandidates[] = $ip;
+            }
+        }
+    }
+}
+if (isset($_SERVER['HTTP_X_REAL_IP'])) {
+    $ip = trim((string) wp_unslash($_SERVER['HTTP_X_REAL_IP']));
+    if ($ip !== '') {
+        $ipCandidates[] = $ip;
+    }
+}
+if (isset($_SERVER['REMOTE_ADDR'])) {
+    $ip = trim((string) wp_unslash($_SERVER['REMOTE_ADDR']));
+    if ($ip !== '') {
+        $ipCandidates[] = $ip;
+    }
+}
+foreach ($ipCandidates as $candidate) {
+    if (filter_var($candidate, FILTER_VALIDATE_IP) !== false) {
+        $currentIp = $candidate;
+        break;
+    }
+}
 ?>
 <table class="form-table" role="presentation">
     <tr>
@@ -54,3 +87,43 @@ $webhookUrl  = rest_url('dexpress/v1/notify');
         <?php esc_html_e('Webhook prihvata i PUT (query string) i POST (JSON body) zahteve od D Express-a.', 'dexpress-woocommerce'); ?>
     </p>
 </div>
+
+<form method="post" action="" style="margin-top:20px;">
+    <?php wp_nonce_field('dexpress_save_settings', 'dexpress_settings_nonce'); ?>
+    <input type="hidden" name="dexpress_save_settings" value="1">
+    <input type="hidden" name="dexpress_active_tab" value="webhook">
+
+    <table class="form-table" role="presentation">
+        <tr>
+            <th scope="row">
+                <label for="webhook_ip_address"><?php esc_html_e('Dozvoljena IP adresa (webhook)', 'dexpress-woocommerce'); ?></label>
+            </th>
+            <td>
+                <input type="text"
+                       id="webhook_ip_address"
+                       name="webhook_ip_address"
+                       class="regular-text code"
+                       placeholder="203.0.113.10"
+                       value="<?php echo esc_attr($allowedIp); ?>">
+                <p class="description">
+                    <?php esc_html_e('IP adresa sa koje D-Express šalje webhook notifikacije. Ostavite prazno da dozvolite sve IP adrese.', 'dexpress-woocommerce'); ?>
+                </p>
+                <p class="description">
+                    <?php
+                    if ($currentIp !== '') {
+                        printf(
+                            /* translators: %s: currently detected IP */
+                            esc_html__('Vaša trenutna IP adresa: %s', 'dexpress-woocommerce'),
+                            esc_html($currentIp),
+                        );
+                    } else {
+                        esc_html_e('Vaša trenutna IP adresa: nije detektovana', 'dexpress-woocommerce');
+                    }
+                    ?>
+                </p>
+            </td>
+        </tr>
+    </table>
+
+    <?php submit_button(__('Sačuvaj webhook podešavanja', 'dexpress-woocommerce')); ?>
+</form>

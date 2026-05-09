@@ -2,447 +2,435 @@
 (function ($) {
     'use strict';
 
-    var mb = dexpressMetabox;
-    var MAX_PKG = parseInt(mb.maxPackages, 10) || 5;
-
-    var state = {
-        step:         1,
-        packageCount: 1,
-        packages:     [],
-    };
-
-    function escapeHtml(str) {
-        return $('<div>').text(str).html();
+    var mb = window.dexpressMetabox || {};
+    var $root = $('#dexpress-shipment-root');
+    if (!$root.length) {
+        return;
     }
 
-    function attrEscape(str) {
-        return String(str)
-            .replace(/&/g, '&amp;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#39;')
-            .replace(/</g, '&lt;');
+    function esc(str) {
+        return $('<div/>').text(String(str || '')).html();
     }
 
-    function packageLineItemsHtml(pkgIdx, pkg) {
-        var lines = mb.orderLineItems || [];
-        if (!lines.length) {
-            return '';
-        }
-        var items = pkg.items || {};
-        var rows = '';
-        var j;
-        for (j = 0; j < lines.length; j++) {
-            var li = lines[j];
-            var sid = String(li.id);
-            var qty = items[sid] !== undefined ? parseInt(items[sid], 10) || 0 : 0;
-            rows +=
-                '<tr>' +
-                '<td>' + escapeHtml(li.name) + '</td>' +
-                '<td style="width:72px;">' +
-                '<input type="number" min="0" max="' + li.qty_max + '" class="small-text dexpress-pkg-item-qty" ' +
-                'data-idx="' + pkgIdx + '" data-item-id="' + li.id + '" value="' + qty + '">' +
-                '</td>' +
-                '<td>/ ' + li.qty_max + '</td>' +
-                '</tr>';
-        }
-        return (
-            '<div class="dexpress-pkg-items" style="margin-top:8px;">' +
-            '<div class="dexpress-field-label">Stavke u paketu (opciono)</div>' +
-            '<table class="widefat" style="margin-top:4px;font-size:11px;">' +
-            rows +
-            '</table></div>'
-        );
+    function setResult(msg, isError) {
+        $('#dexpress-wizard-result').text(msg || '').toggleClass('is-error', !!isError).toggleClass('is-success', !isError && !!msg);
     }
 
-    function validateLineAllocations() {
-        var lines = mb.orderLineItems || [];
-        if (!lines.length) {
-            return true;
+    function openLabel(url, existingWindow) {
+        if (!url) {
+            return false;
         }
-        var maxById = {};
-        var j;
-        for (j = 0; j < lines.length; j++) {
-            maxById[String(lines[j].id)] = lines[j].qty_max;
+        var win = existingWindow || window.open('', '_blank');
+        if (!win) {
+            return false;
         }
-        var totals = {};
-        var i;
-        var k;
-        for (i = 0; i < state.packageCount; i++) {
-            var pkg = state.packages[i];
-            if (!pkg.items) {
-                continue;
-            }
-            for (k in pkg.items) {
-                if (!Object.prototype.hasOwnProperty.call(pkg.items, k)) {
-                    continue;
-                }
-                var q = pkg.items[k];
-                if (!maxById.hasOwnProperty(k)) {
-                    showError('Nepoznata stavka u raspodeli.');
-                    return false;
-                }
-                totals[k] = (totals[k] || 0) + q;
-            }
-        }
-        for (k in maxById) {
-            if (!Object.prototype.hasOwnProperty.call(maxById, k)) {
-                continue;
-            }
-            if ((totals[k] || 0) > maxById[k]) {
-                showError('Ukupna količina po stavci premašuje poručenu.');
-                return false;
-            }
-        }
+        win.location = String(url);
         return true;
     }
 
-    function showStep(n) {
-        state.step = n;
-
-        $('.dexpress-wizard-step').hide();
-        $('#dexpress-step-' + n).show();
-
-        $('.dexpress-step-pill').each(function () {
-            var s = parseInt($(this).data('step'), 10);
-            $(this).toggleClass('is-done', s < n).toggleClass('is-active', s === n);
-        });
-
-        $('.dexpress-step-conn').each(function (i) {
-            $(this).toggleClass('is-done', i < n - 1);
-        });
-
-        $('#dexpress-wizard-back').toggle(n > 1);
-
-        if (n === 4) {
-            $('#dexpress-wizard-next').hide();
-            $('#dexpress-create-shipment-btn').show();
-        } else {
-            $('#dexpress-wizard-next').show();
-            $('#dexpress-create-shipment-btn').hide();
-        }
-
-        hideError();
-    }
-
-    function showError(msg) {
-        $('#dexpress-wizard-error').text(msg).show();
-    }
-
-    function hideError() {
-        $('#dexpress-wizard-error').hide().text('');
-    }
-
-    $('#dexpress-pkg-minus').on('click', function () {
-        var $i = $('#dexpress-pkg-count');
-        var v  = parseInt($i.val(), 10) || 1;
-        if (v > 1) {
-            $i.val(v - 1);
-        }
-    });
-
-    $('#dexpress-pkg-plus').on('click', function () {
-        var $i = $('#dexpress-pkg-count');
-        var v  = parseInt($i.val(), 10) || 1;
-        if (v < MAX_PKG) {
-            $i.val(v + 1);
-        }
-    });
-
-    function renderPackages() {
-        var $list = $('#dexpress-packages-list');
-        $list.empty();
-
-        for (var i = 0; i < state.packageCount; i++) {
-            var pkg = state.packages[i] || {};
-            var title = 'PKG_' + (i + 1);
-
-            $list.append(
-                '<div class="dexpress-pkg-card">' +
-                    '<div class="dexpress-pkg-card-title">' +
-                        '<span class="dashicons dashicons-archive" aria-hidden="true"></span> ' +
-                        title +
-                    '</div>' +
-                    '<p class="dexpress-pkg-field">' +
-                        '<label class="dexpress-field-label">' +
-                            'Težina (g) <span class="dexpress-req">*</span>' +
-                        '</label>' +
-                        '<input type="number" class="widefat dexpress-pkg-weight" data-idx="' + i + '" ' +
-                            'value="' + (pkg.weight || '') + '" min="1" placeholder="npr. 500">' +
-                    '</p>' +
-                    '<p class="dexpress-pkg-dim-hint">' +
-                        '<span class="dashicons dashicons-image-crop" aria-hidden="true"></span> ' +
-                        'Dimenzije (mm, opciono)' +
-                    '</p>' +
-                    '<div class="dexpress-pkg-dims">' +
-                        '<div><label class="dexpress-dim-label">X</label>' +
-                            '<input type="number" class="dexpress-pkg-length" data-idx="' + i + '" ' +
-                                'value="' + (pkg.length || '') + '" min="0" placeholder="mm"></div>' +
-                        '<div><label class="dexpress-dim-label">Y</label>' +
-                            '<input type="number" class="dexpress-pkg-width" data-idx="' + i + '" ' +
-                                'value="' + (pkg.width || '') + '" min="0" placeholder="mm"></div>' +
-                        '<div><label class="dexpress-dim-label">Z</label>' +
-                            '<input type="number" class="dexpress-pkg-height" data-idx="' + i + '" ' +
-                                'value="' + (pkg.height || '') + '" min="0" placeholder="mm"></div>' +
-                    '</div>' +
-                    '<p class="dexpress-pkg-field">' +
-                        '<label class="dexpress-field-label">Sadržaj paketa (opciono, max 50)</label>' +
-                        '<input type="text" maxlength="50" class="widefat dexpress-pkg-content" data-idx="' + i + '" ' +
-                            'value="' + attrEscape(pkg.content || '') + '">' +
-                    '</p>' +
-                    packageLineItemsHtml(i, pkg) +
-                '</div>'
-            );
-        }
-    }
-
-    function savePackages() {
-        state.packages = [];
-        var i;
-        var elContent;
-        for (i = 0; i < state.packageCount; i++) {
-            elContent = $('.dexpress-pkg-content[data-idx="' + i + '"]').val() || '';
-            var itemsObj = {};
-            $('.dexpress-pkg-item-qty[data-idx="' + i + '"]').each(function () {
-                var q = parseInt($(this).val(), 10) || 0;
-                if (q > 0) {
-                    itemsObj[String($(this).data('item-id'))] = q;
-                }
-            });
-            state.packages.push({
-                weight:  parseInt($('.dexpress-pkg-weight[data-idx="' + i + '"]').val(), 10) || 0,
-                length:  parseInt($('.dexpress-pkg-length[data-idx="' + i + '"]').val(), 10) || 0,
-                width:   parseInt($('.dexpress-pkg-width[data-idx="' + i + '"]').val(), 10) || 0,
-                height:  parseInt($('.dexpress-pkg-height[data-idx="' + i + '"]').val(), 10) || 0,
-                content: elContent.trim(),
-                items:   itemsObj,
-            });
-        }
-    }
-
-    function totalWeight() {
-        var sum = 0;
-        for (var i = 0; i < state.packages.length; i++) {
-            sum += state.packages[i].weight || 0;
-        }
-        return sum;
-    }
-
-    function dimLabel(p) {
-        var parts = [];
-        if (p.length > 0) {
-            parts.push('X=' + p.length);
-        }
-        if (p.width > 0) {
-            parts.push('Y=' + p.width);
-        }
-        if (p.height > 0) {
-            parts.push('Z=' + p.height);
-        }
-        return parts.length ? parts.join(', ') + ' mm' : '—';
-    }
-
-    function buildSummary() {
-        var tw      = totalWeight();
-        var twKg    = (tw / 1000).toFixed(2);
-        var cod     = parseFloat(mb.codAmount || '0');
-
-        var row = function (label, value) {
-            return '<tr>' +
-                '<td class="dexpress-sum-label">' + label + '</td>' +
-                '<td class="dexpress-sum-val">' + value + '</td>' +
-                '</tr>';
-        };
-
-        var html = '<table class="dexpress-summary-table">';
-        html += row('Broj paketa:', String(state.packageCount));
-        html += row('Ukupna težina:', tw + ' g (' + twKg + ' kg)');
-
-        var pi;
-        for (pi = 0; pi < state.packages.length; pi++) {
-            var p = state.packages[pi];
-            var sumLine = (p.weight || 0) + ' g, ' + dimLabel(p);
-            if (p.content) {
-                sumLine += '<br><em>' + $('<span>').text(p.content).html() + '</em>';
-            }
-            if (p.items && mb.orderLineItems && mb.orderLineItems.length) {
-                var bits = [];
-                var oid;
-                for (oid in p.items) {
-                    if (!Object.prototype.hasOwnProperty.call(p.items, oid)) {
-                        continue;
-                    }
-                    var qItem = p.items[oid];
-                    var nameLookup = '';
-                    var lx;
-                    for (lx = 0; lx < mb.orderLineItems.length; lx++) {
-                        if (String(mb.orderLineItems[lx].id) === String(oid)) {
-                            nameLookup = mb.orderLineItems[lx].name;
-                            break;
-                        }
-                    }
-                    bits.push($('<span>').text(nameLookup || oid).html() + ' × ' + qItem);
-                }
-                if (bits.length) {
-                    sumLine += '<br>' + bits.join(', ');
-                }
-            }
-            html += row('PKG_' + (pi + 1), sumLine);
-        }
-
-        if (cod > 0) {
-            html += row('Otkupnina (COD):', cod.toLocaleString('sr-RS', {minimumFractionDigits: 2}) + ' RSD');
-        }
-
-        html += row('Sadržaj:', $('<span>').text($('#dexpress-content').val().trim()).html());
-        html += row('Tip dostave:', $('#dexpress-delivery-type option:selected').text());
-        html += row('Način plaćanja:', $('#dexpress-payment-type option:selected').text());
-        html += row('Povraćaj dok.:', $('#dexpress-return-doc option:selected').text());
-        html += row('Self drop-off:', $('#dexpress-self-drop-off').is(':checked') ? 'Da' : 'Ne');
-
-        var note = $('#dexpress-note').val().trim();
-        if (note) {
-            html += row('Napomena:', $('<span>').text(note).html());
-        }
-
-        html += '</table>';
-        $('#dexpress-summary').html(html);
-    }
-
-    function validateStep(step) {
-        if (step === 1) {
-            var count = parseInt($('#dexpress-pkg-count').val(), 10);
-            if (!count || count < 1 || count > MAX_PKG) {
-                showError('Unesite broj paketa od 1 do ' + MAX_PKG + '.');
-                return false;
-            }
-            return true;
-        }
-
-        if (step === 2) {
-            savePackages();
-            for (var i = 0; i < state.packageCount; i++) {
-                if (!state.packages[i].weight || state.packages[i].weight < 1) {
-                    showError('Unesite težinu (g) za paket ' + (i + 1) + '.');
-                    $('.dexpress-pkg-weight[data-idx="' + i + '"]').trigger('focus');
-                    return false;
-                }
-            }
-            if (!validateLineAllocations()) {
-                return false;
-            }
-            return true;
-        }
-
-        if (step === 3) {
-            if (!$('#dexpress-content').val().trim()) {
-                showError('Sadržaj pošiljke je obavezan.');
-                $('#dexpress-content').trigger('focus');
-                return false;
-            }
-            return true;
-        }
-
-        return true;
-    }
-
-    $('#dexpress-wizard-next').on('click', function () {
-        if (!validateStep(state.step)) {
+    function initPendingSendState() {
+        var $pending = $('.dexpress-state--draft[data-state="pending_send"]');
+        if (!$pending.length) {
             return;
         }
 
-        if (state.step === 1) {
-            state.packageCount = parseInt($('#dexpress-pkg-count').val(), 10) || 1;
-            renderPackages();
-            showStep(2);
-        } else if (state.step === 2) {
-            showStep(3);
-        } else if (state.step === 3) {
-            buildSummary();
-            showStep(4);
+        var shipmentId = parseInt($pending.data('shipment-id'), 10) || 0;
+        var labelUrl = String($pending.data('label-url') || '');
+
+        $('#dexpress-reprint-label').on('click', function () {
+            if (!openLabel(labelUrl)) {
+                setResult('Browser je blokirao pop-up prozor. Omogućite pop-up za admin stranicu.', true);
+            }
+        });
+
+        $('#dexpress-edit-shipment').on('click', function () {
+            var url = new URL(window.location.href);
+            url.searchParams.set('dexpress_edit_shipment', String(shipmentId));
+            window.location.href = url.toString();
+        });
+
+        $('#dexpress-send-shipment').on('click', function () {
+            var $btn = $(this);
+            $btn.prop('disabled', true).text(mb.i18n.sending || 'Slanje...');
+            setResult('', false);
+
+            $.post(mb.ajaxUrl, {
+                action: 'dexpress_send_saved_shipment',
+                nonce: mb.nonceSendSaved,
+                shipment_id: shipmentId
+            }).done(function (resp) {
+                if (!resp.success) {
+                    setResult((resp.data && resp.data.message) || (mb.i18n.error || 'Greška.'), true);
+                    return;
+                }
+                setResult((resp.data && resp.data.message) || 'Pošiljka je poslata.', false);
+                setTimeout(function () { window.location.reload(); }, 1100);
+            }).fail(function () {
+                setResult(mb.i18n.error || 'Greška.', true);
+            }).always(function () {
+                $btn.prop('disabled', false).text(mb.i18n.sendToDexpress || 'Pošalji u D-Express');
+            });
+        });
+    }
+
+    function initWizardState() {
+        var $wizard = $('.dexpress-state--wizard[data-state="wizard"]');
+        if (!$wizard.length) {
+            return;
         }
-    });
 
-    $('#dexpress-wizard-back').on('click', function () {
-        if (state.step > 1) {
-            showStep(state.step - 1);
+        var maxPackages = parseInt(mb.maxPackages, 10) || 30;
+        var defaults = mb.defaults || {};
+        var step = 1;
+        var initialDraft = mb.initialDraft || null;
+        var state = {
+            packages: [],
+            options: {
+                sender_location_id: null,
+                delivery_type: parseInt(defaults.delivery_type || 2, 10),
+                payment_type: parseInt(defaults.payment_type || 2, 10),
+                return_doc: parseInt(defaults.return_doc || 0, 10),
+                self_drop_off: defaults.self_drop_off ? 1 : 0,
+                content: '',
+                note: ''
+            }
+        };
+
+        function showError(msg) {
+            $('#dexpress-wizard-error').text(msg).prop('hidden', false);
         }
-    });
 
-    $('#dexpress-create-shipment-btn').on('click', function () {
-        savePackages();
-        var $btn    = $(this);
-        var $result = $('#dexpress-create-result');
-        var tw      = totalWeight();
+        function clearError() {
+            $('#dexpress-wizard-error').text('').prop('hidden', true);
+        }
 
-        $result.text('').css('color', '');
-        $btn.prop('disabled', true).text(mb.i18n.creating);
+        function ensureAtLeastOnePackage() {
+            if (!state.packages.length) {
+                state.packages.push({ mass: 0, dim_x: null, dim_y: null, dim_z: null, content: '', items: {} });
+            }
+        }
 
-        var pkgPayload = state.packages.map(function (p) {
-            var itemsArr = [];
-            if (p.items) {
-                var oid;
-                for (oid in p.items) {
-                    if (!Object.prototype.hasOwnProperty.call(p.items, oid)) {
-                        continue;
+        function packageItemsTable(pkgIndex, pkg) {
+            var lines = mb.orderLineItems || [];
+            if (!lines.length) {
+                return '';
+            }
+            var rows = '';
+            lines.forEach(function (line) {
+                var key = String(line.id);
+                var qty = (pkg.items && pkg.items[key]) ? parseInt(pkg.items[key], 10) : 0;
+                rows += '<tr><td>' + esc(line.name) + '</td>' +
+                    '<td><input type="number" min="0" max="' + parseInt(line.qty_max, 10) + '" class="small-text dexpress-item-qty" data-pkg="' + pkgIndex + '" data-item="' + key + '" value="' + qty + '"></td>' +
+                    '<td>/ ' + parseInt(line.qty_max, 10) + '</td></tr>';
+            });
+            return '<div class="dexpress-item-allocation"><p class="dexpress-field-label">Raspodela stavki po paketu</p><table class="widefat striped"><tbody>' + rows + '</tbody></table></div>';
+        }
+
+        function renderPackages() {
+            var html = '';
+            state.packages.forEach(function (pkg, idx) {
+                html += '<article class="dexpress-package-card">' +
+                    '<div class="dexpress-package-card-head"><span class="dashicons dashicons-archive dexpress-package-icon"></span><strong>PKG_' + (idx + 1) + '</strong></div>' +
+                    '<div class="dexpress-package-card-body">' +
+                    '<p><label class="dexpress-field-label">Težina (kg) <span class="dexpress-req">*</span></label>' +
+                    '<input type="number" min="0.01" step="0.01" class="widefat dexpress-pkg-mass" data-pkg="' + idx + '" value="' + ((pkg.mass || 0) > 0 ? ((pkg.mass || 0) / 1000).toFixed(2) : '') + '"></p>' +
+                    '<div class="dexpress-dims-grid">' +
+                    '<p><label class="dexpress-field-label">Dužina (cm)</label><input type="number" min="0" class="widefat dexpress-pkg-dx" data-pkg="' + idx + '" value="' + (pkg.dim_x || '') + '"></p>' +
+                    '<p><label class="dexpress-field-label">Širina (cm)</label><input type="number" min="0" class="widefat dexpress-pkg-dy" data-pkg="' + idx + '" value="' + (pkg.dim_y || '') + '"></p>' +
+                    '<p><label class="dexpress-field-label">Visina (cm)</label><input type="number" min="0" class="widefat dexpress-pkg-dz" data-pkg="' + idx + '" value="' + (pkg.dim_z || '') + '"></p>' +
+                    '</div>' +
+                    '<p><label class="dexpress-field-label">Sadržaj paketa</label><input type="text" maxlength="50" class="widefat dexpress-pkg-content" data-pkg="' + idx + '" value="' + esc(pkg.content || '') + '"></p>' +
+                    packageItemsTable(idx, pkg) +
+                    '</div></article>';
+            });
+            $('#dexpress-package-cards').html(html);
+        }
+
+        function readOptionsFromForm() {
+            state.options.sender_location_id = parseInt($('#dexpress-sender-location').val(), 10) || 0;
+            state.options.delivery_type = parseInt($('#dexpress-delivery-type').val(), 10) || 2;
+            state.options.payment_type = parseInt($('#dexpress-payment-type').val(), 10) || 2;
+            state.options.return_doc = parseInt($('#dexpress-return-doc').val(), 10) || 0;
+            state.options.self_drop_off = $('#dexpress-self-drop-off').is(':checked') ? 1 : 0;
+            state.options.content = ($('#dexpress-content').val() || '').trim();
+            state.options.note = ($('#dexpress-note').val() || '').trim();
+        }
+
+        function readPackagesFromForm() {
+            state.packages.forEach(function (pkg, idx) {
+                var massKg = parseFloat($('.dexpress-pkg-mass[data-pkg="' + idx + '"]').val()) || 0;
+                pkg.mass = massKg > 0 ? Math.round(massKg * 1000) : 0;
+                var dx = parseInt($('.dexpress-pkg-dx[data-pkg="' + idx + '"]').val(), 10) || 0;
+                var dy = parseInt($('.dexpress-pkg-dy[data-pkg="' + idx + '"]').val(), 10) || 0;
+                var dz = parseInt($('.dexpress-pkg-dz[data-pkg="' + idx + '"]').val(), 10) || 0;
+                pkg.dim_x = dx > 0 ? dx : null;
+                pkg.dim_y = dy > 0 ? dy : null;
+                pkg.dim_z = dz > 0 ? dz : null;
+                pkg.content = (($('.dexpress-pkg-content[data-pkg="' + idx + '"]').val() || '').trim()).slice(0, 50);
+                pkg.items = {};
+                $('.dexpress-item-qty[data-pkg="' + idx + '"]').each(function () {
+                    var qty = parseInt($(this).val(), 10) || 0;
+                    if (qty > 0) {
+                        pkg.items[String($(this).data('item'))] = qty;
                     }
-                    itemsArr.push({
-                        order_item_id: parseInt(oid, 10),
-                        qty:           p.items[oid],
-                    });
+                });
+            });
+        }
+
+        function validateAllocations() {
+            var totals = {};
+            var limits = {};
+            (mb.orderLineItems || []).forEach(function (line) {
+                limits[String(line.id)] = parseInt(line.qty_max, 10) || 0;
+            });
+            state.packages.forEach(function (pkg) {
+                Object.keys(pkg.items || {}).forEach(function (k) {
+                    totals[k] = (totals[k] || 0) + (parseInt(pkg.items[k], 10) || 0);
+                });
+            });
+            return Object.keys(totals).every(function (k) {
+                return limits[k] !== undefined && totals[k] <= limits[k];
+            });
+        }
+
+        function validateStep(targetStep) {
+            clearError();
+            if (targetStep === 2) {
+                readPackagesFromForm();
+                var okMass = state.packages.every(function (pkg) { return (pkg.mass || 0) > 0; });
+                if (!okMass) {
+                    showError('Unesite težinu za svaki paket.');
+                    return false;
+                }
+                if (!validateAllocations()) {
+                    showError('Raspodela stavki po paketima nije validna.');
+                    return false;
                 }
             }
-            return {
-                mass:    p.weight || 0,
-                dim_x:   p.length > 0 ? p.length : null,
-                dim_y:   p.width  > 0 ? p.width  : null,
-                dim_z:   p.height > 0 ? p.height : null,
-                content: (p.content || '').trim(),
-                items:   itemsArr,
-            };
-        });
-
-        $.post(mb.ajaxUrl, {
-            action:             'dexpress_create_shipment',
-            nonce:              mb.nonce,
-            order_id:           mb.orderId,
-            sender_location_id: $('#dexpress-sender-location').val(),
-            delivery_type:      $('#dexpress-delivery-type').val(),
-            payment_type:       $('#dexpress-payment-type').val(),
-            return_doc:         $('#dexpress-return-doc').val(),
-            self_drop_off:      $('#dexpress-self-drop-off').is(':checked') ? 1 : 0,
-            content:            $('#dexpress-content').val().trim(),
-            note:               $('#dexpress-note').val().trim(),
-            total_mass_grams:   tw,
-            packages:           JSON.stringify(pkgPayload),
-        })
-        .done(function (response) {
-            if (response.success) {
-                var color = response.data.test_mode ? '#b45309' : '#2a6a2a';
-                var codes = Array.isArray(response.data.tracking_codes) && response.data.tracking_codes.length
-                    ? response.data.tracking_codes
-                    : [response.data.tracking_code || ''];
-                codes = codes.filter(function (c) { return c; });
-                var codesPart = codes.length === 0
-                    ? ''
-                    : (codes.length === 1
-                        ? (' Kod: ' + codes[0])
-                        : (' Kodovi paketa (' + codes.length + '): ' + codes.join(', ')));
-                $result
-                    .text(response.data.message + codesPart)
-                    .css('color', color);
-                $btn.prop('disabled', true);
-                setTimeout(function () { window.location.reload(); }, 2200);
-            } else {
-                $result.text(response.data.message || mb.i18n.error).css('color', '#b32d2e');
-                $btn.prop('disabled', false).text(mb.i18n.create);
+            if (targetStep === 3) {
+                readOptionsFromForm();
+                if (!state.options.sender_location_id) {
+                    showError('Izaberite lokaciju pošiljaoca.');
+                    return false;
+                }
+                if (!state.options.content) {
+                    showError('Sadržaj pošiljke je obavezan.');
+                    return false;
+                }
             }
-        })
-        .fail(function () {
-            $result.text(mb.i18n.error).css('color', '#b32d2e');
-            $btn.prop('disabled', false).text(mb.i18n.create);
+            return true;
+        }
+
+        function renderSummary() {
+            var totalMass = 0;
+            var list = '<ul class="dexpress-summary-packages">';
+            state.packages.forEach(function (pkg, idx) {
+                totalMass += parseInt(pkg.mass, 10) || 0;
+                var massKg = ((parseInt(pkg.mass, 10) || 0) / 1000).toFixed(2);
+                var dims = (pkg.dim_x && pkg.dim_y && pkg.dim_z) ? (pkg.dim_x + '×' + pkg.dim_y + '×' + pkg.dim_z + ' cm') : '—';
+                list += '<li><strong>PKG_' + (idx + 1) + '</strong> · ' + massKg + ' kg · ' + dims + '</li>';
+            });
+            list += '</ul>';
+
+            var recipient = mb.isPackageShop && mb.destination ? esc(mb.destination) : 'Adresa kupca';
+            var html = '<table class="widefat striped dexpress-summary-table"><tbody>' +
+                '<tr><th>Broj paketa</th><td>' + state.packages.length + '</td></tr>' +
+                '<tr><th>Ukupna masa</th><td>' + (totalMass / 1000).toFixed(2) + ' kg</td></tr>' +
+                '<tr><th>Sadržaj pošiljke</th><td>' + esc(state.options.content) + '</td></tr>' +
+                '<tr><th>Napomena</th><td>' + esc(state.options.note || '—') + '</td></tr>' +
+                '<tr><th>Primalac</th><td>' + recipient + '</td></tr>' +
+                '</tbody></table>' + list;
+            $('#dexpress-step3-summary').html(html);
+        }
+
+        function showStep(n) {
+            step = n;
+            $('.dexpress-step').removeClass('is-active').filter('[data-step="' + n + '"]').addClass('is-active');
+            $('.dexpress-step-panel').prop('hidden', true).filter('[data-step="' + n + '"]').prop('hidden', false);
+            $('#dexpress-step-back').prop('hidden', n === 1);
+            $('#dexpress-step-next').prop('hidden', n === 3);
+            $('#dexpress-print-label').prop('hidden', n !== 3);
+            if (n === 3) {
+                renderSummary();
+            }
+        }
+
+        function toPayload() {
+            readPackagesFromForm();
+            readOptionsFromForm();
+            return {
+                options: {
+                    sender_location_id: state.options.sender_location_id,
+                    delivery_type: state.options.delivery_type,
+                    payment_type: state.options.payment_type,
+                    return_doc: state.options.return_doc,
+                    self_drop_off: state.options.self_drop_off,
+                    content: state.options.content,
+                    note: state.options.note
+                },
+                packages: state.packages.map(function (pkg) {
+                    var items = [];
+                    Object.keys(pkg.items || {}).forEach(function (k) {
+                        items.push({ order_item_id: parseInt(k, 10), qty: parseInt(pkg.items[k], 10) || 0 });
+                    });
+                    return {
+                        mass: parseInt(pkg.mass, 10) || 0,
+                        dim_x: pkg.dim_x || null,
+                        dim_y: pkg.dim_y || null,
+                        dim_z: pkg.dim_z || null,
+                        content: (pkg.content || '').trim(),
+                        items: items
+                    };
+                })
+            };
+        }
+
+        ensureAtLeastOnePackage();
+        if (initialDraft && initialDraft.options && Array.isArray(initialDraft.packages) && initialDraft.packages.length) {
+            state.options.sender_location_id = parseInt(initialDraft.options.sender_location_id, 10) || null;
+            state.options.delivery_type = parseInt(initialDraft.options.delivery_type, 10) || state.options.delivery_type;
+            state.options.payment_type = parseInt(initialDraft.options.payment_type, 10) || state.options.payment_type;
+            state.options.return_doc = parseInt(initialDraft.options.return_doc, 10) || state.options.return_doc;
+            state.options.self_drop_off = initialDraft.options.self_drop_off ? 1 : 0;
+            state.options.content = String(initialDraft.options.content || '').trim();
+            state.options.note = String(initialDraft.options.note || '').trim();
+            state.packages = initialDraft.packages.map(function (pkg) {
+                var items = {};
+                if (pkg.items && typeof pkg.items === 'object') {
+                    Object.keys(pkg.items).forEach(function (key) {
+                        items[String(key)] = parseInt(pkg.items[key], 10) || 0;
+                    });
+                }
+                return {
+                    mass: parseInt(pkg.mass, 10) || 0,
+                    dim_x: pkg.dim_x ? parseInt(pkg.dim_x, 10) : null,
+                    dim_y: pkg.dim_y ? parseInt(pkg.dim_y, 10) : null,
+                    dim_z: pkg.dim_z ? parseInt(pkg.dim_z, 10) : null,
+                    content: String(pkg.content || '').trim(),
+                    items: items
+                };
+            });
+        }
+        ensureAtLeastOnePackage();
+        renderPackages();
+        if (state.options.sender_location_id) {
+            $('#dexpress-sender-location').val(String(state.options.sender_location_id));
+        }
+        $('#dexpress-delivery-type').val(String(state.options.delivery_type));
+        $('#dexpress-payment-type').val(String(state.options.payment_type));
+        $('#dexpress-return-doc').val(String(state.options.return_doc));
+        $('#dexpress-self-drop-off').prop('checked', !!state.options.self_drop_off);
+        $('#dexpress-content').val(state.options.content);
+        $('#dexpress-note').val(state.options.note);
+        showStep(1);
+
+        $('#dexpress-add-package').on('click', function () {
+            if (state.packages.length >= maxPackages) {
+                showError('Dostignut je maksimalan broj paketa.');
+                return;
+            }
+            state.packages.push({ mass: 0, dim_x: null, dim_y: null, dim_z: null, content: '', items: {} });
+            renderPackages();
+            clearError();
         });
-    });
 
-    showStep(1);
+        $('#dexpress-remove-package').on('click', function () {
+            if (state.packages.length <= 1) {
+                return;
+            }
+            state.packages.pop();
+            renderPackages();
+            clearError();
+        });
 
+        $('#dexpress-step-next').on('click', function () {
+            if (!validateStep(step + 1)) {
+                return;
+            }
+            showStep(step + 1);
+        });
+
+        $('#dexpress-step-back').on('click', function () {
+            showStep(step - 1);
+        });
+
+        $('#dexpress-print-label').on('click', function () {
+            if (!validateStep(3)) {
+                return;
+            }
+            var printWin = window.open('', '_blank');
+            if (!printWin) {
+                setResult('Browser je blokirao pop-up prozor. Omogućite pop-up za admin stranicu.', true);
+                return;
+            }
+
+            var payload = toPayload();
+            var $btn = $(this);
+            $btn.prop('disabled', true).text(mb.i18n.savingLocal || 'Čuvanje...');
+            setResult('', false);
+
+            $.post(mb.ajaxUrl, {
+                action: 'dexpress_save_shipment_local',
+                nonce: mb.nonceSaveLocal,
+                order_id: mb.orderId,
+                shipment_id: parseInt(mb.editShipmentId || 0, 10) || 0,
+                draft: JSON.stringify(payload)
+            }).done(function (resp) {
+                if (!resp.success) {
+                    try { printWin.close(); } catch (e) {}
+                    setResult((resp.data && resp.data.message) || (mb.i18n.error || 'Greška.'), true);
+                    return;
+                }
+                var labelUrl = resp.data && resp.data.label_url ? String(resp.data.label_url) : '';
+                if (!openLabel(labelUrl, printWin)) {
+                    try { printWin.close(); } catch (e2) {}
+                    setResult('Neuspešno otvaranje nalepnice.', true);
+                    return;
+                }
+                setResult((resp.data && resp.data.message) || 'Nalepnica je kreirana.', false);
+                setTimeout(function () {
+                    var cleanUrl = new URL(window.location.href);
+                    cleanUrl.searchParams.delete('dexpress_edit_shipment');
+                    window.location.href = cleanUrl.toString();
+                }, 500);
+            }).fail(function () {
+                try { printWin.close(); } catch (e3) {}
+                setResult(mb.i18n.error || 'Greška.', true);
+            }).always(function () {
+                $btn.prop('disabled', false).text('Štampaj nalepnicu');
+            });
+        });
+    }
+
+    if ($('.dexpress-state--wizard').length) {
+        initWizardState();
+    } else if ($('.dexpress-state--draft[data-state="pending_send"]').length) {
+        initPendingSendState();
+    } else if ($('.dexpress-state--created[data-state="created"]').length) {
+        $('.dexpress-copy-track').on('click', function () {
+            var code = String($(this).data('track') || '').trim();
+            if (!code) {
+                return;
+            }
+            var done = function () {
+                setResult('Kod za praćenje je kopiran.', false);
+            };
+            var fallback = function () {
+                var $tmp = $('<input type="text">').val(code).appendTo('body');
+                $tmp.trigger('select');
+                try {
+                    document.execCommand('copy');
+                    done();
+                } catch (e) {
+                    setResult('Kopiranje nije uspelo. Kopirajte kod ručno.', true);
+                }
+                $tmp.remove();
+            };
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(code).then(done).catch(fallback);
+            } else {
+                fallback();
+            }
+        });
+    }
 }(jQuery));

@@ -19,6 +19,14 @@ $email_heading       = $email_heading ?? '';
 $tracking_codes_text = isset($tracking_codes_text) && is_string($tracking_codes_text) ? $tracking_codes_text : '';
 $is_test_shipment    = (bool) ($is_test_shipment ?? false);
 $ctx                 = $shipment_context instanceof ShipmentEmailRenderContext ? $shipment_context : null;
+$packageShopLocationId = trim((string) $order->get_meta('_dexpress_package_shop_location_id'));
+$packageShopLocationName = trim((string) $order->get_meta('_dexpress_package_shop_location_name'));
+$packageShopLocationAddress = trim((string) $order->get_meta('_dexpress_package_shop_location_address'));
+$packageShopLocationCity = trim((string) $order->get_meta('_dexpress_package_shop_location_city'));
+$packageShopLocationType = trim((string) $order->get_meta('_dexpress_package_shop_location_type_label'));
+$packageShopWorkingDays = trim((string) $order->get_meta('_dexpress_package_shop_location_working_days'));
+$packageShopWorkingHours = trim((string) $order->get_meta('_dexpress_package_shop_location_working_hours'));
+$packageShopWorking = trim($packageShopWorkingDays . ($packageShopWorkingDays !== '' && $packageShopWorkingHours !== '' ? ' | ' : '') . $packageShopWorkingHours);
 
 if (!isset($order) || !$order instanceof WC_Order) {
     return;
@@ -38,6 +46,23 @@ printf(
     wp_strip_all_tags((string) $order->get_order_number()),
 );
 echo "\n\n";
+
+if ($packageShopLocationId !== '') {
+    echo wp_strip_all_tags(__('Destinacija dostave: Paket Shop lokacija', 'dexpress-woocommerce')) . "\n";
+    if ($packageShopLocationName !== '') {
+        echo wp_strip_all_tags(__('Lokacija:', 'dexpress-woocommerce')) . ' ' . wp_strip_all_tags($packageShopLocationName) . "\n";
+    }
+    if ($packageShopLocationType !== '') {
+        echo wp_strip_all_tags(__('Tip lokacije:', 'dexpress-woocommerce')) . ' ' . wp_strip_all_tags($packageShopLocationType) . "\n";
+    }
+    if ($packageShopLocationAddress !== '' || $packageShopLocationCity !== '') {
+        echo wp_strip_all_tags(__('Adresa:', 'dexpress-woocommerce')) . ' ' . wp_strip_all_tags(trim($packageShopLocationAddress . ($packageShopLocationCity !== '' ? ', ' . $packageShopLocationCity : ''))) . "\n";
+    }
+    if ($packageShopWorking !== '') {
+        echo wp_strip_all_tags(__('Radno vreme:', 'dexpress-woocommerce')) . ' ' . wp_strip_all_tags($packageShopWorking) . "\n";
+    }
+    echo "\n";
+}
 
 if ($ctx !== null) {
     foreach ($ctx->rows as $row) {

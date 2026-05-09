@@ -29,7 +29,7 @@ defined('ABSPATH') || exit;
                     <?php esc_html_e('Automatski emailovi kupcu (D Express)', 'dexpress-woocommerce'); ?>
                 </label>
                 <p class="description">
-                    <?php esc_html_e('Uključuje obaveštenja kada je pošiljka kreirana i kada se menja status (u toku, na isporuci, isporučeno). Pojedinačne šablone možete isključiti u WooCommerce → Podešavanja → Email.', 'dexpress-woocommerce'); ?>
+                    <?php esc_html_e('Uključuje obaveštenja pri kreiranju pošiljke i pri svakoj promeni statusa prema šifarniku D Express (isti nazivi kao u bazi i u mejlovima). Pojedinačne šablone možete isključiti u WooCommerce → Podešavanja → Email.', 'dexpress-woocommerce'); ?>
                 </p>
             </td>
         </tr>

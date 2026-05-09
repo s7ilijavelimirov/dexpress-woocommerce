@@ -1,0 +1,99 @@
+/* D Express — Package Profiles admin page */
+
+/* ── Forma za dodavanje / izmenu ───────────────────────────── */
+.dex-pp-wrap { max-width: 900px; }
+
+.dex-pp-form-wrap {
+  margin: 0 0 var(--dex-space-6);
+}
+
+.dex-pp-form-card {
+  background: #fff;
+  border: var(--dex-border);
+  border-top: 3px solid var(--dex-primary);
+  border-radius: var(--dex-radius-lg);
+  padding: var(--dex-space-6);
+  box-shadow: var(--dex-shadow-sm);
+}
+
+.dex-pp-form-title {
+  font-size: var(--dex-text-lg);
+  font-weight: 600;
+  color: var(--dex-gray-900);
+  margin: 0 0 var(--dex-space-4);
+}
+
+.dex-pp-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--dex-space-4);
+  margin-bottom: var(--dex-space-4);
+}
+
+.dex-pp-field { display: flex; flex-direction: column; gap: 4px; }
+.dex-pp-field--full { grid-column: 1 / -1; }
+
+.dex-pp-field label {
+  font-size: var(--dex-text-sm);
+  font-weight: 600;
+  color: var(--dex-gray-700);
+}
+
+.dex-pp-dims {
+  display: flex;
+  align-items: center;
+  gap: var(--dex-space-2);
+}
+
+.dex-pp-dims input.small-text { width: 72px; }
+
+.dex-pp-form-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--dex-space-3);
+  padding-top: var(--dex-space-4);
+  border-top: var(--dex-border);
+}
+
+.dex-pp-msg {
+  font-size: var(--dex-text-sm);
+  font-weight: 500;
+}
+
+.dex-pp-msg--ok    { color: var(--dex-success); }
+.dex-pp-msg--error { color: var(--dex-error); }
+
+/* ── Tabela profila ─────────────────────────────────────────── */
+.dex-pp-table th,
+.dex-pp-table td {
+  font-size: var(--dex-text-sm);
+  vertical-align: middle;
+}
+
+.dex-pp-actions {
+  white-space: nowrap;
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+/* ── Bedž ───────────────────────────────────────────────────── */
+.dex-pp-badge {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: 99px;
+  font-size: var(--dex-text-xs);
+  font-weight: 600;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.dex-pp-badge--default {
+  background: var(--dex-success-light);
+  color: var(--dex-success);
+}
+
+@media (max-width: 782px) {
+  .dex-pp-form-grid { grid-template-columns: 1fr; }
+  .dex-pp-field--full { grid-column: auto; }
+}

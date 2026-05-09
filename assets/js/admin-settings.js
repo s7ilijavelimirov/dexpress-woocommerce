@@ -23,12 +23,17 @@
     // -----------------------------------------------------------------------
 
     $(document).on('click', '.dexpress-toggle-password', function () {
-        var targetId = $(this).data('target');
-        var $input   = $('#' + targetId);
-        var isPass   = $input.attr('type') === 'password';
+        var targetId  = $(this).data('target');
+        var $input    = $('#' + targetId);
+        var $icon     = $(this).find('.dashicons');
+        var $srText   = $(this).find('.screen-reader-text');
+        var isPass    = $input.attr('type') === 'password';
 
         $input.attr('type', isPass ? 'text' : 'password');
-        $(this).text(isPass ? 'Sakrij' : 'Prikaži');
+        $icon.toggleClass('dashicons-visibility', !isPass)
+             .toggleClass('dashicons-hidden', isPass);
+        $(this).attr('aria-pressed', isPass ? 'true' : 'false');
+        $srText.text(isPass ? 'Sakrij lozinku' : 'Prikaži lozinku');
     });
 
     // -----------------------------------------------------------------------
@@ -455,8 +460,41 @@
     });
 
     // -----------------------------------------------------------------------
-    // Manual sync
+    // Manual sync (Šifarnici)
     // -----------------------------------------------------------------------
+
+    function setRowSyncStatus(type, state) {
+        var $cell = $('tr[data-sync-type="' + type + '"] .dexpress-sync-status');
+        if (!$cell.length) {
+            return;
+        }
+        if (state === 'loading') {
+            $cell.html('<span class="spinner is-active"></span>');
+        } else if (state === 'success') {
+            $cell.html('<span class="dashicons dashicons-yes-alt dexpress-sync-ok" aria-hidden="true"></span>');
+        } else if (state === 'error') {
+            $cell.html('<span class="dashicons dashicons-dismiss dexpress-sync-err" aria-hidden="true"></span>');
+        } else {
+            $cell.empty();
+        }
+    }
+
+    function clearAllRowSyncStatuses() {
+        $('.dexpress-sync-table .dexpress-sync-status').empty();
+    }
+
+    function updateLastSyncCell($btn) {
+        var $td = $btn.closest('tr').find('td:nth-child(3)');
+        var now = new Date();
+        var pad = function (n) { return String(n).padStart(2, '0'); };
+        var ts  = pad(now.getDate()) + '.' +
+            pad(now.getMonth() + 1) + '.' +
+            now.getFullYear() + ' ' +
+            pad(now.getHours()) + ':' +
+            pad(now.getMinutes()) + ':' +
+            pad(now.getSeconds());
+        $td.text(ts);
+    }
 
     function runSync(type, $btn, $result, requireConfirm) {
         if (requireConfirm && !window.confirm(admin.strings.confirmSync)) {
@@ -464,43 +502,33 @@
         }
 
         var originalText = $btn.text();
-        var reloadAfter  = (type === 'all');
 
         $btn.prop('disabled', true).text(admin.strings.syncing);
         if ($result) { clearResult($result); }
+        setRowSyncStatus(type, 'loading');
 
         $.post(admin.ajaxUrl, {
             action: 'dexpress_manual_sync',
             nonce:  admin.nonces.manualSync,
             type:   type,
         })
-        .done(function (response) {
-            if (response.success) {
-                if ($result) { setResult($result, '✓ ' + response.data.message, true); }
-                if (reloadAfter) {
-                    setTimeout(function () { window.location.reload(); }, 1500);
-                } else {
+            .done(function (response) {
+                if (response.success) {
+                    setRowSyncStatus(type, 'success');
+                    if ($result) { setResult($result, '✓ ' + response.data.message, true); }
                     $btn.prop('disabled', false).text(originalText);
-                    var $td  = $btn.closest('tr').find('td:nth-child(3)');
-                    var now  = new Date();
-                    var pad  = function (n) { return String(n).padStart(2, '0'); };
-                    var ts   = pad(now.getDate()) + '.' +
-                               pad(now.getMonth() + 1) + '.' +
-                               now.getFullYear() + ' ' +
-                               pad(now.getHours()) + ':' +
-                               pad(now.getMinutes()) + ':' +
-                               pad(now.getSeconds());
-                    $td.text(ts);
+                    updateLastSyncCell($btn);
+                } else {
+                    setRowSyncStatus(type, 'error');
+                    if ($result) { setResult($result, response.data.message, false); }
+                    $btn.prop('disabled', false).text(originalText);
                 }
-            } else {
-                if ($result) { setResult($result, response.data.message, false); }
+            })
+            .fail(function () {
+                setRowSyncStatus(type, 'error');
+                if ($result) { setResult($result, admin.strings.syncAjaxFail, false); }
                 $btn.prop('disabled', false).text(originalText);
-            }
-        })
-        .fail(function () {
-            if ($result) { setResult($result, 'Greška pri slanju zahteva.', false); }
-            $btn.prop('disabled', false).text(originalText);
-        });
+            });
     }
 
     $(document).on('click', '.dexpress-manual-sync', function () {
@@ -511,8 +539,123 @@
     });
 
     $('#dexpress-sync-all').on('click', function () {
-        var $result = $('#dexpress-sync-all-result');
-        runSync('all', $(this), $result, true);
+        if (!window.confirm(admin.strings.confirmSync)) {
+            return;
+        }
+
+        var order = admin.syncAllOrder;
+        if (!order || !order.length) {
+            return;
+        }
+
+        var $mainBtn    = $(this);
+        var $mainResult = $('#dexpress-sync-all-result');
+        var $allRowBtns = $('.dexpress-sync-table .dexpress-manual-sync');
+
+        if (!$mainBtn.data('orig-label')) {
+            $mainBtn.data('orig-label', $mainBtn.text());
+        }
+
+        clearResult($mainResult);
+        clearAllRowSyncStatuses();
+
+        $mainBtn.prop('disabled', true).text(admin.strings.syncAllRunning);
+        $allRowBtns.prop('disabled', true);
+
+        function finishFail(msg) {
+            setResult($mainResult, msg, false);
+            $mainBtn.prop('disabled', false).text($mainBtn.data('orig-label'));
+            $allRowBtns.prop('disabled', false);
+        }
+
+        function step(i) {
+            if (i >= order.length) {
+                setResult($mainResult, '✓ ' + admin.strings.syncAllDone, true);
+                $mainBtn.prop('disabled', false).text($mainBtn.data('orig-label'));
+                $allRowBtns.prop('disabled', false);
+                setTimeout(function () { window.location.reload(); }, 1200);
+                return;
+            }
+
+            var type = order[i];
+            setRowSyncStatus(type, 'loading');
+
+            $.post(admin.ajaxUrl, {
+                action: 'dexpress_manual_sync',
+                nonce:  admin.nonces.manualSync,
+                type:   type,
+            })
+                .done(function (response) {
+                    if (response.success) {
+                        setRowSyncStatus(type, 'success');
+                        var $rowBtn = $('.dexpress-manual-sync[data-type="' + type + '"]');
+                        if ($rowBtn.length) {
+                            updateLastSyncCell($rowBtn);
+                        }
+                        step(i + 1);
+                    } else {
+                        setRowSyncStatus(type, 'error');
+                        finishFail(response.data && response.data.message ? response.data.message : admin.strings.syncStepUnknown);
+                    }
+                })
+                .fail(function () {
+                    setRowSyncStatus(type, 'error');
+                    finishFail(admin.strings.syncAjaxFail);
+                });
+        }
+
+        step(0);
     });
+
+    // -----------------------------------------------------------------------
+    // Simulation tab — show timing only when simulation on; Brza/Realna UI
+    // -----------------------------------------------------------------------
+
+    var $simSection = $('#dexpress-section-simulation');
+    if ($simSection.length) {
+        var $simEnabled = $('#dexpress-simulation-enabled');
+        var $simWrap    = $('#dexpress-sim-timing-wrap');
+        var $quickCb    = $('#dexpress-sim-quick-checkbox');
+        var $btnBrza    = $('#dexpress-sim-mode-brza');
+        var $btnRealna  = $('#dexpress-sim-mode-realna');
+        var $panelBrza  = $('#dexpress-sim-timing-brza');
+        var $panelReal  = $('#dexpress-sim-timing-realna');
+
+        function simSyncToggleUi() {
+            var quick = $quickCb.prop('checked');
+            $btnBrza.toggleClass('is-selected', quick);
+            $btnRealna.toggleClass('is-selected', !quick);
+            $btnBrza.attr('aria-pressed', quick ? 'true' : 'false');
+            $btnRealna.attr('aria-pressed', quick ? 'false' : 'true');
+            $panelBrza.prop('hidden', !quick);
+            $panelReal.prop('hidden', quick);
+        }
+
+        function simSetWrapVisible(show) {
+            $simWrap.toggle(!!show);
+        }
+
+        $simEnabled.on('change', function () {
+            var on = $(this).prop('checked');
+            simSetWrapVisible(on);
+            if (on) {
+                $quickCb.prop('checked', true);
+                simSyncToggleUi();
+            }
+        });
+
+        $btnBrza.on('click', function () {
+            $quickCb.prop('checked', true);
+            simSyncToggleUi();
+        });
+
+        $btnRealna.on('click', function () {
+            $quickCb.prop('checked', false);
+            simSyncToggleUi();
+        });
+
+        simSyncToggleUi();
+        simSetWrapVisible($simEnabled.prop('checked'));
+    }
 
 }(jQuery));

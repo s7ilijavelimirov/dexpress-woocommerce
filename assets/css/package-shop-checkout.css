@@ -1,0 +1,418 @@
+.dexpress-package-shop-panel[hidden] {
+    display: none !important;
+}
+
+.dexpress-package-shop-panel {
+    margin: 8px 0 12px;
+    padding: 10px 12px;
+    border: 1px solid #dcdcdc;
+    background: #fafafa;
+}
+
+.dexpress-package-shop-panel__intro p:first-child {
+    margin-top: 0;
+}
+
+.dexpress-package-shop-panel__actions {
+    margin: 10px 0;
+}
+
+.dexpress-package-shop-panel__validation-error {
+    margin: 8px 0 10px;
+    color: #b32d2e;
+    font-size: 13px;
+    line-height: 1.4;
+    font-weight: 600;
+}
+
+.dexpress-ps-selected-panel {
+    margin: 10px 0;
+    border: 1px dashed #666;
+    background: #fff;
+    padding: 10px;
+}
+
+.dexpress-ps-selected-panel__inner {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.dexpress-ps-selected-panel__label {
+    font-weight: 700;
+}
+
+.dexpress-ps-selected-panel__name {
+    font-weight: 600;
+}
+
+.dexpress-ps-selected-panel__reset {
+    margin-top: 4px;
+    align-self: flex-start;
+    border: 1px solid #2f2f2f;
+    background: #fff;
+    color: #2f2f2f;
+    padding: 4px 8px;
+    cursor: pointer;
+}
+
+.dexpress-package-shop-panel__meta-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 10px 0;
+    flex-wrap: wrap;
+}
+
+.dexpress-package-shop-panel__delivery-price,
+.dexpress-package-shop-panel__delivery-time {
+    font-weight: 600;
+}
+
+.dexpress-package-shop-panel__locker-cta {
+    padding: 8px 12px;
+    border: 1px solid #2f2f2f;
+    background: #2f2f2f;
+    color: #fff;
+    cursor: pointer;
+}
+
+.dexpress-package-shop-panel__steps {
+    border-top: 1px solid #dfdfdf;
+    padding-top: 10px;
+}
+
+.dexpress-package-shop-modal[hidden] {
+    display: none !important;
+}
+
+body.dexpress-package-shop-modal-open {
+    overflow: hidden;
+}
+
+.dexpress-package-shop-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 100000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity .1s ease;
+}
+
+.dexpress-package-shop-modal.is-open {
+    opacity: 1;
+}
+
+.dexpress-package-shop-modal__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, .45);
+}
+
+.dexpress-package-shop-modal__dialog {
+    position: relative;
+    width: min(680px, calc(100vw - 40px));
+    max-height: calc(100vh - 40px);
+    overflow: auto;
+    background: #fff;
+    border: 1px solid #d7d7d7;
+}
+
+.dexpress-package-shop-modal__dialog--browser {
+    width: min(1200px, calc(100vw - 32px));
+}
+
+.dexpress-package-shop-modal__header,
+.dexpress-package-shop-modal__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px;
+    border-bottom: 1px solid #e3e3e3;
+}
+
+.dexpress-package-shop-modal__footer {
+    border-top: 1px solid #e3e3e3;
+    border-bottom: 0;
+}
+
+.dexpress-package-shop-modal__title {
+    margin: 0;
+}
+
+.dexpress-package-shop-modal__close {
+    border: 0;
+    background: transparent;
+    font-size: 26px;
+    cursor: pointer;
+}
+
+.dexpress-package-shop-modal__content {
+    padding: 14px;
+}
+
+.dexpress-package-shop-modal__cta {
+    padding: 8px 12px;
+    border: 1px solid #2f2f2f;
+    background: #2f2f2f;
+    color: #fff;
+    cursor: pointer;
+}
+
+.dexpress-package-shop-modal__future-slot {
+    padding: 0 14px 14px;
+}
+
+.dexpress-package-shop-modal__body {
+    padding: 14px;
+}
+
+.dexpress-package-shop-modal__loading {
+    min-height: 280px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.dexpress-package-shop-modal__loading-logo-wrap {
+    text-align: center;
+    width: 100%;
+    max-width: 200px;
+}
+
+.dexpress-package-shop-modal__loading-logo {
+    width: auto;
+    max-width: 200px;
+    max-height: 80px;
+    height: auto;
+    object-fit: contain;
+    animation: dexpress-package-shop-pulse 1.15s ease-in-out infinite;
+}
+
+.dexpress-package-shop-modal__loading-fallback {
+    animation: dexpress-package-shop-pulse 1.15s ease-in-out infinite;
+}
+
+.dexpress-package-shop-modal__layout {
+    display: flex;
+    gap: 12px;
+}
+
+.dexpress-package-shop-modal__sidebar {
+    width: 30%;
+    min-width: 240px;
+}
+
+.dexpress-package-shop-modal__map-wrap {
+    width: 70%;
+    min-height: 520px;
+}
+
+.dexpress-package-shop-modal__map {
+    position: relative;
+    width: 100%;
+    min-height: 520px;
+    border: 1px solid #ddd;
+}
+
+.ps-cluster-marker {
+    --cluster-bg: #000000;
+    --cluster-color: #ffffff;
+}
+
+.dexpress-package-shop-modal__map img,
+.dexpress-package-shop-modal__map canvas {
+    filter: none !important;
+}
+
+.dexpress-package-shop-modal__search {
+    width: 100%;
+    margin: 8px 0;
+}
+
+.dexpress-package-shop-modal__list {
+    max-height: 360px;
+    overflow: auto;
+    border: 1px solid #e2e2e2;
+    background: #fff;
+}
+
+.dexpress-package-shop-modal__item {
+    width: 100%;
+    display: block;
+    text-align: left;
+    padding: 8px;
+    border: 0;
+    border-bottom: 1px solid #efefef;
+    background: #fff;
+    cursor: pointer;
+}
+
+.dexpress-package-shop-modal__item-main {
+    margin-bottom: 8px;
+}
+
+.dexpress-package-shop-modal__item-type {
+    display: inline-block;
+    margin: 2px 0 6px;
+    padding: 1px 6px;
+    border: 1px solid #b7b7b7;
+    border-radius: 10px;
+    background: #fff;
+    color: #2f2f2f;
+    font-size: 11px;
+    line-height: 1.3;
+}
+
+.dexpress-ps-select-btn {
+    border: 1px solid #2f2f2f;
+    background: #2f2f2f;
+    color: #fff;
+    padding: 5px 10px;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.dexpress-package-shop-modal__item.is-active {
+    background: #f3f7ff;
+}
+
+.dexpress-package-shop-modal__item.is-selected {
+    border-left: 3px solid #2f2f2f;
+    background: #f9f9f9;
+}
+
+.dexpress-package-shop-modal__empty {
+    padding: 10px;
+    color: #666;
+}
+
+.dexpress-package-shop-infowindow {
+    max-width: 280px;
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+.dexpress-package-shop-infowindow__type {
+    display: inline-block;
+    margin: 3px 0;
+    padding: 1px 6px;
+    border-radius: 10px;
+    background: #f1f1f1;
+    font-size: 11px;
+}
+
+.dexpress-package-shop-cluster-menu {
+    min-width: 180px;
+    max-width: 240px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.dexpress-package-shop-cluster-popup {
+    position: absolute;
+    transform: translate(-50%, -108%);
+    z-index: 20;
+    padding: 6px;
+    border: 1px solid #d7d7d7;
+    background: #fff;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, .16);
+    border-radius: 6px;
+}
+
+.dexpress-package-shop-cluster-menu__item {
+    width: 100%;
+    border: 1px solid #d7d7d7;
+    background: #fff;
+    text-align: left;
+    padding: 6px 8px;
+    cursor: pointer;
+    font-size: 12px;
+    line-height: 1.3;
+}
+
+.dexpress-package-shop-cluster-menu__item:hover {
+    background: #f4f4f4;
+}
+
+.dexpress-ps-mobile-toggle {
+    display: none;
+}
+
+@keyframes dexpress-package-shop-pulse {
+    0% { opacity: .45; }
+    50% { opacity: 1; }
+    100% { opacity: .45; }
+}
+
+@media (max-width: 900px) {
+    .dexpress-package-shop-modal__layout {
+        flex-direction: column;
+    }
+    .dexpress-package-shop-modal__sidebar,
+    .dexpress-package-shop-modal__map-wrap {
+        width: 100%;
+        min-width: 0;
+    }
+    .dexpress-package-shop-modal__map-wrap,
+    .dexpress-package-shop-modal__map {
+        min-height: 360px;
+    }
+}
+
+@media (max-width: 768px) {
+    .dexpress-package-shop-modal__dialog--browser .dexpress-package-shop-modal__body {
+        position: relative;
+        padding-bottom: 68px;
+        overflow: hidden;
+    }
+
+    .dexpress-package-shop-modal__dialog--browser .dexpress-package-shop-modal__layout {
+        display: block;
+    }
+
+    .dexpress-package-shop-modal__dialog--browser .dexpress-package-shop-modal__map-wrap {
+        width: 100%;
+        min-height: 360px;
+    }
+
+    .dexpress-package-shop-modal__dialog--browser .dexpress-package-shop-modal__sidebar {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 100%;
+        min-width: 0;
+        max-height: 70%;
+        overflow: auto;
+        background: #fff;
+        border-top: 1px solid #dcdcdc;
+        padding: 10px;
+        transform: translateY(105%);
+        transition: transform .2s ease;
+        pointer-events: none;
+        z-index: 3;
+    }
+
+    .dexpress-package-shop-modal--browser.is-mobile-drawer-open .dexpress-package-shop-modal__sidebar {
+        transform: translateY(0);
+        pointer-events: auto;
+    }
+
+    .dexpress-ps-mobile-toggle {
+        display: block;
+        position: absolute;
+        left: 14px;
+        right: 14px;
+        bottom: 14px;
+        z-index: 4;
+        border: 1px solid #2f2f2f;
+        background: #2f2f2f;
+        color: #fff;
+        padding: 10px 12px;
+        cursor: pointer;
+    }
+}

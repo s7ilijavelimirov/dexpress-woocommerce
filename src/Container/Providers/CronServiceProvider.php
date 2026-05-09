@@ -8,6 +8,7 @@ use S7codedesign\DExpress\Application\Sync\SyncCentresService;
 use S7codedesign\DExpress\Application\Sync\SyncDispensersService;
 use S7codedesign\DExpress\Application\Sync\SyncLocationsService;
 use S7codedesign\DExpress\Application\Sync\SyncMunicipalitiesService;
+use S7codedesign\DExpress\Application\Sync\SyncPaymentsService;
 use S7codedesign\DExpress\Application\Sync\SyncShopsService;
 use S7codedesign\DExpress\Application\Sync\SyncStatusCodesService;
 use S7codedesign\DExpress\Application\Sync\SyncStreetsService;
@@ -31,6 +32,7 @@ final class CronServiceProvider implements ServiceProvider
                 $c->get(SyncStatusCodesService::class),
                 $c->get(SyncDispensersService::class),
                 $c->get(SyncLocationsService::class),
+                $c->get(SyncPaymentsService::class),
                 $c->get(SyncCentresService::class),
                 $c->get(SyncShopsService::class),
                 $c->get(WpdbWebhookLogRepository::class),

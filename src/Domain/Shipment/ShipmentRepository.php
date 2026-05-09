@@ -28,6 +28,8 @@ interface ShipmentRepository
      */
     public function findByOrderIds(array $orderIds): array;
 
+    public function findLatestByOrderId(int $orderId): ?Shipment;
+
     /**
      * Hard-deletes a shipment and all its packages.
      * Used as a compensating action when the API call fails after DB commit.
@@ -42,7 +44,22 @@ interface ShipmentRepository
      */
     public function allocatePackageCode(string $prefix, int $rangeStart, int $rangeEnd): PackageCode;
 
+    /**
+     * Highest numeric suffix for the given two-letter prefix among existing package codes, or null if none.
+     * Used for usage / warning logic (read outside the allocation transaction).
+     */
+    public function maxAllocatedNumericForPrefix(string $prefix): ?int;
+
     public function updateStatusPresentation(int $id, StatusEmailBucket $bucket, int $currentSid, string $labelSnapshot): void;
+
+    public function getSendStatus(int $id): string;
+
+    public function setSendStatus(int $id, string $sendStatus): void;
+
+    /**
+     * Updates editable shipment fields for an existing locally saved shipment.
+     */
+    public function updateDraftData(Shipment $shipment): void;
 
     /**
      * Admin lista pošiljaka (bez hidratacije domena).

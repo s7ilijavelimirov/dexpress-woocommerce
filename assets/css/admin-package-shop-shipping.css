@@ -1,0 +1,26 @@
+textarea[id*="dexpress_package_shop"][id*="intro_text"],
+textarea[id*="dexpress_package_shop"][id*="steps_text"],
+textarea[id*="dexpress_package_shop"][id*="modal_info_text"],
+textarea[name*="[intro_text]"],
+textarea[name*="[steps_text]"],
+textarea[name*="[modal_info_text]"] {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+textarea[id*="dexpress_package_shop"][id*="intro_text"],
+textarea[name*="[intro_text]"] {
+    min-height: 120px !important;
+}
+
+textarea[id*="dexpress_package_shop"][id*="steps_text"],
+textarea[name*="[steps_text]"] {
+    min-height: 320px !important;
+}
+
+textarea[id*="dexpress_package_shop"][id*="modal_info_text"],
+textarea[name*="[modal_info_text]"] {
+    min-height: 260px !important;
+}

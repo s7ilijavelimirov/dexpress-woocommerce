@@ -19,6 +19,13 @@ final class PluginActivator
         self::generateWebhookPasscode();
         self::scheduleCronEvents();
 
+        // Prikazuje onboarding wizard novim instalacijama. Samo ako opcija još ne postoji (ne resetuje ponovnom aktivacijom).
+        if (get_option('dexpress_onboarding_complete') === false) {
+            update_option('dexpress_onboarding_complete', 'no');
+            // Transient signalizuje admin_init da preusmeri odmah nakon aktivacije (plugins.php → wizard).
+            set_transient('_dexpress_activation_redirect', true, 30);
+        }
+
         // Forsira ponovno flush na prvom init-u nakon aktivacije (WC My Account endpointi se registruju tek kad je plugin boot-ovan).
         delete_option('dexpress_myaccount_endpoint_rewrite_mark');
 
@@ -27,26 +34,36 @@ final class PluginActivator
 
     private static function scheduleCronEvents(): void
     {
-        // Delegate to WpCronScheduler via Plugin container if already booted,
-        // or schedule directly to avoid a circular instantiation dependency.
+        $schedules = wp_get_schedules();
+        if (!isset($schedules['monthly']) || !isset($schedules['quarterly']) || !isset($schedules['semi_annual'])) {
+            add_filter('cron_schedules', static function (array $s): array {
+                if (!isset($s['monthly'])) {
+                    $s['monthly'] = ['interval' => 30 * DAY_IN_SECONDS, 'display' => 'Jednom mesečno'];
+                }
+                if (!isset($s['quarterly'])) {
+                    $s['quarterly'] = ['interval' => 90 * DAY_IN_SECONDS, 'display' => 'Na tri meseca'];
+                }
+                if (!isset($s['semi_annual'])) {
+                    $s['semi_annual'] = ['interval' => 180 * DAY_IN_SECONDS, 'display' => 'Na šest meseci'];
+                }
+                return $s;
+            });
+        }
+
+        if (!wp_next_scheduled('dexpress_cron_monthly')) {
+            wp_schedule_event(strtotime('first day of next month 04:00:00'), 'monthly', 'dexpress_cron_monthly');
+        }
+
         if (!wp_next_scheduled('dexpress_cron_daily')) {
             wp_schedule_event(strtotime('tomorrow 02:00:00'), 'daily', 'dexpress_cron_daily');
         }
 
-        if (!wp_next_scheduled('dexpress_cron_weekly')) {
-            wp_schedule_event(strtotime('next sunday 03:00:00'), 'weekly', 'dexpress_cron_weekly');
+        if (!wp_next_scheduled('dexpress_cron_quarterly')) {
+            wp_schedule_event(strtotime('+90 days 02:00:00'), 'quarterly', 'dexpress_cron_quarterly');
         }
 
-        if (!wp_next_scheduled('dexpress_cron_monthly')) {
-            // Register monthly interval inline — cron_schedules filter may not have fired yet.
-            if (!wp_get_schedules()['monthly'] ?? false) {
-                add_filter('cron_schedules', static function (array $s): array {
-                    $s['monthly'] = ['interval' => 30 * DAY_IN_SECONDS, 'display' => 'Jednom mesečno'];
-                    return $s;
-                });
-            }
-
-            wp_schedule_event(strtotime('first day of next month 04:00:00'), 'monthly', 'dexpress_cron_monthly');
+        if (!wp_next_scheduled('dexpress_cron_semi_annual')) {
+            wp_schedule_event(strtotime('+180 days 03:00:00'), 'semi_annual', 'dexpress_cron_semi_annual');
         }
     }
 

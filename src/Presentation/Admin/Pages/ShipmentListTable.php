@@ -14,6 +14,17 @@ if (!class_exists(\WP_List_Table::class, false)) {
 
 final class ShipmentListTable extends \WP_List_Table
 {
+    private static function representativeSidForStatusFilter(StatusEmailBucket $bucket): int
+    {
+        return match ($bucket) {
+            StatusEmailBucket::Delivered      => 1,
+            StatusEmailBucket::InTransit      => 3,
+            StatusEmailBucket::OutForDelivery => 4,
+            StatusEmailBucket::ProblemFailed  => 5,
+            StatusEmailBucket::Other          => 0,
+        };
+    }
+
     public function __construct(
         private readonly ShipmentRepository $shipments,
         private readonly StatusCodeRepository $statusCodes,
@@ -58,9 +69,17 @@ final class ShipmentListTable extends \WP_List_Table
         $this->items  = $this->shipments->findAdminListRows($offset, $perPage, $status);
     }
 
+    protected function display_tablenav($which): void
+    {
+        if ($which === 'top') {
+            return;
+        }
+        parent::display_tablenav($which);
+    }
+
     protected function extra_tablenav($which): void
     {
-        if ($which !== 'top') {
+        if ($which !== 'bottom') {
             return;
         }
 
@@ -72,12 +91,16 @@ final class ShipmentListTable extends \WP_List_Table
         echo '<select name="status_filter" id="dexpress-status-filter">';
         echo '<option value="">' . esc_html__('Svi statusi', 'dexpress-woocommerce') . '</option>';
         foreach (StatusEmailBucket::cases() as $case) {
-            $v = $case->value;
+            $v     = $case->value;
+            $label = $this->statusCodes->resolveOfficialShipmentStatusLabel(
+                self::representativeSidForStatusFilter($case),
+                '',
+            );
             printf(
                 '<option value="%s"%s>%s</option>',
                 esc_attr($v),
                 selected($current, $v, false),
-                esc_html($case->label()),
+                esc_html($label),
             );
         }
         echo '</select>';

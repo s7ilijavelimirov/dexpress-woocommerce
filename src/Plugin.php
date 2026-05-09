@@ -22,17 +22,26 @@ use S7codedesign\DExpress\Container\Providers\WebhookServiceProvider;
 use S7codedesign\DExpress\Infrastructure\Cron\WpCronScheduler;
 use S7codedesign\DExpress\Infrastructure\Persistence\DatabaseInstaller;
 use S7codedesign\DExpress\Infrastructure\Logging\Logger;
-use S7codedesign\DExpress\Presentation\Admin\Ajax\CreateShipmentController;
+use S7codedesign\DExpress\Presentation\Admin\Ajax\ShipmentWorkflowController;
 use S7codedesign\DExpress\Presentation\Admin\Ajax\ManualSyncController;
 use S7codedesign\DExpress\Presentation\Admin\Label\PrintLabelController;
 use S7codedesign\DExpress\Presentation\Admin\Ajax\SenderLocationController;
 use S7codedesign\DExpress\Presentation\Admin\Ajax\TestConnectionController;
 use S7codedesign\DExpress\Presentation\Admin\Handlers\SettingsSaveHandler;
 use S7codedesign\DExpress\Presentation\Admin\Menu\AdminMenu;
+use S7codedesign\DExpress\Presentation\Admin\Ajax\BulkShipmentController;
+use S7codedesign\DExpress\Presentation\Admin\Ajax\PackageProfileController;
+use S7codedesign\DExpress\Presentation\Admin\Hooks\OrdersBulkAction;
+use S7codedesign\DExpress\Presentation\Admin\Hooks\OrdersListDeliveryStatusColumn;
 use S7codedesign\DExpress\Presentation\Admin\Metabox\OrderShipmentMetabox;
+use S7codedesign\DExpress\Presentation\Admin\Pages\OnboardingPage;
+use S7codedesign\DExpress\Presentation\Admin\Metabox\PackageShopInfoMetabox;
 use S7codedesign\DExpress\Presentation\Admin\Pages\SettingsPage;
 use S7codedesign\DExpress\Presentation\Frontend\Ajax\AutocompleteController;
+use S7codedesign\DExpress\Presentation\Frontend\Ajax\PackageShopDispenserController;
 use S7codedesign\DExpress\Presentation\Frontend\Checkout\CheckoutFields;
+use S7codedesign\DExpress\Presentation\Frontend\Checkout\PackageShopCustomerFlow;
+use S7codedesign\DExpress\Presentation\Frontend\Checkout\PackageShopInfoPanel;
 use S7codedesign\DExpress\Presentation\Frontend\Checkout\CheckoutValidator;
 use S7codedesign\DExpress\Presentation\Frontend\Tracking\MyAccountTrackingTab;
 use S7codedesign\DExpress\Presentation\Hooks\HposCompatDeclarer;
@@ -124,6 +133,7 @@ final class Plugin
     {
         // AJAX handlers for autocomplete — must register unconditionally (fired via admin-ajax.php)
         $this->container->get(AutocompleteController::class)->register();
+        $this->container->get(PackageShopDispenserController::class)->register();
 
         $checkoutFields = $this->container->get(CheckoutFields::class);
 
@@ -144,19 +154,27 @@ final class Plugin
         // Checkout fields and validation — hooks fire only on frontend (is_checkout guard inside)
         $checkoutFields->register();
         $this->container->get(CheckoutValidator::class)->register();
+        $this->container->get(PackageShopInfoPanel::class)->register();
+        (new PackageShopCustomerFlow())->register();
         $this->container->get(MyAccountTrackingTab::class)->register();
     }
 
     private function registerAdminHooks(): void
     {
         $this->container->get(AdminMenu::class)->register();
+        $this->container->get(OnboardingPage::class)->register();
         $this->container->get(SettingsSaveHandler::class)->register();
         $this->container->get(TestConnectionController::class)->register();
         $this->container->get(SenderLocationController::class)->register();
         $this->container->get(ManualSyncController::class)->register();
-        $this->container->get(CreateShipmentController::class)->register();
+        $this->container->get(ShipmentWorkflowController::class)->register();
         $this->container->get(OrderShipmentMetabox::class)->register();
+        $this->container->get(PackageShopInfoMetabox::class)->register();
         $this->container->get(PrintLabelController::class)->register();
+        $this->container->get(OrdersListDeliveryStatusColumn::class)->register();
+        $this->container->get(PackageProfileController::class)->register();
+        $this->container->get(BulkShipmentController::class)->register();
+        $this->container->get(OrdersBulkAction::class)->register();
     }
 
     private function loadTextDomain(): void

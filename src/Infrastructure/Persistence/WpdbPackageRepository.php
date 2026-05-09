@@ -112,4 +112,31 @@ final class WpdbPackageRepository
 
         return $packages;
     }
+
+    public function updateForShipment(Package $package, int $shipmentId): void
+    {
+        if ($package->id === null || $package->id <= 0) {
+            throw new \RuntimeException('Paket nije validan za ažuriranje.');
+        }
+
+        $this->wpdb->update(
+            $this->table,
+            [
+                'mass_grams'   => $package->mass?->value(),
+                'dim_x'        => $package->dimX,
+                'dim_y'        => $package->dimY,
+                'dim_z'        => $package->dimZ,
+                'vmass'        => $package->vmass,
+                'reference_id' => $package->referenceId,
+                'content_note' => $package->contentNote,
+                'updated_at'   => current_time('mysql'),
+            ],
+            [
+                'id'          => $package->id,
+                'shipment_id' => $shipmentId,
+            ],
+            ['%d', '%d', '%d', '%d', '%d', '%s', '%s', '%s'],
+            ['%d', '%d'],
+        );
+    }
 }

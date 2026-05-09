@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace S7codedesign\DExpress\Infrastructure\Persistence\Sync;
 
+use S7codedesign\DExpress\Application\Sync\RowChangeStats;
 use wpdb;
 
 final class MunicipalityRepository
@@ -18,14 +19,14 @@ final class MunicipalityRepository
     /**
      * @param array<int, array<string, mixed>> $rows
      */
-    public function upsertBatch(array $rows): int
+    public function upsertBatch(array $rows): RowChangeStats
     {
         if (empty($rows)) {
-            return 0;
+            return new RowChangeStats();
         }
 
-        $now      = current_time('mysql');
-        $affected = 0;
+        $now   = current_time('mysql');
+        $stats = new RowChangeStats();
 
         foreach ($rows as $row) {
             // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
@@ -49,10 +50,10 @@ final class MunicipalityRepository
             );
 
             if ($result !== false) {
-                $affected++;
+                $stats = UpsertOutcome::mergeStats($stats, $this->wpdb);
             }
         }
 
-        return $affected;
+        return $stats;
     }
 }

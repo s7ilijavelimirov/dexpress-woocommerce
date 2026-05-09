@@ -22,12 +22,12 @@ final class SyncDispensersService
     {
         try {
             $rows  = $this->apiClient->get('/data/dispensers');
-            $count = $this->repository->replaceAll($rows);
+            $stats = $this->repository->replaceAll($rows);
 
             $this->options->set(self::SYNC_KEY, current_time('YmdHis'));
             $this->options->save();
 
-            return SyncResult::success('dispensers', $count);
+            return SyncResult::success('dispensers', $stats);
         } catch (\Throwable $e) {
             return SyncResult::failure('dispensers', $e->getMessage());
         }

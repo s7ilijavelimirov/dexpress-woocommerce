@@ -7,6 +7,7 @@ namespace S7codedesign\DExpress\Presentation\Frontend\Checkout;
 use S7codedesign\DExpress\Domain\Address\PhoneNumber;
 use S7codedesign\DExpress\Infrastructure\Logging\Logger;
 use S7codedesign\DExpress\Infrastructure\Persistence\AddressSearchRepository;
+use S7codedesign\DExpress\Infrastructure\Persistence\DispenserBrowserRepository;
 use WC_Order;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -30,6 +31,7 @@ final class CheckoutFields
     public function __construct(
         private readonly Logger $logger,
         private readonly AddressSearchRepository $addressSearch,
+        private readonly DispenserBrowserRepository $dispenserBrowser,
     ) {}
 
     public function register(): void
@@ -335,6 +337,7 @@ final class CheckoutFields
     {
         // Logging happens in saveOrderMetaLate after WC core meta updates.
         $this->persistClassicCheckoutMeta($order, $data, false);
+        $this->saveDispenserMetaClassic($order, $data);
     }
 
     /**
@@ -351,6 +354,7 @@ final class CheckoutFields
         }
 
         $this->persistClassicCheckoutMeta($order, $data, true);
+        $this->saveDispenserMetaClassic($order, $data);
     }
 
     /**
@@ -408,8 +412,124 @@ final class CheckoutFields
             }
         }
 
+        $this->saveDispenserMetaBlock($order, $request);
+
         $order->save();
         $this->logCheckoutPersistedSummary($order, 'block_store_api');
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     */
+    private function saveDispenserMetaClassic(WC_Order $order, array $data): void
+    {
+        $raw = (string) ($data['dexpress_checkout_dispenser_id'] ?? '');
+        $rawType = (string) ($data['dexpress_checkout_location_type'] ?? '');
+        if ($raw === '' && isset($_POST['dexpress_checkout_dispenser_id'])) {
+            $raw = (string) wp_unslash($_POST['dexpress_checkout_dispenser_id']);
+        }
+        if ($rawType === '' && isset($_POST['dexpress_checkout_location_type'])) {
+            $rawType = (string) wp_unslash($_POST['dexpress_checkout_location_type']);
+        }
+
+        $this->saveDispenserMetaById($order, $raw, $rawType);
+    }
+
+    private function saveDispenserMetaBlock(WC_Order $order, WP_REST_Request $request): void
+    {
+        $raw = (string) ($request->get_param('dexpress_checkout_dispenser_id') ?? '');
+        $rawType = (string) ($request->get_param('dexpress_checkout_location_type') ?? '');
+
+        if ($raw === '') {
+            $additional = (array) ($request->get_param('additional_fields') ?? []);
+            $raw = (string) ($additional['dexpress_checkout_dispenser_id'] ?? '');
+            if ($rawType === '') {
+                $rawType = (string) ($additional['dexpress_checkout_location_type'] ?? '');
+            }
+        }
+
+        $this->saveDispenserMetaById($order, $raw, $rawType);
+    }
+
+    private function saveDispenserMetaById(WC_Order $order, string $rawDispenserId, string $rawLocationType = ''): void
+    {
+        $sanitizedId = sanitize_text_field(trim($rawDispenserId));
+        if ($sanitizedId === '') {
+            return;
+        }
+
+        $id = absint($sanitizedId);
+        if ($id <= 0) {
+            return;
+        }
+
+        $row = $this->dispenserBrowser->findById($id);
+        $locationType = sanitize_text_field(trim($rawLocationType));
+
+        if ($row === null) {
+            $locationType = $locationType !== '' ? $locationType : '2';
+            $order->update_meta_data('_dexpress_package_shop_location_id', sanitize_text_field((string) $id));
+            $order->update_meta_data('_dexpress_package_shop_location_type', $locationType);
+            $order->update_meta_data('_dexpress_package_shop_location_type_label', $locationType === '2' ? 'Paketomat' : 'Paket Shop');
+            $order->update_meta_data('_dexpress_package_shop_location_town_id', 0);
+            $order->delete_meta_data('_dexpress_package_shop_location_phone');
+            $order->delete_meta_data('_dexpress_package_shop_location_description');
+            $this->logger->warning('[PACKAGE SHOP CHECKOUT] selected location not found in repository; town ID saved as 0', [
+                'order_id' => (int) $order->get_id(),
+                'location_id' => $id,
+            ]);
+            $order->delete_meta_data('_dexpress_dispenser_id');
+            $order->delete_meta_data('_dexpress_dispenser_name');
+            $order->delete_meta_data('_dexpress_dispenser_address');
+            $order->delete_meta_data('_dexpress_dispenser_city');
+            $order->delete_meta_data('_dexpress_dispenser_working_hours');
+            $order->delete_meta_data('_dexpress_dispenser_working_days');
+            $order->delete_meta_data('_dexpress_dispenser_payment');
+            return;
+        }
+
+        $payment = [];
+        if (!empty($row['pay_by_card'])) {
+            $payment[] = 'kartica';
+        }
+        if (!empty($row['pay_by_cash'])) {
+            $payment[] = 'gotovina';
+        }
+        $paymentText = implode(', ', $payment);
+
+        $resolvedId = sanitize_text_field((string) ($row['id'] ?? $id));
+        $locationType = sanitize_text_field((string) ($row['location_type'] ?? ($locationType !== '' ? $locationType : '2')));
+        $locationTypeLabel = sanitize_text_field((string) ($row['location_type_label'] ?? ($locationType === '2' ? 'Paketomat' : 'Paket Shop')));
+        $resolvedTownId = absint((int) ($row['town_id'] ?? 0));
+
+        if ($resolvedTownId <= 0) {
+            $this->logger->warning('[PACKAGE SHOP CHECKOUT] location saved without town ID', [
+                'order_id' => (int) $order->get_id(),
+                'location_id' => $resolvedId,
+            ]);
+        }
+
+        $order->update_meta_data('_dexpress_package_shop_location_id', $resolvedId);
+        $order->update_meta_data('_dexpress_package_shop_location_type', $locationType);
+        $order->update_meta_data('_dexpress_package_shop_location_type_label', $locationTypeLabel);
+        $order->update_meta_data('_dexpress_package_shop_location_name', sanitize_text_field((string) ($row['name'] ?? '')));
+        $order->update_meta_data('_dexpress_package_shop_location_description', sanitize_text_field((string) ($row['description'] ?? '')));
+        $order->update_meta_data('_dexpress_package_shop_location_address', sanitize_text_field((string) ($row['address'] ?? '')));
+        $order->update_meta_data('_dexpress_package_shop_location_city', sanitize_text_field((string) ($row['town_name'] ?? '')));
+        $order->update_meta_data('_dexpress_package_shop_location_town_id', $resolvedTownId);
+        $order->update_meta_data('_dexpress_package_shop_location_phone', sanitize_text_field((string) ($row['phone'] ?? '')));
+        $order->update_meta_data('_dexpress_package_shop_location_working_hours', sanitize_text_field((string) ($row['work_hours'] ?? '')));
+        $order->update_meta_data('_dexpress_package_shop_location_working_days', sanitize_text_field((string) ($row['work_days'] ?? '')));
+        $order->update_meta_data('_dexpress_package_shop_location_payment', sanitize_text_field($paymentText));
+
+        // Remove legacy keys so only one package-shop meta convention remains.
+        $order->delete_meta_data('_dexpress_dispenser_id');
+        $order->delete_meta_data('_dexpress_dispenser_name');
+        $order->delete_meta_data('_dexpress_dispenser_address');
+        $order->delete_meta_data('_dexpress_dispenser_city');
+        $order->delete_meta_data('_dexpress_dispenser_working_hours');
+        $order->delete_meta_data('_dexpress_dispenser_working_days');
+        $order->delete_meta_data('_dexpress_dispenser_payment');
     }
 
     /**

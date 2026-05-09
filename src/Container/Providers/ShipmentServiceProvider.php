@@ -7,6 +7,7 @@ namespace S7codedesign\DExpress\Container\Providers;
 use S7codedesign\DExpress\Application\Address\RecipientAddressCheckService;
 use S7codedesign\DExpress\Application\Shipment\CreateShipmentService;
 use S7codedesign\DExpress\Application\Shipment\OrderRecipientResolver;
+use S7codedesign\DExpress\Application\Shipment\ShipmentCodeAllocator;
 use S7codedesign\DExpress\Container\Container;
 use S7codedesign\DExpress\Container\ServiceProvider;
 use S7codedesign\DExpress\Domain\Shipment\ShipmentRepository;
@@ -19,10 +20,10 @@ use S7codedesign\DExpress\Infrastructure\Persistence\WpdbPackageItemRepository;
 use S7codedesign\DExpress\Infrastructure\Persistence\WpdbPackageRepository;
 use S7codedesign\DExpress\Infrastructure\Persistence\WpdbShipmentItemRepository;
 use S7codedesign\DExpress\Infrastructure\Persistence\WpdbSenderLocationRepository;
-use S7codedesign\DExpress\Infrastructure\Persistence\Sync\StatusCodeRepository;
 use S7codedesign\DExpress\Infrastructure\Persistence\WpdbShipmentRepository;
-use S7codedesign\DExpress\Presentation\Admin\Ajax\CreateShipmentController;
+use S7codedesign\DExpress\Presentation\Admin\Ajax\ShipmentWorkflowController;
 use S7codedesign\DExpress\Presentation\Admin\Metabox\OrderShipmentMetabox;
+use S7codedesign\DExpress\Presentation\Admin\Metabox\PackageShopInfoMetabox;
 
 final class ShipmentServiceProvider implements ServiceProvider
 {
@@ -99,6 +100,15 @@ final class ShipmentServiceProvider implements ServiceProvider
         );
 
         $container->singleton(
+            ShipmentCodeAllocator::class,
+            static fn (Container $c): ShipmentCodeAllocator => new ShipmentCodeAllocator(
+                $c->get(ShipmentRepository::class),
+                $c->get(OptionsRepository::class),
+                $c->get(Logger::class),
+            ),
+        );
+
+        $container->singleton(
             CreateShipmentService::class,
             static fn (Container $c): CreateShipmentService => new CreateShipmentService(
                 $c->get(ShipmentRepository::class),
@@ -112,13 +122,15 @@ final class ShipmentServiceProvider implements ServiceProvider
                 $c->get(WpdbShipmentItemRepository::class),
                 $c->get(Logger::class),
                 $c->get(RecipientAddressCheckService::class),
+                $c->get(ShipmentCodeAllocator::class),
             ),
         );
 
         $container->singleton(
-            CreateShipmentController::class,
-            static fn (Container $c): CreateShipmentController => new CreateShipmentController(
+            ShipmentWorkflowController::class,
+            static fn (Container $c): ShipmentWorkflowController => new ShipmentWorkflowController(
                 $c->get(CreateShipmentService::class),
+                $c->get(WpdbShipmentRepository::class),
             ),
         );
 
@@ -128,9 +140,12 @@ final class ShipmentServiceProvider implements ServiceProvider
                 $c->get(WpdbShipmentRepository::class),
                 $c->get(WpdbSenderLocationRepository::class),
                 $c->get(OptionsRepository::class),
-                $c->get(WpdbPackageItemRepository::class),
-                $c->get(StatusCodeRepository::class),
             ),
+        );
+
+        $container->singleton(
+            PackageShopInfoMetabox::class,
+            static fn (): PackageShopInfoMetabox => new PackageShopInfoMetabox(),
         );
     }
 }

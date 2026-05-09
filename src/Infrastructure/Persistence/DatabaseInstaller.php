@@ -8,7 +8,7 @@ final class DatabaseInstaller
 {
     public const DB_VERSION_OPTION = 'dexpress_db_version';
 
-    public const DB_VERSION = '2.2.0';
+    public const DB_VERSION = '2.4.0';
 
     public function __construct(private readonly \wpdb $wpdb)
     {
@@ -199,6 +199,7 @@ final class DatabaseInstaller
             'dexpress_shops',
             'dexpress_centres',
             'dexpress_status_codes',
+            'dexpress_package_profiles',
         ];
 
         foreach ($tables as $name) {
@@ -247,6 +248,7 @@ final class DatabaseInstaller
             $this->shipmentItems($p, $charset),
             $this->webhookLogs($p, $charset),
             $this->payments($p, $charset),
+            $this->packageProfiles($p, $charset),
         ];
     }
 
@@ -443,6 +445,7 @@ final class DatabaseInstaller
   order_id BIGINT UNSIGNED NOT NULL,
   reference_id VARCHAR(50) NOT NULL,
   sender_location_id BIGINT UNSIGNED NOT NULL,
+  send_status VARCHAR(20) NOT NULL DEFAULT 'pending_send',
   status VARCHAR(32) NOT NULL DEFAULT 'other',
   current_sid INT NULL DEFAULT NULL,
   status_label_snapshot VARCHAR(200) NOT NULL DEFAULT '',
@@ -582,6 +585,25 @@ final class DatabaseInstaller
   KEY payment_reference (payment_reference),
   KEY shipment_code (shipment_code),
   KEY order_reference_id (order_reference_id)
+) $charset;";
+    }
+
+    private function packageProfiles(string $p, string $charset): string
+    {
+        return "CREATE TABLE IF NOT EXISTS {$p}dexpress_package_profiles (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  name VARCHAR(100) NOT NULL,
+  description TEXT NULL DEFAULT NULL,
+  weight_grams INT UNSIGNED NOT NULL DEFAULT 0,
+  dim_x INT UNSIGNED NULL DEFAULT NULL,
+  dim_y INT UNSIGNED NULL DEFAULT NULL,
+  dim_z INT UNSIGNED NULL DEFAULT NULL,
+  default_content VARCHAR(50) NULL DEFAULT NULL,
+  is_default TINYINT(1) NOT NULL DEFAULT 0,
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL,
+  PRIMARY KEY  (id),
+  KEY is_default (is_default)
 ) $charset;";
     }
 }

@@ -109,6 +109,11 @@ final class WebhookController
         string $dt,
         array $raw,
     ): WP_REST_Response {
+        $ipGate = $this->validateClientIpAgainstAllowedAddress();
+        if ($ipGate instanceof WP_REST_Response) {
+            return $ipGate;
+        }
+
         if ($nID === '' || $code === '' || $sID === '') {
             $this->logger->warning('[WEBHOOK] Malformed payload (missing nID, code, or sID).');
             return new WP_REST_Response('', 200);
@@ -172,4 +177,76 @@ final class WebhookController
 
         return $local->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s');
     }
+
+    private function validateClientIpAgainstAllowedAddress(): ?WP_REST_Response
+    {
+        $allowedIp = trim($this->options->getString('webhook.ip_address', ''));
+        if ($allowedIp === '') {
+            return null;
+        }
+
+        $clientIp = $this->resolveClientIp();
+        $allowedIpNormalized = $this->normalizeIpCandidate($allowedIp);
+        if ($clientIp === '' || $allowedIpNormalized === '' || $clientIp !== $allowedIpNormalized) {
+            $ipForLog = $clientIp !== '' ? $clientIp : 'unknown';
+            $this->logger->warning('Webhook blocked: unauthorized IP ' . $ipForLog . ' attempted to access webhook endpoint');
+
+            return new WP_REST_Response('Forbidden', 403);
+        }
+
+        return null;
+    }
+
+    private function resolveClientIp(): string
+    {
+        $candidates = [];
+
+        $xff = isset($_SERVER['HTTP_X_FORWARDED_FOR']) ? (string) wp_unslash($_SERVER['HTTP_X_FORWARDED_FOR']) : '';
+        if ($xff !== '') {
+            foreach (explode(',', $xff) as $part) {
+                $candidates[] = trim($part);
+            }
+        }
+
+        $xRealIp = isset($_SERVER['HTTP_X_REAL_IP']) ? trim((string) wp_unslash($_SERVER['HTTP_X_REAL_IP'])) : '';
+        if ($xRealIp !== '') {
+            $candidates[] = $xRealIp;
+        }
+
+        $remoteAddr = isset($_SERVER['REMOTE_ADDR']) ? trim((string) wp_unslash($_SERVER['REMOTE_ADDR'])) : '';
+        if ($remoteAddr !== '') {
+            $candidates[] = $remoteAddr;
+        }
+
+        foreach ($candidates as $candidate) {
+            $ip = $this->normalizeIpCandidate($candidate);
+            if ($ip !== '') {
+                return $ip;
+            }
+        }
+
+        return '';
+    }
+
+    private function normalizeIpCandidate(string $candidate): string
+    {
+        $candidate = trim($candidate);
+        if ($candidate === '') {
+            return '';
+        }
+
+        if (str_starts_with($candidate, '[') && str_ends_with($candidate, ']')) {
+            $candidate = substr($candidate, 1, -1);
+        }
+
+        if (str_contains($candidate, '.') && substr_count($candidate, ':') === 1) {
+            $parts = explode(':', $candidate, 2);
+            if (isset($parts[0]) && filter_var($parts[0], FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false) {
+                $candidate = $parts[0];
+            }
+        }
+
+        return filter_var($candidate, FILTER_VALIDATE_IP) !== false ? $candidate : '';
+    }
+
 }

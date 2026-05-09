@@ -24,12 +24,12 @@ final class SyncMunicipalitiesService
         try {
             $since = $this->options->getString(self::SYNC_KEY, self::FIRST_SYNC_DATE);
             $rows  = $this->apiClient->get('/data/municipalities', ['date' => $since]);
-            $count = $this->repository->upsertBatch($rows);
+            $stats = $this->repository->upsertBatch($rows);
 
             $this->options->set(self::SYNC_KEY, current_time('YmdHis'));
             $this->options->save();
 
-            return SyncResult::success('municipalities', $count);
+            return SyncResult::success('municipalities', $stats);
         } catch (\Throwable $e) {
             return SyncResult::failure('municipalities', $e->getMessage());
         }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace S7codedesign\DExpress\Infrastructure\Persistence\Sync;
 
+use S7codedesign\DExpress\Application\Sync\RowChangeStats;
 use wpdb;
 
 final class LocationRepository
@@ -18,13 +19,16 @@ final class LocationRepository
     /**
      * @param array<int, array<string, mixed>> $rows
      */
-    public function replaceAll(array $rows): int
+    public function replaceAll(array $rows): RowChangeStats
     {
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        $deleted = (int) $this->wpdb->get_var("SELECT COUNT(*) FROM `{$this->table}`");
+
         // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
         $this->wpdb->query("TRUNCATE TABLE `{$this->table}`");
 
         if (empty($rows)) {
-            return 0;
+            return new RowChangeStats(deleted: $deleted);
         }
 
         $now      = current_time('mysql');
@@ -55,10 +59,10 @@ final class LocationRepository
             );
 
             if ($result !== false) {
-                $inserted++;
+                ++$inserted;
             }
         }
 
-        return $inserted;
+        return new RowChangeStats(inserted: $inserted, deleted: $deleted);
     }
 }

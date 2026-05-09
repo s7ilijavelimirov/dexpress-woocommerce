@@ -74,7 +74,7 @@ final class ShipmentStatusIngestionService
 
         $order = wc_get_order($shipment->orderId);
         if ($order instanceof WC_Order) {
-            $order->add_order_note(ShipmentStatusOrderNoteFormatter::format($packageCode, $labelSnapshot, $bucket));
+            $order->add_order_note(ShipmentStatusOrderNoteFormatter::format($packageCode, $labelSnapshot));
             $order->save();
         }
 

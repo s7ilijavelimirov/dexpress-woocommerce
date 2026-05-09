@@ -11,6 +11,7 @@ use S7codedesign\DExpress\Domain\Shipment\ShipmentRepository;
 use S7codedesign\DExpress\Infrastructure\Async\WebhookJobScheduler;
 use S7codedesign\DExpress\Infrastructure\Logging\Logger;
 use S7codedesign\DExpress\Infrastructure\Options\OptionsRepository;
+use S7codedesign\DExpress\Infrastructure\Persistence\Sync\StatusCodeRepository;
 use S7codedesign\DExpress\Infrastructure\Persistence\WpdbWebhookLogRepository;
 
 final class SimulationServiceProvider implements ServiceProvider
@@ -36,12 +37,19 @@ final class SimulationServiceProvider implements ServiceProvider
                     );
                 }
 
+                if (!$c->has(StatusCodeRepository::class)) {
+                    throw new \LogicException(
+                        'StatusCodeRepository is not registered. Register SyncServiceProvider before SimulationServiceProvider.',
+                    );
+                }
+
                 return new SimulationService(
                     $c->get(ShipmentRepository::class),
                     $c->get(WpdbWebhookLogRepository::class),
                     $c->get(OptionsRepository::class),
                     $c->get(Logger::class),
                     $c->get(WebhookJobScheduler::class),
+                    $c->get(StatusCodeRepository::class),
                 );
             },
         );

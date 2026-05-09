@@ -22,12 +22,12 @@ final class SyncStatusCodesService
     {
         try {
             $rows  = $this->apiClient->get('/data/statuses');
-            $count = $this->repository->upsertBatch($rows);
+            $stats = $this->repository->upsertBatch($rows);
 
             $this->options->set(self::SYNC_KEY, current_time('YmdHis'));
             $this->options->save();
 
-            return SyncResult::success('status_codes', $count);
+            return SyncResult::success('status_codes', $stats);
         } catch (\Throwable $e) {
             return SyncResult::failure('status_codes', $e->getMessage());
         }

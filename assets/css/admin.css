@@ -1,30 +1,78 @@
 /* D Express WooCommerce Integration — Admin styles */
 
+/* -------------------------------------------------------------------------
+   Settings tabs
+   ------------------------------------------------------------------------- */
+
 .dexpress-settings-wrap .nav-tab-wrapper {
     margin-bottom: 0;
     padding-bottom: 0;
 }
 
+/* Active tab: primary brand indicator via inset shadow */
+.dexpress-settings-wrap .nav-tab-active,
+.dexpress-settings-wrap .nav-tab-active:focus,
+.dexpress-settings-wrap .nav-tab-active:hover {
+    background-color: #fff;
+    border-bottom-color: #fff;
+    box-shadow: inset 0 3px 0 var(--dex-primary);
+}
+
+/* Remove left margin on first tab */
+.dexpress-settings-wrap .nav-tab-wrapper .nav-tab:first-child {
+    margin-left: 0;
+}
+
 .dexpress-tab-content {
     background: #fff;
-    border: 1px solid #c3c4c7;
+    border: var(--dex-border);
     border-top: none;
     padding: 20px;
     margin-bottom: 20px;
 }
 
-/* Password field with toggle */
+/* -------------------------------------------------------------------------
+   Password field with toggle
+   ------------------------------------------------------------------------- */
+
 .dexpress-password-wrap {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--dex-space-2);
 }
 
 .dexpress-password-wrap input {
     flex: 0 0 auto;
 }
 
-/* Inline result text (success/error after AJAX actions) */
+/* Eye toggle button — icon-only, matches input height */
+.dexpress-pw-toggle.button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 6px;
+    min-width: 30px;
+    height: 30px;
+    line-height: 1;
+}
+
+.dexpress-pw-toggle .dashicons {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    color: var(--dex-gray-500);
+    transition: color var(--dex-transition);
+}
+
+.dexpress-pw-toggle:hover .dashicons,
+.dexpress-pw-toggle:focus .dashicons {
+    color: var(--dex-gray-900);
+}
+
+/* -------------------------------------------------------------------------
+   Inline result text (success/error after AJAX actions)
+   ------------------------------------------------------------------------- */
+
 .dexpress-inline-result {
     display: inline-block;
     margin-left: 10px;
@@ -32,18 +80,52 @@
 }
 
 .dexpress-inline-result.is-success {
-    color: #00a32a;
+    color: var(--dex-success);
 }
 
 .dexpress-inline-result.is-error {
-    color: #d63638;
+    color: var(--dex-error);
 }
 
-/* Info box (webhook tab) */
+/* -------------------------------------------------------------------------
+   Šifarnici — sync status indicators
+   ------------------------------------------------------------------------- */
+
+.dexpress-sync-table .dexpress-sync-status {
+    display: inline-block;
+    margin-left: var(--dex-space-2);
+    min-width: 22px;
+    vertical-align: middle;
+}
+
+.dexpress-sync-table .dexpress-sync-status .spinner {
+    float: none;
+    margin: 0;
+    vertical-align: middle;
+}
+
+.dexpress-sync-table .dexpress-sync-status .dashicons.dexpress-sync-ok {
+    color: var(--dex-success);
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+}
+
+.dexpress-sync-table .dexpress-sync-status .dashicons.dexpress-sync-err {
+    color: var(--dex-error);
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+}
+
+/* -------------------------------------------------------------------------
+   Info box (webhook tab)
+   ------------------------------------------------------------------------- */
+
 .dexpress-info-box {
-    background: #f0f6fc;
-    border-left: 4px solid #2271b1;
-    padding: 12px 16px;
+    background: var(--dex-info-light);
+    border-left: 4px solid var(--dex-info);
+    padding: var(--dex-space-3) var(--dex-space-4);
     margin-top: 20px;
     max-width: 600px;
 }
@@ -53,32 +135,75 @@
 }
 
 .dexpress-notice-warning {
-    color: #d63638;
+    color: var(--dex-error);
     font-weight: 500;
 }
 
-/* Locations table */
+/* -------------------------------------------------------------------------
+   Locations table
+   ------------------------------------------------------------------------- */
+
 .dexpress-locations-table td,
 .dexpress-locations-table th {
     vertical-align: middle;
 }
 
+/* -------------------------------------------------------------------------
+   Status badges
+   ------------------------------------------------------------------------- */
+
 .dexpress-badge {
     display: inline-block;
-    padding: 2px 8px;
-    border-radius: 3px;
-    font-size: 12px;
+    padding: 2px var(--dex-space-2);
+    border-radius: var(--dex-radius-sm);
+    font-size: var(--dex-text-sm);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.03em;
 }
 
 .dexpress-badge-default {
-    background: #d1e9d1;
-    color: #1a7129;
+    background: var(--dex-success-light);
+    color: var(--dex-success);
 }
 
-/* Sync table */
+/* -------------------------------------------------------------------------
+   WooCommerce orders list — D Express delivery status column
+   ------------------------------------------------------------------------- */
+
+.wp-admin .dexpress-order-delivery-badge {
+    display: inline-block;
+    padding: 6px var(--dex-space-3);
+    border-radius: var(--dex-radius-sm);
+    line-height: 1.35;
+    white-space: normal;
+    word-break: break-word;
+}
+
+.wp-admin .dexpress-order-delivery-badge--delivered {
+    background: var(--dex-success-light);
+    color: var(--dex-success);
+}
+
+.wp-admin .dexpress-order-delivery-badge--progress {
+    background: var(--dex-info-light);
+    color: var(--dex-info);
+}
+
+.wp-admin .dexpress-order-delivery-badge--problem {
+    background: var(--dex-error-light);
+    color: var(--dex-error);
+}
+
+.wp-admin .dexpress-order-delivery-badge--neutral {
+    background: var(--dex-gray-100);
+    color: var(--dex-gray-500);
+}
+
+/* -------------------------------------------------------------------------
+   Sync table
+   ------------------------------------------------------------------------- */
+
 .dexpress-sync-table td,
 .dexpress-sync-table th {
     vertical-align: middle;
@@ -86,12 +211,15 @@
 
 .dexpress-sync-result {
     display: block;
-    margin-top: 4px;
-    font-size: 12px;
-    color: #00a32a;
+    margin-top: var(--dex-space-1);
+    font-size: var(--dex-text-sm);
+    color: var(--dex-success);
 }
 
-/* Modal overlay */
+/* -------------------------------------------------------------------------
+   Modal overlay + modal
+   ------------------------------------------------------------------------- */
+
 .dexpress-modal-overlay {
     position: fixed;
     inset: 0;
@@ -99,14 +227,13 @@
     z-index: 100000;
 }
 
-/* Modal */
 .dexpress-modal {
     position: fixed;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
     background: #fff;
-    border: 1px solid #c3c4c7;
+    border: var(--dex-border);
     box-shadow: 0 5px 30px rgba(0, 0, 0, 0.3);
     z-index: 100001;
     min-width: 520px;
@@ -117,37 +244,43 @@
 }
 
 .dexpress-modal-content {
-    padding: 20px 24px;
+    padding: 20px var(--dex-space-6);
 }
 
 .dexpress-modal-content h3 {
     margin-top: 0;
-    border-bottom: 1px solid #dcdcde;
+    border-bottom: 1px solid var(--dex-gray-200);
     padding-bottom: 10px;
-    margin-bottom: 16px;
+    margin-bottom: var(--dex-space-4);
 }
 
 .dexpress-modal-actions {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding-top: 16px;
-    border-top: 1px solid #dcdcde;
-    margin-top: 4px;
+    gap: var(--dex-space-2);
+    padding-top: var(--dex-space-4);
+    border-top: 1px solid var(--dex-gray-200);
+    margin-top: var(--dex-space-1);
 }
 
-/* Copy target */
+/* -------------------------------------------------------------------------
+   Copy target
+   ------------------------------------------------------------------------- */
+
 code.dexpress-copy-target {
     display: inline-block;
-    padding: 4px 8px;
-    background: #f6f7f7;
-    border: 1px solid #dcdcde;
-    border-radius: 3px;
-    font-size: 13px;
+    padding: var(--dex-space-1) var(--dex-space-2);
+    background: var(--dex-gray-50);
+    border: var(--dex-border);
+    border-radius: var(--dex-radius-sm);
+    font-size: var(--dex-text-base);
     word-break: break-all;
 }
 
-/* Town + street autocomplete (shared styles) */
+/* -------------------------------------------------------------------------
+   Town + street autocomplete
+   ------------------------------------------------------------------------- */
+
 .dexpress-town-autocomplete,
 .dexpress-street-autocomplete {
     position: relative;
@@ -160,7 +293,7 @@ code.dexpress-copy-target {
     left: 0;
     z-index: 9999;
     background: #fff;
-    border: 1px solid #c3c4c7;
+    border: var(--dex-border);
     border-top: none;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
     min-width: 100%;
@@ -169,21 +302,22 @@ code.dexpress-copy-target {
 }
 
 .dexpress-suggestion-item {
-    padding: 8px 12px;
+    padding: var(--dex-space-2) var(--dex-space-3);
     cursor: pointer;
-    font-size: 13px;
+    font-size: var(--dex-text-base);
     line-height: 1.4;
     outline: none;
+    transition: background var(--dex-transition), color var(--dex-transition);
 }
 
 .dexpress-suggestion-item:hover,
 .dexpress-suggestion-item:focus {
-    background: #f0f6fc;
-    color: #2271b1;
+    background: var(--dex-info-light);
+    color: var(--dex-info);
 }
 
 .dexpress-suggestion-empty {
-    color: #888;
+    color: var(--dex-gray-500);
     cursor: default;
     font-style: italic;
 }
@@ -191,35 +325,41 @@ code.dexpress-copy-target {
 .dexpress-suggestion-empty:hover,
 .dexpress-suggestion-empty:focus {
     background: none;
-    color: #888;
+    color: var(--dex-gray-500);
 }
 
-/* Phone / field inline error */
+/* -------------------------------------------------------------------------
+   Phone / field inline error
+   ------------------------------------------------------------------------- */
+
 .dexpress-field-error {
     display: none;
-    color: #d63638;
-    font-size: 12px;
-    margin-top: 4px;
+    color: var(--dex-error);
+    font-size: var(--dex-text-sm);
+    margin-top: var(--dex-space-1);
 }
 
 .dexpress-field-error.is-visible {
     display: block;
 }
 
-/* Danger zone */
+/* -------------------------------------------------------------------------
+   Danger zone
+   ------------------------------------------------------------------------- */
+
 .dexpress-danger-zone {
-    border: 2px solid #d63638;
-    border-radius: 4px;
+    border: 2px solid var(--dex-error);
+    border-radius: var(--dex-radius-sm);
     overflow: hidden;
     max-width: 900px;
 }
 
 .dexpress-danger-zone-header {
-    background: #d63638;
+    background: var(--dex-error);
     color: #fff;
     font-weight: 600;
     font-size: 14px;
-    padding: 10px 16px;
+    padding: 10px var(--dex-space-4);
 }
 
 .dexpress-danger-zone-header .dashicons {
@@ -229,41 +369,44 @@ code.dexpress-copy-target {
 }
 
 .dexpress-danger-zone-body {
-    background: #fff8f8;
-    padding: 4px 16px 16px;
+    background: var(--dex-error-light);
+    padding: var(--dex-space-1) var(--dex-space-4) var(--dex-space-4);
 }
 
 .dexpress-danger-zone-body .form-table th {
-    color: #50575e;
+    color: var(--dex-gray-500);
 }
 
-/* Locations header */
+/* -------------------------------------------------------------------------
+   Locations header + misc
+   ------------------------------------------------------------------------- */
+
 .dexpress-locations-header {
     display: flex;
     align-items: center;
-    margin-bottom: 8px;
+    margin-bottom: var(--dex-space-2);
 }
 
-/* Required field marker */
 .dexpress-required {
-    color: #d63638;
+    color: var(--dex-error);
     font-weight: 600;
     margin-left: 1px;
 }
 
-/* Street number input — medium width */
 .dexpress-number-input {
     width: 120px;
 }
 
-/* Autocomplete spinner — inline next to input */
 .dexpress-ac-spinner {
     float: none;
     margin: 0 0 0 6px;
     vertical-align: middle;
 }
 
-/* Settings page header — title + logo on same line */
+/* -------------------------------------------------------------------------
+   Settings page header
+   ------------------------------------------------------------------------- */
+
 .dexpress-settings-header {
     display: flex;
     align-items: flex-start;
@@ -272,230 +415,254 @@ code.dexpress-copy-target {
 
 .dexpress-settings-header h1 {
     margin: 0;
+    font-size: var(--dex-text-xl);
+    font-weight: 600;
+    color: var(--dex-gray-900);
 }
 
 .dexpress-header-logo {
     height: 50px;
     width: auto;
-    border-radius: 5px;
-}
-
-/* Active tab matches tab-content background */
-.dexpress-settings-wrap .nav-tab-active,
-.dexpress-settings-wrap .nav-tab-active:focus,
-.dexpress-settings-wrap .nav-tab-active:hover {
-    background-color: #fff;
-    border-bottom-color: #fff;
-}
-
-/* Remove left margin on first tab */
-.dexpress-settings-wrap .nav-tab-wrapper .nav-tab:first-child {
-    margin-left: 0;
+    border-radius: var(--dex-radius);
 }
 
 /* -------------------------------------------------------------------------
-   Order metabox — shipment wizard (cards + steps)
+   Settings tab — card sections
    ------------------------------------------------------------------------- */
 
-#dexpress-wizard .dexpress-steps-indicator {
+.dexpress-tab-content .dexpress-settings-section {
+    border: var(--dex-border);
+    border-radius: var(--dex-radius-lg);
+    margin: 0 0 20px;
+    background: #fff;
+    max-width: 920px;
+    box-shadow: var(--dex-shadow-sm);
+}
+
+.dexpress-tab-content .dexpress-settings-section--highlight {
+    border-color: var(--dex-info);
+    box-shadow: 0 0 0 1px var(--dex-info), var(--dex-shadow-sm);
+}
+
+.dexpress-tab-content .dexpress-settings-section-head {
+    padding: 10px 14px;
+    background: var(--dex-gray-50);
+    border-bottom: var(--dex-border);
+    border-radius: var(--dex-radius-lg) var(--dex-radius-lg) 0 0;
+}
+
+.dexpress-tab-content .dexpress-settings-section--highlight .dexpress-settings-section-head {
+    background: var(--dex-info-light);
+    border-bottom-color: var(--dex-gray-200);
+}
+
+.dexpress-tab-content .dexpress-settings-section-title {
+    margin: 0;
+    font-size: var(--dex-text-lg);
+    line-height: 1.4;
+    font-weight: 600;
+    color: var(--dex-gray-700);
+}
+
+.dexpress-tab-content .dexpress-settings-section-body {
+    padding: var(--dex-space-4) 18px 18px;
+}
+
+.dexpress-tab-content .dexpress-settings-section-body .form-table {
+    margin-top: 0;
+}
+
+.dexpress-tab-content .dexpress-settings-section-lead {
+    margin: 0 0 var(--dex-space-3);
+    max-width: 720px;
+    font-size: var(--dex-text-base);
+    color: var(--dex-gray-700);
+}
+
+.dexpress-tab-content .dexpress-usage-count {
+    font-size: var(--dex-text-lg);
+    font-weight: 600;
+}
+
+.dexpress-tab-content .dexpress-usage-meter {
+    height: 10px;
+    background: var(--dex-gray-100);
+    border-radius: var(--dex-radius);
+    overflow: hidden;
+    max-width: 480px;
+    border: var(--dex-border);
+}
+
+.dexpress-tab-content .dexpress-usage-meter-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--dex-info), #1d4ed8);
+    border-radius: var(--dex-radius-sm) 0 0 var(--dex-radius-sm);
+    transition: width var(--dex-transition);
+}
+
+.dexpress-tab-content .dexpress-usage-meter.is-warning .dexpress-usage-meter-fill {
+    background: linear-gradient(90deg, var(--dex-warning), var(--dex-error));
+}
+
+.dexpress-tab-content .dexpress-usage-meter.is-exhausted .dexpress-usage-meter-fill {
+    background: var(--dex-error);
+}
+
+/* -------------------------------------------------------------------------
+   Simulation tab — horizontal status flow
+   ------------------------------------------------------------------------- */
+
+.dexpress-tab-content .dexpress-settings-section--simulation {
+    max-width: 920px;
+}
+
+.dexpress-tab-content .dexpress-sim-flow {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 6px 4px;
+    margin: var(--dex-space-4) 0 20px;
+    padding: 14px var(--dex-space-4);
+    background: var(--dex-gray-50);
+    border: var(--dex-border);
+    border-radius: var(--dex-radius-sm);
+    max-width: 100%;
+}
+
+.dexpress-tab-content .dexpress-sim-flow__step {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    margin-bottom: 14px;
-    gap: 4px;
 }
 
-#dexpress-wizard .dexpress-step-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 4px 8px;
-    border-radius: 6px;
-    background: #f0f0f1;
-    color: #50575e;
-    font-size: 11px;
+.dexpress-tab-content .dexpress-sim-flow__box {
+    display: inline-block;
+    padding: var(--dex-space-2) var(--dex-space-3);
+    font-size: var(--dex-text-sm);
     font-weight: 600;
-    line-height: 1;
-    transition: background 0.15s, color 0.15s;
+    line-height: 1.2;
+    color: var(--dex-gray-900);
+    background: #fff;
+    border: var(--dex-border);
+    border-radius: var(--dex-radius-sm);
+    box-shadow: var(--dex-shadow-sm);
+    white-space: nowrap;
 }
 
-#dexpress-wizard .dexpress-step-pill .dashicons {
+.dexpress-tab-content .dexpress-sim-flow__arrow {
+    color: var(--dex-gray-500);
     font-size: 16px;
-    width: 16px;
-    height: 16px;
+    font-weight: 600;
+    padding: 0 2px;
+    user-select: none;
 }
 
-#dexpress-wizard .dexpress-step-pill.is-active {
-    background: #2271b1;
-    color: #fff;
+.dexpress-tab-content .dexpress-sim-timing-wrap {
+    margin-top: var(--dex-space-2);
+    padding: var(--dex-space-4) 18px;
+    background: var(--dex-gray-50);
+    border: var(--dex-border);
+    border-radius: var(--dex-radius-sm);
+    max-width: 720px;
 }
 
-#dexpress-wizard .dexpress-step-pill.is-done {
-    background: #00a32a;
-    color: #fff;
+.dexpress-tab-content .dexpress-sim-timing-wrap__label {
+    margin: 0 0 10px;
+    font-size: var(--dex-text-base);
+    font-weight: 600;
+    color: var(--dex-gray-900);
 }
 
-#dexpress-wizard .dexpress-step-pill.is-done:not(.is-active) .dashicons::before {
-    opacity: 0.95;
+.dexpress-tab-content .dexpress-sim-quick-checkbox {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
 }
 
-#dexpress-wizard .dexpress-step-conn {
-    flex: 1;
-    height: 3px;
-    background: #dcdcde;
-    border-radius: 2px;
-    min-width: 8px;
-}
-
-#dexpress-wizard .dexpress-step-conn.is-done {
-    background: #68de7c;
-}
-
-#dexpress-wizard .dexpress-metabox-card {
-    border: 1px solid #c3c4c7;
-    border-radius: 4px;
-    margin-bottom: 12px;
+.dexpress-tab-content .dexpress-sim-toggle {
+    display: inline-flex;
+    margin-bottom: 14px;
+    border: var(--dex-border);
+    border-radius: var(--dex-radius-sm);
+    overflow: hidden;
     background: #fff;
 }
 
-#dexpress-wizard .dexpress-metabox-card-head {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 10px;
+.dexpress-tab-content .dexpress-sim-toggle__btn {
+    margin: 0;
+    padding: var(--dex-space-2) 18px;
+    font-size: var(--dex-text-base);
     font-weight: 600;
-    font-size: 12px;
-    background: #f6f7f7;
-    border-bottom: 1px solid #c3c4c7;
+    line-height: 1.3;
+    color: var(--dex-gray-500);
+    background: #fff;
+    border: none;
+    border-right: var(--dex-border);
+    cursor: pointer;
+    box-shadow: none;
+    transition: color var(--dex-transition), background var(--dex-transition);
 }
 
-#dexpress-wizard .dexpress-metabox-card-head .dashicons {
-    color: #2271b1;
+.dexpress-tab-content .dexpress-sim-toggle__btn:last-child {
+    border-right: none;
 }
 
-#dexpress-wizard .dexpress-metabox-card-body {
-    padding: 10px;
+.dexpress-tab-content .dexpress-sim-toggle__btn:hover {
+    color: var(--dex-info);
+    background: var(--dex-info-light);
 }
 
-#dexpress-wizard .dexpress-metabox-lead {
+.dexpress-tab-content .dexpress-sim-toggle__btn.is-selected {
+    color: #fff;
+    background: var(--dex-info);
+}
+
+.dexpress-tab-content .dexpress-sim-toggle__btn.is-selected:hover {
+    color: #fff;
+    background: var(--dex-info);
+}
+
+.dexpress-tab-content .dexpress-sim-timing-panel__intro {
     margin: 0 0 10px;
-    font-size: 12px;
-    color: #50575e;
+    max-width: 640px;
 }
 
-#dexpress-wizard .dexpress-field-label {
-    display: block;
+.dexpress-tab-content .dexpress-sim-timing-list {
+    margin: 0 0 4px 1.1em;
+    padding: 0;
+    list-style: disc;
+    max-width: 640px;
+}
+
+.dexpress-tab-content .dexpress-sim-timing-list li {
+    margin-bottom: 6px;
+    line-height: 1.45;
+}
+
+/* -------------------------------------------------------------------------
+   Typography — Design System
+   ------------------------------------------------------------------------- */
+
+/* Page-level body text */
+.dexpress-tab-content,
+.dexpress-tab-content p,
+.dexpress-tab-content td,
+.dexpress-tab-content label {
+    font-size: var(--dex-text-base);
+    color: var(--dex-gray-700);
+}
+
+/* Form table label column */
+.dexpress-tab-content .form-table th {
+    font-size: var(--dex-text-sm);
+    color: var(--dex-gray-500);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
     font-weight: 600;
-    margin-bottom: 4px;
-    font-size: 12px;
-}
-
-#dexpress-wizard .dexpress-req {
-    color: #d63638;
-}
-
-#dexpress-wizard .dexpress-pkg-counter {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-#dexpress-wizard .dexpress-pkg-counter input[type="number"] {
-    width: 64px;
-    text-align: center;
-    font-size: 15px;
-    font-weight: 600;
-}
-
-#dexpress-wizard .dexpress-pkg-card {
-    border: 1px solid #dcdcde;
-    border-radius: 4px;
-    padding: 10px;
-    margin-bottom: 10px;
-    background: #fcfcfc;
-}
-
-#dexpress-wizard .dexpress-pkg-card:last-child {
-    margin-bottom: 0;
-}
-
-#dexpress-wizard .dexpress-pkg-card-title {
-    font-weight: 600;
-    font-size: 12px;
-    margin-bottom: 8px;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-}
-
-#dexpress-wizard .dexpress-pkg-card-title .dashicons {
-    color: #646970;
-}
-
-#dexpress-wizard .dexpress-pkg-field {
-    margin: 0 0 8px;
-}
-
-#dexpress-wizard .dexpress-pkg-dim-hint {
-    margin: 0 0 4px;
-    font-size: 11px;
-    color: #646970;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-}
-
-#dexpress-wizard .dexpress-pkg-dims {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 6px;
-}
-
-#dexpress-wizard .dexpress-dim-label {
-    font-size: 10px;
-    color: #646970;
-    display: block;
-    margin-bottom: 2px;
-}
-
-#dexpress-wizard .dexpress-wizard-error {
-    color: #b32d2e;
-    margin: 8px 0;
-    font-size: 12px;
-    padding: 8px 10px;
-    background: #fcf0f1;
-    border-left: 3px solid #b32d2e;
-}
-
-#dexpress-wizard .dexpress-create-result {
-    margin: 8px 0;
-    font-size: 12px;
-}
-
-#dexpress-wizard .dexpress-wizard-nav {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 12px;
-    gap: 8px;
-    flex-wrap: wrap;
-}
-
-#dexpress-wizard .dexpress-summary-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 12px;
-}
-
-#dexpress-wizard .dexpress-sum-label {
-    padding: 5px 8px 5px 0;
-    color: #646970;
-    vertical-align: top;
-    width: 42%;
-}
-
-#dexpress-wizard .dexpress-sum-val {
-    padding: 5px 0;
-    font-weight: 600;
-    vertical-align: top;
 }

@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace S7codedesign\DExpress\Presentation\Admin\Pages;
 
+use S7codedesign\DExpress\Application\Shipment\ShipmentCodeAllocator;
+use S7codedesign\DExpress\Application\Simulation\SimulationService;
+use S7codedesign\DExpress\Domain\Shipment\ShipmentRepository;
 use S7codedesign\DExpress\Infrastructure\Options\EncryptedString;
 use S7codedesign\DExpress\Infrastructure\Options\OptionsRepository;
 use S7codedesign\DExpress\Infrastructure\Persistence\WpdbSenderLocationRepository;
@@ -26,6 +29,8 @@ final class SettingsPage
     public function __construct(
         private readonly OptionsRepository $options,
         private readonly WpdbSenderLocationRepository $senderLocations,
+        private readonly ShipmentRepository $shipments,
+        private readonly SimulationService $simulation,
     ) {}
 
     public function render(): void
@@ -46,6 +51,14 @@ final class SettingsPage
         echo '<h1>' . esc_html__('D Express podešavanja', 'dexpress-woocommerce') . '</h1>';
         if ($notice) {
             $this->renderNotice($notice);
+        }
+
+        $usageWarning = ShipmentCodeAllocator::consumeUsageWarningTransient();
+        if ($usageWarning !== null && $usageWarning !== '') {
+            printf(
+                '<div class="notice notice-warning is-dismissible"><p>%s</p></div>',
+                esc_html($usageWarning),
+            );
         }
 
         echo '<nav class="nav-tab-wrapper woo-nav-tab-wrapper">';
@@ -81,8 +94,86 @@ final class SettingsPage
         $options          = $this->options;
         $senderLocations  = $this->senderLocations->findAll();
         $hasPassword      = !EncryptedString::fromString($options->getString('api.password'))->isEmpty();
+        /** @var array<string, mixed>|null $shipment_code_range_status read-only UI stats (API tab only) */
+        $shipment_code_range_status = $tab === 'api' ? $this->shipmentCodeRangeStatusForTemplate() : null;
+        /** @var array{quick: list<array<string, mixed>>, real: list<array<string, mixed>>, flow_labels: list<string>}|null $simulation_timeline */
+        $simulation_timeline = $tab === 'simulation' ? $this->simulationTimelineForTemplate() : null;
 
         require $template;
+    }
+
+    /**
+     * Read-only stats for Shipment Code Range UI (no allocation / persistence).
+     *
+     * @return array{
+     *   valid: bool,
+     *   tier?: 'normal'|'warning'|'critical'|'exhausted',
+     *   prefix?: string,
+     *   range_start?: int,
+     *   range_end?: int,
+     *   total?: int,
+     *   used?: int,
+     *   remaining?: int,
+     *   usage_percent?: float,
+     *   max_numeric?: int|null
+     * }
+     */
+    private function shipmentCodeRangeStatusForTemplate(): array
+    {
+        $prefix     = strtoupper(trim($this->options->getString('shipment.prefix', '')));
+        $rangeStart = max(1, (int) $this->options->get('shipment.range_start', 1));
+        $rangeEnd   = max(1, (int) $this->options->get('shipment.range_end', 99));
+
+        if ($prefix === '' || !preg_match('/^[A-Z]{2}$/', $prefix) || $rangeEnd < $rangeStart) {
+            return ['valid' => false];
+        }
+
+        $total = $rangeEnd - $rangeStart + 1;
+        if ($total < 1) {
+            return ['valid' => false];
+        }
+
+        $maxNumeric = $this->shipments->maxAllocatedNumericForPrefix($prefix);
+        $rawUsed    = $maxNumeric === null ? 0 : max(0, $maxNumeric - $rangeStart + 1);
+        $used       = min($rawUsed, $total);
+        $remaining  = max(0, $total - $rawUsed);
+        $usagePct   = $total > 0 ? min(100.0, ($rawUsed / $total) * 100.0) : 0.0;
+
+        $tier = 'normal';
+        if ($rawUsed >= $total || $remaining <= 0) {
+            $tier = 'exhausted';
+        } elseif ($usagePct > 95.0) {
+            $tier = 'critical';
+        } elseif ($usagePct >= 80.0) {
+            $tier = 'warning';
+        }
+
+        return [
+            'valid'          => true,
+            'tier'           => $tier,
+            'prefix'         => $prefix,
+            'range_start'    => $rangeStart,
+            'range_end'      => $rangeEnd,
+            'total'          => $total,
+            'used'           => $rawUsed,
+            'remaining'      => $remaining,
+            'usage_percent'  => $usagePct,
+            'max_numeric'    => $maxNumeric,
+        ];
+    }
+
+    /**
+     * Simulacija: koraci i labele iz servisa + šifarnik (bez duplog hardkoda u šablonu).
+     *
+     * @return array{quick: list<array<string, mixed>>, real: list<array<string, mixed>>, flow_labels: list<string>}
+     */
+    private function simulationTimelineForTemplate(): array
+    {
+        return [
+            'quick'       => $this->simulation->buildAdminTimelinePreview(true),
+            'real'        => $this->simulation->buildAdminTimelinePreview(false),
+            'flow_labels' => $this->simulation->simulationFlowStepLabels(),
+        ];
     }
 
     private function getNotice(): ?array
@@ -99,7 +190,11 @@ final class SettingsPage
 
     private function renderNotice(array $notice): void
     {
-        $class = $notice['type'] === 'success' ? 'notice-success' : 'notice-error';
+        $class = match ($notice['type']) {
+            'success' => 'notice-success',
+            'warning' => 'notice-warning',
+            default   => 'notice-error',
+        };
         printf(
             '<div class="notice %s is-dismissible"><p>%s</p></div>',
             esc_attr($class),

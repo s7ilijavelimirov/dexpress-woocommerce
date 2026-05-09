@@ -8,6 +8,7 @@ use S7codedesign\DExpress\Application\Sync\SyncCentresService;
 use S7codedesign\DExpress\Application\Sync\SyncDispensersService;
 use S7codedesign\DExpress\Application\Sync\SyncLocationsService;
 use S7codedesign\DExpress\Application\Sync\SyncMunicipalitiesService;
+use S7codedesign\DExpress\Application\Sync\SyncPaymentsService;
 use S7codedesign\DExpress\Application\Sync\SyncShopsService;
 use S7codedesign\DExpress\Application\Sync\SyncStatusCodesService;
 use S7codedesign\DExpress\Application\Sync\SyncStreetsService;
@@ -24,6 +25,7 @@ use S7codedesign\DExpress\Infrastructure\Persistence\Sync\ShopRepository;
 use S7codedesign\DExpress\Infrastructure\Persistence\Sync\StatusCodeRepository;
 use S7codedesign\DExpress\Infrastructure\Persistence\Sync\StreetRepository;
 use S7codedesign\DExpress\Infrastructure\Persistence\Sync\TownRepository;
+use S7codedesign\DExpress\Infrastructure\Persistence\WpdbPaymentRepository;
 
 final class SyncServiceProvider implements ServiceProvider
 {
@@ -91,6 +93,14 @@ final class SyncServiceProvider implements ServiceProvider
             static function (): ShopRepository {
                 global $wpdb;
                 return new ShopRepository($wpdb);
+            },
+        );
+
+        $container->singleton(
+            WpdbPaymentRepository::class,
+            static function (): WpdbPaymentRepository {
+                global $wpdb;
+                return new WpdbPaymentRepository($wpdb);
             },
         );
 
@@ -163,6 +173,15 @@ final class SyncServiceProvider implements ServiceProvider
             static fn (Container $c) => new SyncShopsService(
                 $c->get(DExpressApiClient::class),
                 $c->get(ShopRepository::class),
+                $c->get(OptionsRepository::class),
+            ),
+        );
+
+        $container->singleton(
+            SyncPaymentsService::class,
+            static fn (Container $c) => new SyncPaymentsService(
+                $c->get(DExpressApiClient::class),
+                $c->get(WpdbPaymentRepository::class),
                 $c->get(OptionsRepository::class),
             ),
         );

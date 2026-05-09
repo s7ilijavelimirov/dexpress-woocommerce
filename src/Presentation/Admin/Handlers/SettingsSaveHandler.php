@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace S7codedesign\DExpress\Presentation\Admin\Handlers;
 
+use S7codedesign\DExpress\Application\Shipment\ShipmentCodeAllocator;
 use S7codedesign\DExpress\Infrastructure\Options\EncryptedString;
 use S7codedesign\DExpress\Infrastructure\Options\OptionsRepository;
 
@@ -11,6 +12,7 @@ final class SettingsSaveHandler
 {
     public function __construct(
         private readonly OptionsRepository $options,
+        private readonly ShipmentCodeAllocator $codeAllocator,
     ) {}
 
     public function register(): void
@@ -86,6 +88,10 @@ final class SettingsSaveHandler
             $defaultRet = 0;
         }
 
+        if ($rangeEnd < $rangeStart) {
+            return 'Opseg kodova: vrednost „Do“ mora biti veća ili jednaka „Od“.';
+        }
+
         $this->options->set('api.username', $username);
         $this->options->set('api.client_id', $clientId);
         $this->options->set('api.environment', $environment);
@@ -103,12 +109,25 @@ final class SettingsSaveHandler
         }
 
         $this->options->save();
+        $this->codeAllocator->evaluateRangeUsageAfterSettingsSaved();
+
         return null;
     }
 
     private function saveWebhookTab(): ?string
     {
-        // Webhook passcode is read-only — nothing to save here.
+        $ipAddress = trim(sanitize_text_field((string) ($_POST['webhook_ip_address'] ?? '')));
+
+        if ($ipAddress !== '' && filter_var($ipAddress, FILTER_VALIDATE_IP) === false) {
+            return 'Dozvoljena IP adresa mora biti validna IPv4 ili IPv6 adresa.';
+        }
+
+        $this->options->set('webhook.ip_address', $ipAddress);
+        // Cleanup legacy keys from previous allowlist implementation.
+        $this->options->set('webhook.ip_allowlist', '');
+        $this->options->set('webhook.ip_bypass_test_mode', false);
+        $this->options->save();
+
         return null;
     }
 

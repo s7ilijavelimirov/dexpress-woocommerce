@@ -17,6 +17,7 @@ final class DiagnosticsPage
         'sync.last_status_codes'   => 'Status kodovi',
         'sync.last_dispensers'     => 'Paketomati',
         'sync.last_locations'      => 'Lokacije',
+        'sync.last_payments'       => 'Otkupnine',
         'sync.last_centres'        => 'Centri',
         'sync.last_shops'          => 'Prodavnice',
     ];

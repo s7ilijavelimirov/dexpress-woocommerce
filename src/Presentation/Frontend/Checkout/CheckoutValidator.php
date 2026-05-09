@@ -7,6 +7,7 @@ namespace S7codedesign\DExpress\Presentation\Frontend\Checkout;
 use S7codedesign\DExpress\Application\Address\RecipientAddressCheckService;
 use S7codedesign\DExpress\Domain\Address\PhoneNumber;
 use S7codedesign\DExpress\Domain\Address\StreetNumber;
+use S7codedesign\DExpress\Presentation\Frontend\Shipping\DexpressPackageShopShippingMethod;
 use WC_Order;
 use WP_Error;
 
@@ -26,6 +27,7 @@ final class CheckoutValidator
 
     public function register(): void
     {
+        add_action('woocommerce_checkout_process', [$this, 'validatePackageShopSelectionClassicProcess'], 20);
         add_action('woocommerce_after_checkout_validation', [$this, 'validate'], 10, 2);
 
         if (\defined('WC_VERSION') && version_compare(\WC_VERSION, '9.9.0', '>=')) {
@@ -229,6 +231,17 @@ final class CheckoutValidator
             }
         }
 
+        if ($this->checkoutUsesPackageShopShipping($data)
+            && did_action('woocommerce_checkout_process') === 0) {
+            $selectedDispenserId = $this->extractCheckoutDispenserId($data);
+            if ($selectedDispenserId === '') {
+                $errors->add(
+                    'dexpress_package_shop_dispenser',
+                    __('Molimo vas odaberite paketomat pre naručivanja.', 'dexpress-woocommerce'),
+                );
+            }
+        }
+
         if (!$errors->has_errors()) {
             $this->addressCheck->validateCheckoutBlocking($data, $errors);
         }
@@ -258,6 +271,7 @@ final class CheckoutValidator
             'billing_dexpress_street_number' => (string) $order->get_meta('_billing_street_number'),
             'billing_dexpress_town_id'      => (string) (int) $order->get_meta('_billing_town_id'),
             'billing_dexpress_street_id'    => (string) (int) $order->get_meta('_billing_street_id'),
+            'dexpress_checkout_dispenser_id' => (string) $order->get_meta('_dexpress_package_shop_location_id'),
             'ship_to_different_address'     => $shipDiff ? 1 : 0,
         ];
 
@@ -275,6 +289,76 @@ final class CheckoutValidator
         }
 
         return $data;
+    }
+
+    public function validatePackageShopSelectionClassicProcess(): void
+    {
+        $methods = isset($_POST['shipping_method']) ? (array) wp_unslash($_POST['shipping_method']) : [];
+        if ($methods === []) {
+            return;
+        }
+
+        $usesPackageShop = false;
+        foreach ($methods as $method) {
+            if (!is_string($method)) {
+                continue;
+            }
+
+            if (str_starts_with($method, DexpressPackageShopShippingMethod::METHOD_ID)) {
+                $usesPackageShop = true;
+                break;
+            }
+        }
+
+        if (!$usesPackageShop) {
+            return;
+        }
+
+        $selectedDispenserId = sanitize_text_field(wp_unslash((string) ($_POST['dexpress_checkout_dispenser_id'] ?? $_POST['dexpress_checkout_location_id'] ?? '')));
+        if ($selectedDispenserId === '') {
+            wc_add_notice(__('Molimo vas odaberite paketomat pre naručivanja.', 'dexpress-woocommerce'), 'error');
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     */
+    private function checkoutUsesPackageShopShipping(array $data): bool
+    {
+        $methods = (array) ($data['shipping_method'] ?? []);
+
+        foreach ($methods as $method) {
+            if (!is_string($method)) {
+                continue;
+            }
+
+            if (str_starts_with($method, DexpressPackageShopShippingMethod::METHOD_ID)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     */
+    private function extractCheckoutDispenserId(array $data): string
+    {
+        $id = trim((string) ($data['dexpress_checkout_dispenser_id'] ?? $data['dexpress_checkout_location_id'] ?? ''));
+        if ($id !== '') {
+            return $id;
+        }
+
+        $additional = $data['additional_fields'] ?? null;
+        if (is_array($additional)) {
+            $id = trim((string) ($additional['dexpress_checkout_dispenser_id'] ?? $additional['dexpress_checkout_location_id'] ?? ''));
+            if ($id !== '') {
+                return $id;
+            }
+        }
+
+        return '';
     }
 
     private function orderUsesDistinctShippingAddress(WC_Order $order): bool

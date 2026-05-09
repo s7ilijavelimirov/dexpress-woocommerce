@@ -1,0 +1,325 @@
+/* D Express — Bulk Shipment Wizard */
+
+.dex-bulk-wrap { max-width: 1100px; }
+
+/* ── Stepper ────────────────────────────────────────────────── */
+.dex-bulk-stepper {
+  display: flex;
+  align-items: center;
+  margin: var(--dex-space-4) 0 var(--dex-space-6);
+}
+
+.dex-bulk-step {
+  display: flex;
+  align-items: center;
+  gap: var(--dex-space-2);
+  opacity: .45;
+  transition: opacity var(--dex-transition);
+}
+
+.dex-bulk-step--active { opacity: 1; }
+.dex-bulk-step--done   { opacity: .75; }
+
+.dex-bulk-step__num {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--dex-gray-200);
+  color: var(--dex-gray-700);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--dex-text-sm);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.dex-bulk-step--active .dex-bulk-step__num {
+  background: var(--dex-primary);
+  color: #fff;
+}
+
+.dex-bulk-step--done .dex-bulk-step__num {
+  background: var(--dex-success);
+  color: #fff;
+}
+
+.dex-bulk-step__label {
+  font-size: var(--dex-text-sm);
+  font-weight: 600;
+  color: var(--dex-gray-700);
+  white-space: nowrap;
+}
+
+.dex-bulk-step-line {
+  flex: 1;
+  height: 2px;
+  background: var(--dex-gray-200);
+  margin: 0 var(--dex-space-3);
+}
+
+/* ── Panels ─────────────────────────────────────────────────── */
+.dex-bulk-panel { margin-bottom: var(--dex-space-6); }
+
+/* ── Profile cards (Step 1) ─────────────────────────────────── */
+.dex-bulk-profiles-row {
+  background: #fff;
+  border: var(--dex-border);
+  border-radius: var(--dex-radius-lg);
+  padding: var(--dex-space-4);
+  margin-bottom: var(--dex-space-4);
+}
+
+.dex-bulk-profiles-row h3 {
+  font-size: var(--dex-text-base);
+  margin: 0 0 var(--dex-space-3);
+  color: var(--dex-gray-700);
+}
+
+.dex-bulk-profile-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--dex-space-3);
+}
+
+.dex-profile-card {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: var(--dex-space-3) var(--dex-space-4);
+  background: var(--dex-gray-50);
+  border: var(--dex-border);
+  border-radius: var(--dex-radius-lg);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color var(--dex-transition), background var(--dex-transition);
+  min-width: 140px;
+}
+
+.dex-profile-card:hover,
+.dex-profile-card--active {
+  border-color: var(--dex-primary);
+  background: var(--dex-primary-light);
+}
+
+.dex-profile-card strong {
+  font-size: var(--dex-text-sm);
+  color: var(--dex-gray-900);
+}
+
+.dex-profile-card span {
+  font-size: var(--dex-text-xs);
+  color: var(--dex-gray-500);
+}
+
+/* ── Defaults card (Step 1) ──────────────────────────────────── */
+.dex-bulk-defaults-card {
+  background: #fff;
+  border: var(--dex-border);
+  border-radius: var(--dex-radius-lg);
+  padding: var(--dex-space-4) var(--dex-space-6);
+  margin-bottom: var(--dex-space-4);
+}
+
+.dex-bulk-defaults-card h3 {
+  font-size: var(--dex-text-base);
+  margin: 0 0 var(--dex-space-3);
+  color: var(--dex-gray-700);
+}
+
+/* ── Orders table (Step 2) ───────────────────────────────────── */
+.dex-bulk-orders-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--dex-text-sm);
+  background: #fff;
+  border: var(--dex-border);
+  border-radius: var(--dex-radius-lg);
+  overflow: hidden;
+}
+
+.dex-bulk-orders-table th {
+  background: var(--dex-gray-50);
+  padding: var(--dex-space-2) var(--dex-space-3);
+  font-size: var(--dex-text-xs);
+  font-weight: 600;
+  color: var(--dex-gray-500);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  border-bottom: var(--dex-border);
+  white-space: nowrap;
+}
+
+.dex-bulk-orders-table td {
+  padding: var(--dex-space-2) var(--dex-space-3);
+  border-bottom: var(--dex-border);
+  vertical-align: middle;
+}
+
+.dex-bulk-orders-table tr:last-child td { border-bottom: 0; }
+.dex-bulk-orders-table input[type="number"],
+.dex-bulk-orders-table input[type="text"] { width: 100%; min-width: 60px; }
+
+/* ── Results table (Step 3) ──────────────────────────────────── */
+.dex-bulk-results-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--dex-text-sm);
+  background: #fff;
+  border: var(--dex-border);
+  border-radius: var(--dex-radius-lg);
+  overflow: hidden;
+  margin-bottom: var(--dex-space-4);
+}
+
+.dex-bulk-results-table th {
+  background: var(--dex-gray-50);
+  padding: var(--dex-space-2) var(--dex-space-3);
+  font-size: var(--dex-text-xs);
+  font-weight: 600;
+  color: var(--dex-gray-500);
+  text-transform: uppercase;
+  border-bottom: var(--dex-border);
+}
+
+.dex-bulk-results-table td {
+  padding: var(--dex-space-2) var(--dex-space-3);
+  border-bottom: var(--dex-border);
+  vertical-align: middle;
+}
+
+.dex-bulk-results-table tr:last-child td { border-bottom: 0; }
+
+/* ── Progress bar ────────────────────────────────────────────── */
+.dex-bulk-progress-bar {
+  height: 8px;
+  background: var(--dex-gray-200);
+  border-radius: 99px;
+  overflow: hidden;
+  margin-bottom: var(--dex-space-3);
+}
+
+.dex-bulk-progress-fill {
+  height: 100%;
+  background: var(--dex-primary);
+  border-radius: 99px;
+  transition: width .3s ease;
+}
+
+/* ── Status badges (inline) ──────────────────────────────────── */
+.dex-row-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 99px;
+  font-size: var(--dex-text-xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.dex-row-status--pending { background: var(--dex-gray-100);      color: var(--dex-gray-500); }
+.dex-row-status--saving  { background: var(--dex-info-light);    color: var(--dex-info); }
+.dex-row-status--saved   { background: var(--dex-success-light); color: var(--dex-success); }
+.dex-row-status--sending { background: var(--dex-info-light);    color: var(--dex-info); }
+.dex-row-status--sent    { background: var(--dex-success-light); color: var(--dex-success); }
+.dex-row-status--error   { background: var(--dex-error-light);   color: var(--dex-error); }
+
+/* ── Footer akcije ───────────────────────────────────────────── */
+.dex-bulk-step-footer {
+  display: flex;
+  align-items: center;
+  gap: var(--dex-space-3);
+  padding-top: var(--dex-space-4);
+  margin-top: var(--dex-space-4);
+  border-top: var(--dex-border);
+}
+
+/* ── Layout helpers (zamena inline stilova) ──────────────────── */
+.dex-bulk-dims-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dex-bulk-step2-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--dex-space-3);
+}
+
+.dex-bulk-step2-header h3 { margin: 0; }
+
+.dex-bulk-orders-table .dex-col-dims { white-space: nowrap; }
+.dex-bulk-orders-table .dex-dim-input { width: 52px; min-width: 52px; }
+.dex-bulk-orders-table .dex-text-medium { width: 120px; min-width: 120px; }
+
+/* ── Final summary card (posle send faze) ────────────────────── */
+.dex-bulk-summary {
+  margin-top: var(--dex-space-4);
+  background: #fff;
+  border: var(--dex-border);
+  border-radius: var(--dex-radius-lg);
+  overflow: hidden;
+}
+
+.dex-bulk-summary__header {
+  padding: var(--dex-space-3) var(--dex-space-4);
+  font-size: var(--dex-text-base);
+  font-weight: 700;
+  color: #fff;
+}
+
+.dex-bulk-summary__header--success { background: var(--dex-success); }
+.dex-bulk-summary__header--partial { background: var(--dex-warning, #d97706); }
+
+.dex-bulk-summary__body {
+  padding: var(--dex-space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--dex-space-3);
+}
+
+.dex-bulk-summary__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--dex-space-3);
+}
+
+.dex-bulk-summary__stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  border-radius: 99px;
+  font-size: var(--dex-text-sm);
+  font-weight: 600;
+}
+
+.dex-bulk-summary__stat--sent  { background: var(--dex-success-light); color: var(--dex-success); }
+.dex-bulk-summary__stat--error { background: var(--dex-error-light);   color: var(--dex-error); }
+
+.dex-bulk-summary__section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+}
+
+.dex-bulk-tracking-codes {
+  width: 100%;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: var(--dex-text-sm);
+  padding: 8px;
+  border: var(--dex-border);
+  border-radius: var(--dex-radius);
+  background: var(--dex-gray-50);
+  resize: vertical;
+}
+
+.dex-bulk-summary__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--dex-space-2);
+}

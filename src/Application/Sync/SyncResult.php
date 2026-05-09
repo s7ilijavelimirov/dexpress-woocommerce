@@ -8,24 +8,24 @@ final class SyncResult
 {
     public function __construct(
         public readonly string $type,
-        public readonly int    $inserted,
-        public readonly int    $updated,
-        public readonly bool   $success,
+        public readonly RowChangeStats $changes,
+        public readonly bool $success,
         public readonly string $errorMessage = '',
     ) {}
 
-    public static function success(string $type, int $inserted, int $updated = 0): self
+    public static function success(string $type, RowChangeStats $changes): self
     {
-        return new self($type, $inserted, $updated, true);
+        return new self($type, $changes, true);
     }
 
     public static function failure(string $type, string $errorMessage): self
     {
-        return new self($type, 0, 0, false, $errorMessage);
+        return new self($type, new RowChangeStats(), false, $errorMessage);
     }
 
+    /** Broj stvarno dodatih ili izmenjenih redova (bez identičnih ponovnih upisa). */
     public function total(): int
     {
-        return $this->inserted + $this->updated;
+        return $this->changes->changedRows();
     }
 }

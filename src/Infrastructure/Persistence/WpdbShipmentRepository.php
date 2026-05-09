@@ -42,6 +42,7 @@ final class WpdbShipmentRepository implements ShipmentRepository
                     'order_id'           => $shipment->orderId,
                     'reference_id'       => $shipment->referenceId,
                     'sender_location_id' => $shipment->senderLocationId,
+                    'send_status'             => 'pending_send',
                     'status'                  => $shipment->emailBucket()->value,
                     'current_sid'             => $shipment->currentSid(),
                     'status_label_snapshot'   => $shipment->displayStatusLabel(),
@@ -62,7 +63,7 @@ final class WpdbShipmentRepository implements ShipmentRepository
                     'created_at'         => $now,
                     'updated_at'         => $now,
                 ],
-                ['%d', '%s', '%d', '%s', '%d', '%s', '%d', '%d', '%d', '%d', '%d', '%s', '%d', '%s', '%s', '%d', '%d', '%d', '%d', '%s', '%s', '%s'],
+                ['%d', '%s', '%d', '%s', '%s', '%d', '%s', '%d', '%d', '%d', '%d', '%d', '%s', '%d', '%s', '%s', '%d', '%d', '%d', '%d', '%s', '%s', '%s'],
             );
 
             $id = (int) $this->wpdb->insert_id;
@@ -182,6 +183,20 @@ final class WpdbShipmentRepository implements ShipmentRepository
         return array_map(fn (array $row): Shipment => $this->hydrate($row), $rows);
     }
 
+    public function findLatestByOrderId(int $orderId): ?Shipment
+    {
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        $row = $this->wpdb->get_row(
+            $this->wpdb->prepare(
+                "SELECT * FROM `{$this->table}` WHERE order_id = %d AND deleted_at IS NULL ORDER BY created_at DESC LIMIT 1",
+                $orderId,
+            ),
+            ARRAY_A,
+        );
+
+        return is_array($row) ? $this->hydrate($row) : null;
+    }
+
     /**
      * @param list<int> $orderIds
      * @return Shipment[]
@@ -245,11 +260,35 @@ final class WpdbShipmentRepository implements ShipmentRepository
 
         if ($next > $rangeEnd) {
             throw new \RuntimeException(
-                sprintf('Opseg kodova pošiljaka je iscrpljen (prefix: %s, max: %d).', $prefix, $rangeEnd)
+                'D Express code range exhausted. Please extend range in settings.',
             );
         }
 
         return PackageCode::fromPrefixAndIndex($prefix, $next);
+    }
+
+    public function maxAllocatedNumericForPrefix(string $prefix): ?int
+    {
+        $prefix = strtoupper($prefix);
+        if ($prefix === '' || !preg_match('/^[A-Z]{2}$/', $prefix)) {
+            return null;
+        }
+
+        $like = $this->wpdb->esc_like($prefix) . '%';
+
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        $maxCode = $this->wpdb->get_var(
+            $this->wpdb->prepare(
+                "SELECT MAX(code) FROM `{$this->packagesTable}` WHERE code LIKE %s",
+                $like,
+            )
+        );
+
+        if ($maxCode === null || $maxCode === '') {
+            return null;
+        }
+
+        return (int) substr((string) $maxCode, 2);
     }
 
     public function updateStatusPresentation(int $id, StatusEmailBucket $bucket, int $currentSid, string $labelSnapshot): void
@@ -264,6 +303,64 @@ final class WpdbShipmentRepository implements ShipmentRepository
             ],
             ['id' => $id],
             ['%s', '%d', '%s', '%s'],
+            ['%d'],
+        );
+    }
+
+    public function getSendStatus(int $id): string
+    {
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        $value = $this->wpdb->get_var(
+            $this->wpdb->prepare(
+                "SELECT send_status FROM `{$this->table}` WHERE id = %d LIMIT 1",
+                $id,
+            ),
+        );
+
+        return is_string($value) && $value !== '' ? $value : 'sent';
+    }
+
+    public function setSendStatus(int $id, string $sendStatus): void
+    {
+        $normalized = $sendStatus === 'pending_send' ? 'pending_send' : 'sent';
+        $this->wpdb->update(
+            $this->table,
+            [
+                'send_status' => $normalized,
+                'updated_at'  => current_time('mysql'),
+            ],
+            ['id' => $id],
+            ['%s', '%s'],
+            ['%d'],
+        );
+    }
+
+    public function updateDraftData(Shipment $shipment): void
+    {
+        $id = (int) $shipment->id();
+        if ($id <= 0) {
+            throw new \RuntimeException('Pošiljka nije validna za ažuriranje.');
+        }
+
+        $this->wpdb->update(
+            $this->table,
+            [
+                'sender_location_id' => $shipment->senderLocationId,
+                'dl_type_id'         => $shipment->deliveryType->value,
+                'payment_by'         => $shipment->paymentBy->value,
+                'payment_type'       => $shipment->paymentType->value,
+                'value_para'         => $shipment->declaredValue->toPara(),
+                'cod_amount_para'    => $shipment->codAmount->toPara(),
+                'cod_bank_account'   => $shipment->codBankAccount,
+                'total_mass_grams'   => $shipment->totalMass->value(),
+                'content'            => $shipment->content,
+                'note'               => $shipment->note,
+                'return_doc'         => $shipment->returnDoc->value,
+                'self_drop_off'      => $shipment->selfDropOff ? 1 : 0,
+                'updated_at'         => current_time('mysql'),
+            ],
+            ['id' => $id],
+            ['%d', '%d', '%d', '%d', '%d', '%d', '%s', '%d', '%s', '%s', '%d', '%d', '%s'],
             ['%d'],
         );
     }

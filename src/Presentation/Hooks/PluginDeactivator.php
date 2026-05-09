@@ -8,8 +8,9 @@ final class PluginDeactivator
 {
     private const CRON_HOOKS = [
         'dexpress_cron_daily',
-        'dexpress_cron_weekly',
         'dexpress_cron_monthly',
+        'dexpress_cron_quarterly',
+        'dexpress_cron_semi_annual',
     ];
 
     public static function deactivate(): void
@@ -25,6 +26,7 @@ final class PluginDeactivator
             if ($timestamp) {
                 wp_unschedule_event($timestamp, $hook);
             }
+            wp_clear_scheduled_hook($hook);
         }
 
         wp_clear_scheduled_hook('dexpress/simulate_shipments');

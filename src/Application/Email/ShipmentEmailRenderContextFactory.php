@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace S7codedesign\DExpress\Application\Email;
 
+use S7codedesign\DExpress\Application\Simulation\SimulationService;
 use S7codedesign\DExpress\Domain\Shipment\Shipment;
 use S7codedesign\DExpress\Domain\Shipment\StatusEmailBucket;
 use S7codedesign\DExpress\Domain\Status\StatusMapper;
@@ -11,9 +12,35 @@ use S7codedesign\DExpress\Infrastructure\Persistence\Sync\StatusCodeRepository;
 
 final class ShipmentEmailRenderContextFactory
 {
-    /** @var list<int> */
+    /**
+     * Problem sIDs where the failure occurred before the courier collected the package
+     * (at sender or pickup stage). Used by {@see problemProgressStepIndex()} to place
+     * the problem marker at step 1 ("pickup") rather than step 2 ("in transit").
+     *
+     * sIDs 108–112 are an additional early-problem range handled by the range check
+     * in problemProgressStepIndex() and are not repeated here.
+     *
+     * Official label for each sID is resolved at runtime from wp_dexpress_status_codes
+     * (synced from GET /data/statuses). The grouping below reflects the stage at which
+     * the problem is reported:
+     *
+     *   5         — shipment refused / problem recorded at sender before pickup
+     *   8–11      — pre-collection failures (package not ready, address issue, etc.)
+     *   19, 25    — early-stage problem codes (before courier handoff)
+     *   106, 107  — pre-transit problem variants
+     *   119, 125  — pre-transit problem variants
+     *   822, 841  — extended problem codes mapped to ProblemFailed in StatusMapper;
+     *               both occur before or at the point of collection
+     *
+     * @var list<int>
+     */
     private const EARLY_PROBLEM_SIDS = [
-        5, 8, 9, 10, 11, 19, 25, 106, 107, 119, 125, 822, 841,
+        5,           // problem at sender before courier pickup
+        8, 9, 10, 11, // pre-collection failures
+        19, 25,      // early-stage problem codes
+        106, 107,    // pre-transit problem variants
+        119, 125,    // pre-transit problem variants
+        822, 841,    // extended ProblemFailed codes occurring at/before collection
     ];
 
     public function __construct(
@@ -163,15 +190,15 @@ final class ShipmentEmailRenderContextFactory
     }
 
     /**
+     * Isti sID redosled kao simulacija test webhook-a (0 → 3 → 4 → 1); nazivi isključivo iz šifarnika.
+     *
      * @return list<string>
      */
     private function stepLabels(): array
     {
-        return [
-            __('Kreirana pošiljka', 'dexpress-woocommerce'),
-            __('U tranzitu', 'dexpress-woocommerce'),
-            __('Na isporuci', 'dexpress-woocommerce'),
-            __('Isporučeno', 'dexpress-woocommerce'),
-        ];
+        return array_map(
+            fn (int $sid): string => $this->codes->resolveOfficialShipmentStatusLabel($sid, ''),
+            SimulationService::SIMULATION_STEP_SIDS,
+        );
     }
 }

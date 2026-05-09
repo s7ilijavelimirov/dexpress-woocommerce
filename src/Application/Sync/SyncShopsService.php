@@ -22,12 +22,12 @@ final class SyncShopsService
     {
         try {
             $rows  = $this->apiClient->get('/data/shops');
-            $count = $this->repository->replaceAll($rows);
+            $stats = $this->repository->replaceAll($rows);
 
             $this->options->set(self::SYNC_KEY, current_time('YmdHis'));
             $this->options->save();
 
-            return SyncResult::success('shops', $count);
+            return SyncResult::success('shops', $stats);
         } catch (\Throwable $e) {
             return SyncResult::failure('shops', $e->getMessage());
         }

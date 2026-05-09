@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace S7codedesign\DExpress\Application\Shipment;
 
-use S7codedesign\DExpress\Domain\Shipment\StatusEmailBucket;
-
 /**
  * Order note text when a shipment status changes (webhook or simulation).
  */
@@ -15,34 +13,13 @@ final class ShipmentStatusOrderNoteFormatter
     {
     }
 
-    public static function format(string $packageCode, string $labelSnapshot, StatusEmailBucket $bucket): string
+    public static function format(string $packageCode, string $labelSnapshot): string
     {
-        return match ($bucket) {
-            StatusEmailBucket::InTransit => sprintf(
-                'D Express: Pošiljka %s je u transportu. (%s)',
-                $packageCode,
-                $labelSnapshot,
-            ),
-            StatusEmailBucket::OutForDelivery => sprintf(
-                'D Express: Pošiljka %s izlazi na isporuku. (%s)',
-                $packageCode,
-                $labelSnapshot,
-            ),
-            StatusEmailBucket::Delivered => sprintf(
-                'D Express: Pošiljka %s je isporučena. (%s)',
-                $packageCode,
-                $labelSnapshot,
-            ),
-            StatusEmailBucket::ProblemFailed => sprintf(
-                'D Express: Problem / neuspeh za pošiljku %s. (%s)',
-                $packageCode,
-                $labelSnapshot,
-            ),
-            default => sprintf(
-                'D Express: Status pošiljke %s — %s.',
-                $packageCode,
-                $labelSnapshot,
-            ),
-        };
+        return sprintf(
+            /* translators: 1: package tracking code, 2: official status label from D Express codebook / snapshot */
+            __('D Express: paket %1$s — %2$s', 'dexpress-woocommerce'),
+            $packageCode,
+            $labelSnapshot,
+        );
     }
 }

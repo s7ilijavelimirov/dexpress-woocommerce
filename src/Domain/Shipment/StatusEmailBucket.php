@@ -15,15 +15,4 @@ enum StatusEmailBucket: string
     case OutForDelivery  = 'out_for_delivery';
     case ProblemFailed   = 'problem_failed';
     case Other           = 'other';
-
-    public function label(): string
-    {
-        return match ($this) {
-            self::Delivered      => __('Isporučeno', 'dexpress-woocommerce'),
-            self::InTransit      => __('U transportu', 'dexpress-woocommerce'),
-            self::OutForDelivery => __('Na isporuci', 'dexpress-woocommerce'),
-            self::ProblemFailed  => __('Problem / neuspeh', 'dexpress-woocommerce'),
-            self::Other          => __('Ostalo', 'dexpress-woocommerce'),
-        };
-    }
 }

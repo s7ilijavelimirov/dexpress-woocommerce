@@ -20,6 +20,14 @@ use S7codedesign\DExpress\Presentation\Email\TrackingLinkBuilder;
 
 /** @var WC_Order $order */
 $ctx = $shipment_context instanceof ShipmentEmailRenderContext ? $shipment_context : null;
+$packageShopLocationId = trim((string) $order->get_meta('_dexpress_package_shop_location_id'));
+$packageShopLocationName = trim((string) $order->get_meta('_dexpress_package_shop_location_name'));
+$packageShopLocationAddress = trim((string) $order->get_meta('_dexpress_package_shop_location_address'));
+$packageShopLocationCity = trim((string) $order->get_meta('_dexpress_package_shop_location_city'));
+$packageShopLocationType = trim((string) $order->get_meta('_dexpress_package_shop_location_type_label'));
+$packageShopWorkingDays = trim((string) $order->get_meta('_dexpress_package_shop_location_working_days'));
+$packageShopWorkingHours = trim((string) $order->get_meta('_dexpress_package_shop_location_working_hours'));
+$packageShopWorking = trim($packageShopWorkingDays . ($packageShopWorkingDays !== '' && $packageShopWorkingHours !== '' ? ' | ' : '') . $packageShopWorkingHours);
 
 /**
  * @param 'done'|'current'|'pending'|'problem' $state
@@ -48,6 +56,30 @@ $dexpress_email_step_color = static function (string $state): string {
     );
     ?>
 </p>
+
+<?php if ($packageShopLocationId !== '') : ?>
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin:0 0 18px;border-collapse:collapse;background:#fff8da;border:1px solid #e5d48a;border-radius:6px;">
+        <tr>
+            <td style="padding:12px 14px;">
+                <p style="margin:0 0 8px;font-size:14px;font-weight:700;color:#1a1a1a;">
+                    <?php esc_html_e('Destinacija dostave: Paket Shop lokacija', 'dexpress-woocommerce'); ?>
+                </p>
+                <?php if ($packageShopLocationName !== '') : ?>
+                    <p style="margin:0 0 4px;font-size:13px;line-height:1.5;"><strong><?php esc_html_e('Lokacija:', 'dexpress-woocommerce'); ?></strong> <?php echo esc_html($packageShopLocationName); ?></p>
+                <?php endif; ?>
+                <?php if ($packageShopLocationType !== '') : ?>
+                    <p style="margin:0 0 4px;font-size:13px;line-height:1.5;"><strong><?php esc_html_e('Tip lokacije:', 'dexpress-woocommerce'); ?></strong> <?php echo esc_html($packageShopLocationType); ?></p>
+                <?php endif; ?>
+                <?php if ($packageShopLocationAddress !== '' || $packageShopLocationCity !== '') : ?>
+                    <p style="margin:0 0 4px;font-size:13px;line-height:1.5;"><strong><?php esc_html_e('Adresa:', 'dexpress-woocommerce'); ?></strong> <?php echo esc_html(trim($packageShopLocationAddress . ($packageShopLocationCity !== '' ? ', ' . $packageShopLocationCity : ''))); ?></p>
+                <?php endif; ?>
+                <?php if ($packageShopWorking !== '') : ?>
+                    <p style="margin:0;font-size:13px;line-height:1.5;"><strong><?php esc_html_e('Radno vreme:', 'dexpress-woocommerce'); ?></strong> <?php echo esc_html($packageShopWorking); ?></p>
+                <?php endif; ?>
+            </td>
+        </tr>
+    </table>
+<?php endif; ?>
 
 <?php if ($ctx !== null) : ?>
     <?php foreach ($ctx->rows as $row) : ?>
