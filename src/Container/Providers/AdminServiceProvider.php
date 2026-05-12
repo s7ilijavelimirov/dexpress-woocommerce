@@ -139,12 +139,7 @@ final class AdminServiceProvider implements ServiceProvider
             ShipmentsPage::class,
             static function (Container $c): ShipmentsPage {
                 global $wpdb;
-                return new ShipmentsPage(
-                    $c->get(ShipmentRepository::class),
-                    $c->get(StatusCodeRepository::class),
-                    $c->get(WpdbPackageProfileRepository::class),
-                    $wpdb,
-                );
+                return new ShipmentsPage($wpdb, $c->get(WpdbPackageProfileRepository::class));
             },
         );
 

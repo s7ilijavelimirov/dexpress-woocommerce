@@ -26,11 +26,36 @@ final class BulkShipmentPage
         private readonly WpdbSenderLocationRepository  $locations,
     ) {}
 
+    /**
+     * Registruje admin_init hook koji postavlja $title pre nego što admin-header.php pozove
+     * strip_tags(get_admin_page_title()) — hidden submeniji ne dobijaju $title automatski.
+     */
+    public function register(): void
+    {
+        add_action('admin_init', function (): void {
+            if (($GLOBALS['pagenow'] ?? '') !== 'admin.php') {
+                return;
+            }
+            // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+            if (sanitize_key($_GET['page'] ?? '') !== self::PAGE_SLUG) {
+                return;
+            }
+            global $title;
+            if (!isset($title) || !is_string($title) || $title === '') {
+                $title = (string) __('D Express — Grupno kreiranje pošiljaka', 'dexpress-woocommerce');
+            } else {
+                $title = (string) $title;
+            }
+        });
+    }
+
     public function render(): void
     {
         if (!current_user_can('manage_woocommerce')) {
             wp_die(esc_html__('Nemate dozvolu.', 'dexpress-woocommerce'));
         }
+
+        $GLOBALS['title'] = __('D Express — Grupno kreiranje pošiljaka', 'dexpress-woocommerce');
 
         // Validacija nonce-a pri inicijalnom učitavanju.
         // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotValidated
@@ -138,7 +163,12 @@ final class BulkShipmentPage
         <div class="dex-bulk-step-line"></div>
         <div class="dex-bulk-step" data-step="3">
             <span class="dex-bulk-step__num">3</span>
-            <span class="dex-bulk-step__label"><?= esc_html__('Štampa i slanje', 'dexpress-woocommerce') ?></span>
+            <span class="dex-bulk-step__label"><?= esc_html__('Štampa', 'dexpress-woocommerce') ?></span>
+        </div>
+        <div class="dex-bulk-step-line"></div>
+        <div class="dex-bulk-step" data-step="4">
+            <span class="dex-bulk-step__num">4</span>
+            <span class="dex-bulk-step__label"><?= esc_html__('Slanje', 'dexpress-woocommerce') ?></span>
         </div>
     </div>
 
@@ -243,7 +273,7 @@ final class BulkShipmentPage
                     </td>
                 </tr>
                 <tr>
-                    <th><label for="dex-bulk-weight"><?= esc_html__('Masa (kg)', 'dexpress-woocommerce') ?> *</label></th>
+                    <th><label for="dex-bulk-weight"><?= esc_html__('Masa (kg)', 'dexpress-woocommerce') ?></label></th>
                     <td>
                         <input type="number" id="dex-bulk-weight" name="weight_kg" min="0.01" step="0.001" class="small-text" placeholder="0.500" />
                     </td>
@@ -276,7 +306,7 @@ final class BulkShipmentPage
         </div>
 
         <div class="dex-bulk-step-footer">
-            <a href="<?= esc_url($ordersUrl) ?>" class="button"><?= esc_html__('← Nazad na narudžbine', 'dexpress-woocommerce') ?></a>
+            <a href="<?= esc_url(admin_url('admin.php?page=dexpress-shipments')) ?>" class="button"><?= esc_html__('← Nazad na pošiljke', 'dexpress-woocommerce') ?></a>
             <button type="button" class="button button-primary" id="dex-bulk-step1-next">
                 <?= esc_html__('Pregled narudžbina →', 'dexpress-woocommerce') ?>
             </button>
@@ -300,9 +330,9 @@ final class BulkShipmentPage
         </div>
     </div><!-- #dex-bulk-step2 -->
 
-    <!-- Korak 3: Štampa i slanje -->
+    <!-- Korak 3: Kreiranje i štampa nalepnica -->
     <div id="dex-bulk-step3" class="dex-bulk-panel" style="display:none;">
-        <h3><?= esc_html__('Kreiranje pošiljaka', 'dexpress-woocommerce') ?></h3>
+        <h3><?= esc_html__('Kreiranje i štampa nalepnica', 'dexpress-woocommerce') ?></h3>
 
         <!-- Progress bar (prikazuje se tokom save faze) -->
         <div id="dex-bulk-progress-wrap" style="display:none;">
@@ -312,22 +342,40 @@ final class BulkShipmentPage
             <p id="dex-bulk-progress-label" class="description" aria-live="polite"></p>
         </div>
 
-        <!-- Rezultati (prikazuju se posle save faze) -->
+        <!-- Rezultati save faze + print akcije -->
         <div id="dex-bulk-results-wrap" style="display:none;">
             <div id="dex-bulk-results-table-wrap"><!-- popunjava JS --></div>
             <div class="dex-bulk-step-footer" id="dex-bulk-print-actions">
                 <button type="button" class="button button-primary" id="dex-bulk-print-all">
                     <?= esc_html__('Štampaj sve nalepnice', 'dexpress-woocommerce') ?>
                 </button>
-                <button type="button" class="button button-primary" id="dex-bulk-send-all" style="display:none;">
-                    <?= esc_html__('Pošalji sve u D-Express', 'dexpress-woocommerce') ?>
+                <button type="button" class="button button-primary" id="dex-bulk-step3-continue" disabled>
+                    <?= esc_html__('Nastavi na slanje →', 'dexpress-woocommerce') ?>
                 </button>
-                <a href="<?= esc_url($ordersUrl) ?>" class="button">
-                    <?= esc_html__('Nazad na narudžbine', 'dexpress-woocommerce') ?>
-                </a>
             </div>
         </div>
     </div><!-- #dex-bulk-step3 -->
+
+    <!-- Korak 4: Slanje u D-Express -->
+    <div id="dex-bulk-step4" class="dex-bulk-panel" style="display:none;">
+        <h3><?= esc_html__('Slanje u D-Express', 'dexpress-woocommerce') ?></h3>
+        <div class="notice notice-warning inline" style="margin-bottom:var(--dex-space-4,16px)">
+            <p>
+                <strong><?= esc_html__('Pažnja:', 'dexpress-woocommerce') ?></strong>
+                <?= esc_html__('Ova akcija je nepovratna. Proverite da su nalepnice odštampane i paketi pripremljeni pre predaje kuriru.', 'dexpress-woocommerce') ?>
+            </p>
+        </div>
+        <div id="dex-bulk-send-results-wrap"><!-- popunjava JS --></div>
+        <div class="dex-bulk-step-footer">
+            <button type="button" class="button button-primary" id="dex-bulk-send-all">
+                <?= esc_html__('Pošalji sve u D-Express', 'dexpress-woocommerce') ?>
+            </button>
+            <a href="<?= esc_url($ordersUrl) ?>" class="button">
+                <?= esc_html__('Nazad na narudžbine', 'dexpress-woocommerce') ?>
+            </a>
+        </div>
+        <div id="dex-bulk-final-summary-wrap"></div>
+    </div><!-- #dex-bulk-step4 -->
 </div><!-- .dex-bulk-wrap -->
 
         <?php
@@ -388,6 +436,7 @@ final class BulkShipmentPage
 
     /**
      * Učitava narudžbine i vraća neophodne podatke za prikaz u Step 2.
+     * Kalkuliše težinu: baza 500g + suma težina WC stavki (po WC weight unit).
      *
      * @param list<int> $orderIds
      * @return list<array<string, mixed>>
@@ -395,6 +444,8 @@ final class BulkShipmentPage
     private function loadOrders(array $orderIds): array
     {
         $result = [];
+        $wUnit  = (string) get_option('woocommerce_weight_unit', 'kg');
+
         foreach ($orderIds as $orderId) {
             $order = wc_get_order($orderId);
             if (!$order instanceof \WC_Order) {
@@ -408,12 +459,61 @@ final class BulkShipmentPage
                 $customer = (string) $order->get_billing_company();
             }
 
+            // Produkte lista + automatska kalkulacija mase
+            $products       = [];
+            $productWeightG = 0;
+            foreach ($order->get_items() as $item) {
+                if (!$item instanceof \WC_Order_Item_Product) {
+                    continue;
+                }
+                $product = $item->get_product();
+                $qty     = (int) $item->get_quantity();
+                $itemG   = 0;
+                if ($product instanceof \WC_Product && $product->get_weight() !== '') {
+                    $itemG           = (int) round(wc_get_weight((float) $product->get_weight() * $qty, 'g', $wUnit));
+                    $productWeightG += $itemG;
+                }
+                $products[] = [
+                    'name'     => (string) $item->get_name(),
+                    'qty'      => $qty,
+                    'weight_g' => $itemG,
+                ];
+            }
+
+            $baseWeightG  = 500;
+            $totalWeightG = $baseWeightG + $productWeightG;
+            $calcWeightKg = number_format($totalWeightG / 1000, 3, '.', '');
+
+            // Adresa dostave
+            $shippingCity  = (string) $order->get_shipping_city();
+            $shippingAddr1 = (string) $order->get_shipping_address_1();
+            $shippingAddr  = trim($shippingCity . ($shippingAddr1 !== '' ? ', ' . $shippingAddr1 : ''));
+
+            // COD
+            $isCod = $order->get_payment_method() === 'cod';
+
+            // Package Shop
+            $isShop = false;
+            foreach ($order->get_shipping_methods() as $m) {
+                if ($m->get_method_id() === 'dexpress_package_shop') {
+                    $isShop = true;
+                    break;
+                }
+            }
+
             $result[] = [
-                'id'        => $orderId,
-                'number'    => $order->get_order_number(),
-                'customer'  => $customer,
-                'total'     => html_entity_decode(wp_strip_all_tags($order->get_formatted_order_total() ?? ''), ENT_QUOTES | ENT_HTML5, 'UTF-8'),
-                'edit_url'  => get_edit_post_link($orderId) ?? admin_url('post.php?post=' . $orderId . '&action=edit'),
+                'id'               => $orderId,
+                'number'           => $order->get_order_number(),
+                'customer'         => $customer,
+                'total'            => html_entity_decode(wp_strip_all_tags((string) ($order->get_formatted_order_total() ?? '')), ENT_QUOTES | ENT_HTML5, 'UTF-8'),
+                'edit_url'         => get_edit_post_link($orderId) ?? admin_url('post.php?post=' . $orderId . '&action=edit'),
+                'products'         => $products,
+                'product_weight_g' => $productWeightG,
+                'base_weight_g'    => $baseWeightG,
+                'calc_weight_kg'   => $calcWeightKg,
+                'shipping_address' => $shippingAddr,
+                'is_cod'           => $isCod,
+                'is_shop'          => $isShop,
             ];
         }
 

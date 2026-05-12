@@ -88,20 +88,75 @@ $range_status = is_array($shipment_code_range_status ?? null) ? $shipment_code_r
                 </tr>
                 <tr>
                     <th scope="row">
-                        <label for="api_environment"><?php esc_html_e('Okruženje', 'dexpress-woocommerce'); ?></label>
+                        <?php esc_html_e('Okruženje', 'dexpress-woocommerce'); ?>
                     </th>
                     <td>
-                        <select id="api_environment" name="api_environment">
-                            <option value="test" <?php selected($options->getString('api.environment', 'test'), 'test'); ?>>
-                                <?php esc_html_e('Testno', 'dexpress-woocommerce'); ?>
-                            </option>
-                            <option value="production" <?php selected($options->getString('api.environment', 'test'), 'production'); ?>>
-                                <?php esc_html_e('Produkcija', 'dexpress-woocommerce'); ?>
-                            </option>
-                        </select>
-                        <p class="description">
-                            <?php esc_html_e('Testno okruženje koristi iste URL-ove kao produkcija, ali sa test kredencijalima.', 'dexpress-woocommerce'); ?>
-                        </p>
+                        <?php $currentEnv = $options->getString('api.environment', 'test'); ?>
+                        <input type="hidden" name="api_environment" id="api_environment_hidden" value="<?php echo esc_attr($currentEnv); ?>">
+
+                        <style>
+                            .dex-env-toggle { display: inline-flex; border-radius: 6px; overflow: hidden; border: 1px solid #c3c4c7; }
+                            .dex-env-option { padding: 7px 18px; font-size: 13px; font-weight: 500; cursor: pointer; border: none; background: #f6f7f7; color: #50575e; transition: background 0.15s, color 0.15s; }
+                            .dex-env-option:focus { outline: 2px solid #2271b1; outline-offset: -2px; }
+                            .dex-env-option[data-value="test"].is-active  { background: #fcf9e8; color: #8a6914; border-right: 1px solid #c3c4c7; }
+                            .dex-env-option[data-value="production"].is-active { background: #fcebea; color: #8d2323; }
+                            .dex-env-status { margin-top: 10px; padding: 8px 12px; border-radius: 4px; font-size: 13px; border-left: 4px solid; max-width: 480px; }
+                            .dex-env-status.is-test { background: #fcf9e8; border-color: #dba617; color: #614e00; }
+                            .dex-env-status.is-production { background: #fcebea; border-color: #cc1818; color: #6e1010; }
+                        </style>
+
+                        <div class="dex-env-toggle" role="group" aria-label="<?php esc_attr_e('Okruženje', 'dexpress-woocommerce'); ?>">
+                            <button type="button"
+                                    class="dex-env-option<?php echo $currentEnv === 'test' ? ' is-active' : ''; ?>"
+                                    data-value="test"
+                                    aria-pressed="<?php echo $currentEnv === 'test' ? 'true' : 'false'; ?>">
+                                <span class="dashicons dashicons-shield" style="font-size:14px;width:14px;height:14px;vertical-align:middle;margin-right:4px;"></span>
+                                <?php esc_html_e('TEST MODE', 'dexpress-woocommerce'); ?>
+                            </button>
+                            <button type="button"
+                                    class="dex-env-option<?php echo $currentEnv === 'production' ? ' is-active' : ''; ?>"
+                                    data-value="production"
+                                    aria-pressed="<?php echo $currentEnv === 'production' ? 'true' : 'false'; ?>">
+                                <span class="dashicons dashicons-warning" style="font-size:14px;width:14px;height:14px;vertical-align:middle;margin-right:4px;"></span>
+                                <?php esc_html_e('PRODUKCIJA', 'dexpress-woocommerce'); ?>
+                            </button>
+                        </div>
+
+                        <div id="dex-env-status" class="dex-env-status <?php echo $currentEnv === 'production' ? 'is-production' : 'is-test'; ?>">
+                            <?php if ($currentEnv === 'production'): ?>
+                                ⚠ <?php esc_html_e('Produkcijsko okruženje — pošiljke se šalju D Express-u.', 'dexpress-woocommerce'); ?>
+                            <?php else: ?>
+                                ℹ <?php esc_html_e('Testno okruženje — isti URL-ovi, test kredencijali, bez stvarnih pošiljki.', 'dexpress-woocommerce'); ?>
+                            <?php endif; ?>
+                        </div>
+
+                        <script>
+                        (function () {
+                            var msgTest = <?php echo wp_json_encode(esc_html__('ℹ Testno okruženje — isti URL-ovi, test kredencijali, bez stvarnih pošiljki.', 'dexpress-woocommerce')); ?>;
+                            var msgProd = <?php echo wp_json_encode(esc_html__('⚠ Produkcijsko okruženje — pošiljke se šalju D Express-u.', 'dexpress-woocommerce')); ?>;
+
+                            document.querySelectorAll('.dex-env-option').forEach(function (btn) {
+                                btn.addEventListener('click', function () {
+                                    var val = this.dataset.value;
+                                    document.querySelectorAll('.dex-env-option').forEach(function (b) {
+                                        b.classList.remove('is-active');
+                                        b.setAttribute('aria-pressed', 'false');
+                                    });
+                                    this.classList.add('is-active');
+                                    this.setAttribute('aria-pressed', 'true');
+                                    document.getElementById('api_environment_hidden').value = val;
+                                    var status = document.getElementById('dex-env-status');
+                                    if (val === 'production') {
+                                        status.className = 'dex-env-status is-production';
+                                        status.textContent = msgProd;
+                                    } else {
+                                        status.className = 'dex-env-status is-test';
+                                        status.textContent = msgTest;
+                                    }
+                                });
+                            });
+                        }());
+                        </script>
                     </td>
                 </tr>
             </table>

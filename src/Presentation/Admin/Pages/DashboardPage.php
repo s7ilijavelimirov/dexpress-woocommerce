@@ -52,99 +52,143 @@ final class DashboardPage
         $paymentsUrl    = esc_url(admin_url('admin.php?page=dexpress-payments'));
         $onboardingUrl  = esc_url(admin_url('admin.php?page=' . OnboardingPage::PAGE_SLUG));
 
+        $apiOk = $sysInfo['credentials'] === 'ok';
+
         ?>
 <div class="wrap dex-dashboard">
-    <h1 class="wp-heading-inline"><?= esc_html__('D Express — pregled', 'dexpress-woocommerce') ?></h1>
 
-    <!-- Stat cards -->
-    <div class="dex-dash-stats">
-        <div class="dex-stat-card">
-            <p class="dex-stat-card__label"><?= esc_html__('Pošiljke ovaj mesec', 'dexpress-woocommerce') ?></p>
-            <p class="dex-stat-card__value"><?= (int) $stats['month'] ?></p>
+    <!-- Header -->
+    <div class="dex-db-header">
+        <div class="dex-db-header__left">
+            <h1 class="dex-db-header__title"><?= esc_html__('D Express', 'dexpress-woocommerce') ?></h1>
+            <p class="dex-db-header__sub"><?= esc_html__('Pregled sistema i aktivnih pošiljaka', 'dexpress-woocommerce') ?></p>
         </div>
-        <div class="dex-stat-card dex-stat-card--delivered">
-            <p class="dex-stat-card__label"><?= esc_html__('Dostavljeno', 'dexpress-woocommerce') ?></p>
-            <p class="dex-stat-card__value"><?= (int) $stats['delivered'] ?></p>
+        <div class="dex-db-header__right">
+            <?php if ($apiOk): ?>
+            <span class="dex-db-pill dex-db-pill--ok">
+                <span class="dex-db-pill__dot"></span>
+                <?= esc_html__('API aktivan', 'dexpress-woocommerce') ?>
+            </span>
+            <?php else: ?>
+            <a href="<?= $settingsUrl ?>" class="dex-db-pill dex-db-pill--warn">
+                <span class="dex-db-pill__dot"></span>
+                <?= esc_html__('API nije podešen', 'dexpress-woocommerce') ?>
+            </a>
+            <?php endif; ?>
         </div>
-        <div class="dex-stat-card dex-stat-card--transit">
-            <p class="dex-stat-card__label"><?= esc_html__('U tranzitu', 'dexpress-woocommerce') ?></p>
-            <p class="dex-stat-card__value"><?= (int) $stats['in_transit'] ?></p>
+    </div>
+    <hr class="wp-header-end">
+
+    <!-- KPI cards -->
+    <div class="dex-kpi-grid">
+        <div class="dex-kpi-card">
+            <div class="dex-kpi-icon dex-kpi-icon--primary">
+                <span class="dashicons dashicons-email-alt"></span>
+            </div>
+            <div class="dex-kpi-body">
+                <p class="dex-kpi-value"><?= (int) $stats['month'] ?></p>
+                <p class="dex-kpi-label"><?= esc_html__('Pošiljke ovaj mesec', 'dexpress-woocommerce') ?></p>
+            </div>
         </div>
-        <div class="dex-stat-card dex-stat-card--problem">
-            <p class="dex-stat-card__label"><?= esc_html__('Problem', 'dexpress-woocommerce') ?></p>
-            <p class="dex-stat-card__value"><?= (int) $stats['problem'] ?></p>
+        <div class="dex-kpi-card">
+            <div class="dex-kpi-icon dex-kpi-icon--success">
+                <span class="dashicons dashicons-yes-alt"></span>
+            </div>
+            <div class="dex-kpi-body">
+                <p class="dex-kpi-value dex-kpi-value--success"><?= (int) $stats['delivered'] ?></p>
+                <p class="dex-kpi-label"><?= esc_html__('Dostavljeno', 'dexpress-woocommerce') ?></p>
+            </div>
+        </div>
+        <div class="dex-kpi-card">
+            <div class="dex-kpi-icon dex-kpi-icon--info">
+                <span class="dashicons dashicons-location"></span>
+            </div>
+            <div class="dex-kpi-body">
+                <p class="dex-kpi-value dex-kpi-value--info"><?= (int) $stats['in_transit'] ?></p>
+                <p class="dex-kpi-label"><?= esc_html__('U tranzitu', 'dexpress-woocommerce') ?></p>
+            </div>
+        </div>
+        <div class="dex-kpi-card">
+            <div class="dex-kpi-icon dex-kpi-icon--error">
+                <span class="dashicons dashicons-warning"></span>
+            </div>
+            <div class="dex-kpi-body">
+                <p class="dex-kpi-value dex-kpi-value--error"><?= (int) $stats['problem'] ?></p>
+                <p class="dex-kpi-label"><?= esc_html__('Problem', 'dexpress-woocommerce') ?></p>
+            </div>
         </div>
     </div>
 
-    <!-- Two-column body -->
-    <div class="dex-dash-body">
+    <!-- Body -->
+    <div class="dex-db-body">
 
-        <!-- LEFT: bar chart + recent shipments -->
-        <div class="dex-dash-col-main">
+        <!-- Main column -->
+        <div class="dex-db-main">
 
             <!-- 7-day bar chart -->
-            <div class="dex-dash-card">
-                <div class="dex-dash-card__head">
-                    <h2 class="dex-dash-card__title"><?= esc_html__('Pošiljke po danima (7 dana)', 'dexpress-woocommerce') ?></h2>
+            <div class="dex-db-card">
+                <div class="dex-db-card__head">
+                    <h2 class="dex-db-card__title"><?= esc_html__('Pošiljke — poslednjih 7 dana', 'dexpress-woocommerce') ?></h2>
                 </div>
-                <div class="dex-dash-card__body">
+                <div class="dex-db-card__body">
                     <?php $this->renderBarChart($chart); ?>
                 </div>
             </div>
 
             <!-- Recent shipments -->
-            <div class="dex-dash-card">
-                <div class="dex-dash-card__head">
-                    <h2 class="dex-dash-card__title"><?= esc_html__('Poslednje pošiljke', 'dexpress-woocommerce') ?></h2>
-                    <a href="<?= $shipmentsUrl ?>" class="button button-small"><?= esc_html__('Sve pošiljke', 'dexpress-woocommerce') ?></a>
+            <div class="dex-db-card">
+                <div class="dex-db-card__head">
+                    <h2 class="dex-db-card__title"><?= esc_html__('Poslednje pošiljke', 'dexpress-woocommerce') ?></h2>
+                    <a href="<?= $shipmentsUrl ?>" class="dex-db-view-all"><?= esc_html__('Sve pošiljke', 'dexpress-woocommerce') ?> &rarr;</a>
                 </div>
                 <?php $this->renderRecentShipments($recent); ?>
             </div>
 
         </div>
 
-        <!-- RIGHT: quick actions + system status -->
-        <div class="dex-dash-col-side">
+        <!-- Side column -->
+        <div class="dex-db-side">
 
             <!-- Quick actions -->
-            <div class="dex-dash-card">
-                <div class="dex-dash-card__head">
-                    <h2 class="dex-dash-card__title"><?= esc_html__('Brze akcije', 'dexpress-woocommerce') ?></h2>
+            <div class="dex-db-card">
+                <div class="dex-db-card__head">
+                    <h2 class="dex-db-card__title"><?= esc_html__('Brze akcije', 'dexpress-woocommerce') ?></h2>
                 </div>
-                <div class="dex-dash-card__body">
-                    <ul class="dex-quick-actions">
-                        <li><a href="<?= $shipmentsUrl ?>">
-                            <span class="dashicons dashicons-email-alt"></span>
-                            <?= esc_html__('Lista pošiljaka', 'dexpress-woocommerce') ?>
-                        </a></li>
-                        <li><a href="<?= $paymentsUrl ?>">
-                            <span class="dashicons dashicons-money-alt"></span>
-                            <?= esc_html__('Otkupnine', 'dexpress-woocommerce') ?>
-                        </a></li>
-                        <li><a href="<?= $settingsUrl ?>">
-                            <span class="dashicons dashicons-admin-settings"></span>
-                            <?= esc_html__('Podešavanja', 'dexpress-woocommerce') ?>
-                        </a></li>
-                        <li><a href="<?= $diagnosticsUrl ?>">
-                            <span class="dashicons dashicons-search"></span>
-                            <?= esc_html__('Dijagnostika', 'dexpress-woocommerce') ?>
-                        </a></li>
-                        <li><a href="<?= $onboardingUrl ?>">
-                            <span class="dashicons dashicons-welcome-widgets-menus"></span>
-                            <?= esc_html__('Čarobnjak podešavanja', 'dexpress-woocommerce') ?>
-                        </a></li>
-                    </ul>
-                </div>
+                <nav class="dex-actions">
+                    <a href="<?= $shipmentsUrl ?>" class="dex-actions__item">
+                        <span class="dex-actions__icon dex-actions__icon--blue"><span class="dashicons dashicons-email-alt"></span></span>
+                        <span class="dex-actions__label"><?= esc_html__('Lista pošiljaka', 'dexpress-woocommerce') ?></span>
+                        <span class="dashicons dashicons-arrow-right-alt2 dex-actions__arrow"></span>
+                    </a>
+                    <a href="<?= $paymentsUrl ?>" class="dex-actions__item">
+                        <span class="dex-actions__icon dex-actions__icon--green"><span class="dashicons dashicons-money-alt"></span></span>
+                        <span class="dex-actions__label"><?= esc_html__('Otkupnine', 'dexpress-woocommerce') ?></span>
+                        <span class="dashicons dashicons-arrow-right-alt2 dex-actions__arrow"></span>
+                    </a>
+                    <a href="<?= $settingsUrl ?>" class="dex-actions__item">
+                        <span class="dex-actions__icon dex-actions__icon--gray"><span class="dashicons dashicons-admin-settings"></span></span>
+                        <span class="dex-actions__label"><?= esc_html__('Podešavanja', 'dexpress-woocommerce') ?></span>
+                        <span class="dashicons dashicons-arrow-right-alt2 dex-actions__arrow"></span>
+                    </a>
+                    <a href="<?= $diagnosticsUrl ?>" class="dex-actions__item">
+                        <span class="dex-actions__icon dex-actions__icon--purple"><span class="dashicons dashicons-search"></span></span>
+                        <span class="dex-actions__label"><?= esc_html__('Dijagnostika', 'dexpress-woocommerce') ?></span>
+                        <span class="dashicons dashicons-arrow-right-alt2 dex-actions__arrow"></span>
+                    </a>
+                    <a href="<?= $onboardingUrl ?>" class="dex-actions__item">
+                        <span class="dex-actions__icon dex-actions__icon--orange"><span class="dashicons dashicons-welcome-widgets-menus"></span></span>
+                        <span class="dex-actions__label"><?= esc_html__('Čarobnjak podešavanja', 'dexpress-woocommerce') ?></span>
+                        <span class="dashicons dashicons-arrow-right-alt2 dex-actions__arrow"></span>
+                    </a>
+                </nav>
             </div>
 
             <!-- System status -->
-            <div class="dex-dash-card">
-                <div class="dex-dash-card__head">
-                    <h2 class="dex-dash-card__title"><?= esc_html__('Status sistema', 'dexpress-woocommerce') ?></h2>
+            <div class="dex-db-card">
+                <div class="dex-db-card__head">
+                    <h2 class="dex-db-card__title"><?= esc_html__('Status sistema', 'dexpress-woocommerce') ?></h2>
                 </div>
-                <div class="dex-dash-card__body">
-                    <?php $this->renderSystemStatus($sysInfo); ?>
-                </div>
+                <?php $this->renderSystemStatus($sysInfo); ?>
             </div>
 
         </div>
@@ -309,15 +353,19 @@ final class DashboardPage
     {
         $max = max(1, ...array_column($chart, 'count'));
 
-        echo '<div class="dex-bar-chart">';
+        echo '<div class="dex-db-chart">';
         foreach ($chart as $day) {
-            $pct  = (int) round($day['count'] / $max * 100);
-            $zero = $day['count'] === 0 ? ' dex-bar--zero' : '';
+            $pct       = (int) round($day['count'] / $max * 100);
+            $zero      = $day['count'] === 0 ? ' dex-db-bar--zero' : '';
+            $countHtml = $day['count'] > 0
+                ? '<span class="dex-db-chart__count">' . esc_html((string) $day['count']) . '</span>'
+                : '';
             printf(
-                '<div class="dex-bar-chart__col" title="%s pošiljak(i)"><div class="dex-bar%s" style="--bar-h:%d%%"></div><span class="dex-bar-chart__label">%s</span></div>',
+                '<div class="dex-db-chart__col" title="%s pošiljak(i)"><div class="dex-db-bar%s" style="--bar-h:%d%%">%s</div><span class="dex-db-chart__label">%s</span></div>',
                 esc_attr((string) $day['count']),
                 esc_attr($zero),
                 $pct,
+                $countHtml,
                 esc_html($day['label']),
             );
         }
@@ -330,13 +378,13 @@ final class DashboardPage
     private function renderRecentShipments(array $recent): void
     {
         if (empty($recent)) {
-            echo '<div class="dex-dash-card__body"><p class="description">'
+            echo '<div class="dex-db-card__body"><p class="description">'
                 . esc_html__('Nema pošiljaka.', 'dexpress-woocommerce')
                 . '</p></div>';
             return;
         }
 
-        echo '<table class="dex-dash-table">';
+        echo '<div class="dex-db-table-wrap"><table class="dex-db-table">';
         echo '<thead><tr>'
             . '<th>' . esc_html__('Kod', 'dexpress-woocommerce') . '</th>'
             . '<th>' . esc_html__('Narudžbina', 'dexpress-woocommerce') . '</th>'
@@ -371,7 +419,7 @@ final class DashboardPage
                 . '<td><span class="dex-code">%s</span></td>'
                 . '<td><a href="%s">#%d</a></td>'
                 . '<td><span class="dex-badge dex-badge--%s">%s</span></td>'
-                . '<td>%s</td>'
+                . '<td class="dex-db-table__date">%s</td>'
                 . '</tr>',
                 esc_html($code),
                 $orderUrl,
@@ -382,7 +430,7 @@ final class DashboardPage
             );
         }
 
-        echo '</tbody></table>';
+        echo '</tbody></table></div>';
     }
 
     /**
@@ -395,11 +443,13 @@ final class DashboardPage
             ? esc_html__('Podešeno', 'dexpress-woocommerce')
             : esc_html__('Nije podešeno', 'dexpress-woocommerce');
 
-        echo '<ul class="dex-status-list">';
+        echo '<dl class="dex-sys-info">';
 
         printf(
-            '<li><span class="dex-status-list__key">%s</span>'
-            . '<span class="dex-status-list__val"><span class="dex-status-dot dex-status-dot--%s"></span>%s (%s)</span></li>',
+            '<div class="dex-sys-info__row">'
+            . '<dt>%s</dt>'
+            . '<dd><span class="dex-status-dot dex-status-dot--%s"></span>%s <span class="dex-sys-info__sub">(%s)</span></dd>'
+            . '</div>',
             esc_html__('API pristup', 'dexpress-woocommerce'),
             esc_attr($credDot),
             $credLabel,
@@ -407,8 +457,10 @@ final class DashboardPage
         );
 
         printf(
-            '<li><span class="dex-status-list__key">%s</span>'
-            . '<span class="dex-status-list__val"><code style="font-size:10px;word-break:break-all;">%s</code></span></li>',
+            '<div class="dex-sys-info__row">'
+            . '<dt>%s</dt>'
+            . '<dd><code>%s</code></dd>'
+            . '</div>',
             esc_html__('Webhook URL', 'dexpress-woocommerce'),
             esc_html((string) $info['webhook']),
         );
@@ -417,19 +469,21 @@ final class DashboardPage
         $sync = $info['sync'];
         foreach ($sync as $label => $val) {
             printf(
-                '<li><span class="dex-status-list__key">%s</span><span class="dex-status-list__val">%s</span></li>',
+                '<div class="dex-sys-info__row"><dt>%s</dt><dd>%s</dd></div>',
                 esc_html($label),
                 esc_html($val),
             );
         }
 
         printf(
-            '<li><span class="dex-status-list__key">PHP / Plugin</span>'
-            . '<span class="dex-status-list__val">%s / v%s</span></li>',
+            '<div class="dex-sys-info__row">'
+            . '<dt>PHP / Plugin</dt>'
+            . '<dd>%s / <strong>v%s</strong></dd>'
+            . '</div>',
             esc_html((string) $info['php']),
             esc_html((string) $info['plugin']),
         );
 
-        echo '</ul>';
+        echo '</dl>';
     }
 }

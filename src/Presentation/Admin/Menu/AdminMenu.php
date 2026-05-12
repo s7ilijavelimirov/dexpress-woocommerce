@@ -47,6 +47,7 @@ final class AdminMenu
 
     public function register(): void
     {
+        $this->bulkShipmentPage->register();
         add_action('admin_menu', [$this, 'addMenuItems'], 54);
         add_action('admin_enqueue_scripts', [$this, 'enqueueAdminAssets']);
         add_action('admin_head', [$this, 'printIconStyles']);
@@ -193,6 +194,7 @@ final class AdminMenu
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended
         $page = isset($_GET['page']) ? sanitize_key((string) $_GET['page']) : '';
 
+
         if ($page === PackageProfilesPage::PAGE_SLUG) {
             wp_enqueue_style(
                 'dexpress-package-profiles',
@@ -209,6 +211,7 @@ final class AdminMenu
             );
             wp_localize_script('dexpress-package-profiles', 'dexpressProfiles', [
                 'ajaxUrl' => admin_url('admin-ajax.php'),
+                'iconUrl' => DEXPRESS_PLUGIN_URL . 'assets/images/package-box.svg',
                 'nonces'  => [
                     'save'       => wp_create_nonce('dexpress_save_package_profile'),
                     'delete'     => wp_create_nonce('dexpress_delete_package_profile'),

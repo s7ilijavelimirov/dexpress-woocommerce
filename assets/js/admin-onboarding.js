@@ -22,11 +22,28 @@
     // -----------------------------------------------------------------------
 
     var state = {
-        step: 1,
+        step:  1,
         total: 6,
-        credentials: { username: '', password: '', client_id: '' },
+        credentials:          { username: '', password: '', client_id: '' },
+        connectionTested:     false, // API test ran and succeeded this session
+        credentialsPersisted: false, // credentials were saved to DB this session (or pre-loaded)
         stepDone: { 1: true, 2: false, 3: false, 4: false, 5: false, 6: true },
     };
+
+    // Pre-populate credentials state from DB.
+    // If all three are already saved, treat Step 2 as pre-validated (returning user flow).
+    (function () {
+        var saved = ob.credentialsSaved || {};
+        if (saved.username) { state.credentials.username  = '(saved)'; }
+        if (saved.password) { state.credentials.password  = '(saved)'; }
+        if (saved.clientId) { state.credentials.client_id = '(saved)'; }
+
+        if (saved.username && saved.password && saved.clientId) {
+            state.connectionTested     = true;
+            state.credentialsPersisted = true;
+            $('#dex-ob-panel-2 .dex-ob-next').prop('disabled', false);
+        }
+    }());
 
     // -----------------------------------------------------------------------
     // Progress & step indicator
@@ -60,6 +77,15 @@
 
         state.step = n;
 
+        // Sync panel 6 client_id warning with current credential state.
+        if (n === 6) {
+            if (state.credentials.client_id) {
+                $('#dex-ob-clientid-warning').attr('hidden', true);
+            } else {
+                $('#dex-ob-clientid-warning').removeAttr('hidden');
+            }
+        }
+
         // Scroll to top of wrap
         $('html, body').animate({ scrollTop: $('.dex-ob-wrap').offset().top - 32 }, 200);
     }
@@ -88,8 +114,48 @@
     // Navigation: Next / Back / Skip
     // -----------------------------------------------------------------------
 
+    /**
+     * Smart gate for Step 2 "Dalje →".
+     * Guards field presence + connection tested + persistence before navigating to Step 3.
+     */
+    function handleStep2Next() {
+        var $result = $('#dex-ob-connection-result');
+        var saved   = ob.credentialsSaved || {};
+
+        var hasUsername = $('#dex-ob-api-username').val().trim() !== '' || !!saved.username;
+        var hasPassword = $('#dex-ob-api-password').val().trim() !== '' || !!saved.password;
+        var hasClientId = $('#dex-ob-api-client-id').val().trim() !== '' || !!saved.clientId;
+
+        var missing = [];
+        if (!hasUsername) { missing.push('korisničko ime'); }
+        if (!hasPassword) { missing.push('lozinka'); }
+        if (!hasClientId) { missing.push('Client ID (CClientID)'); }
+
+        if (missing.length) {
+            setInlineResult($result, '✗ Fali: ' + missing.join(', ') + '.', false);
+            return;
+        }
+
+        if (!state.connectionTested) {
+            setInlineResult($result, '✗ Potrebno je testirati API konekciju pre nastavka.', false);
+            $('#dex-ob-test-connection').trigger('focus');
+            return;
+        }
+
+        if (!state.credentialsPersisted) {
+            setInlineResult($result, '✗ Kredencijali nisu sačuvani u bazu. Testiraj konekciju ponovo.', false);
+            return;
+        }
+
+        setStep(3);
+    }
+
     $(document).on('click', '.dex-ob-next', function () {
         var fromStep = parseInt($(this).data('step'), 10);
+        if (fromStep === 2) {
+            handleStep2Next();
+            return;
+        }
         if (fromStep < state.total) {
             setStep(fromStep + 1);
         }
@@ -113,6 +179,49 @@
     setStep(1);
 
     // -----------------------------------------------------------------------
+    // Step 2 — Field state management
+    // -----------------------------------------------------------------------
+
+    /**
+     * Enables/disables "Dalje →" in Step 2 based on whether all three fields
+     * have a value (either typed or previously saved to DB).
+     */
+    function syncStep2ButtonState() {
+        var saved    = ob.credentialsSaved || {};
+        var username = $('#dex-ob-api-username').val().trim();
+        var password = $('#dex-ob-api-password').val().trim();
+        var clientId = $('#dex-ob-api-client-id').val().trim();
+
+        var hasUsername = username !== '' || !!saved.username;
+        var hasPassword = password !== '' || !!saved.password;
+        var hasClientId = clientId !== '' || !!saved.clientId;
+
+        $('#dex-ob-panel-2 .dex-ob-next').prop('disabled', !(hasUsername && hasPassword && hasClientId));
+    }
+
+    // Typing a new password means the cached test result is stale — require re-test.
+    $(document).on('input', '#dex-ob-api-password', function () {
+        if ($(this).val().trim() !== '') {
+            state.connectionTested     = false;
+            state.credentialsPersisted = false;
+        }
+        syncStep2ButtonState();
+    });
+
+    // Any username edit invalidates the test (different credentials now).
+    $(document).on('input', '#dex-ob-api-username', function () {
+        state.connectionTested     = false;
+        state.credentialsPersisted = false;
+        syncStep2ButtonState();
+    });
+
+    // Client ID change only affects persistence, not the connection test itself.
+    $(document).on('input', '#dex-ob-api-client-id', function () {
+        state.credentialsPersisted = false;
+        syncStep2ButtonState();
+    });
+
+    // -----------------------------------------------------------------------
     // Step 2 — API credentials: show/hide password
     // -----------------------------------------------------------------------
 
@@ -133,6 +242,46 @@
     // Step 2 — API credentials: test connection
     // -----------------------------------------------------------------------
 
+    function saveCredentials(username, password, clientId, $result, $next) {
+        setInlineResult($result, 'Čuvanje kredencijala...', true);
+
+        $.post(ob.ajaxUrl, {
+            action:    'dexpress_onboarding_save_credentials',
+            nonce:     ob.nonces.saveCredentials,
+            username:  username,
+            password:  password,
+            client_id: clientId,
+        })
+        .done(function (response) {
+            if (response.success) {
+                setInlineResult($result, '✓ Konekcija uspešna! Kredencijali su sačuvani.', true);
+                state.connectionTested     = true;
+                state.credentialsPersisted = true;
+                state.credentials.username  = username || '(saved)';
+                state.credentials.password  = '(saved)';
+                state.credentials.client_id = clientId || '';
+                $next.prop('disabled', false);
+                // Sync panel 6 client_id warning immediately after save.
+                if (response.data && response.data.clientId) {
+                    state.credentials.client_id = clientId || '(saved)';
+                    $('#dex-ob-clientid-warning').attr('hidden', true);
+                } else {
+                    state.credentials.client_id = '';
+                    $('#dex-ob-clientid-warning').removeAttr('hidden');
+                }
+                obLog('info', 'Korak 2 — kredencijali sačuvani u bazu, clientId: ' + (response.data && response.data.clientId ? 'da' : 'ne'));
+            } else {
+                var msg = response.data && response.data.message ? response.data.message : 'Greška pri čuvanju.';
+                setInlineResult($result, '✗ API kredencijali nisu sačuvani. ' + msg, false);
+                obLog('warning', 'Korak 2 — čuvanje kredencijala neuspešno: ' + msg);
+            }
+        })
+        .fail(function () {
+            setInlineResult($result, '✗ API kredencijali nisu sačuvani. Proverite lozinku i pokušajte ponovo.', false);
+            obLog('warning', 'Korak 2 — AJAX greška pri čuvanju kredencijala');
+        });
+    }
+
     $('#dex-ob-test-connection').on('click', function () {
         var $btn    = $(this);
         var $result = $('#dex-ob-connection-result');
@@ -152,16 +301,14 @@
         })
         .done(function (response) {
             if (response.success) {
-                setInlineResult($result, '✓ ' + response.data.message, true);
-                // Store credentials in state for handleComplete
-                state.credentials.username = username;
-                state.credentials.password = password;
-                state.credentials.client_id = clientId;
-                $next.prop('disabled', false);
+                state.connectionTested = true;
                 obLog('info', 'Korak 2 — test konekcije uspešan, korisnik: ' + (username || '(sačuvan)'));
+                // Test passed — immediately persist to DB so Step 3 sync can use them.
+                saveCredentials(username, password, clientId, $result, $next);
             } else {
-                setInlineResult($result, '✗ ' + response.data.message, false);
-                obLog('warning', 'Korak 2 — test konekcije neuspešan: ' + (response.data && response.data.message ? response.data.message : ''));
+                var errMsg = response.data && response.data.message ? response.data.message : 'Neuspešna konekcija.';
+                setInlineResult($result, '✗ ' + errMsg, false);
+                obLog('warning', 'Korak 2 — test konekcije neuspešan: ' + errMsg);
             }
         })
         .fail(function () {
@@ -184,6 +331,17 @@
         var $spinner = $('#dex-ob-sync-spinner');
         var $result  = $('#dex-ob-sync-result');
         var $next    = $('#dex-ob-panel-3 .dex-ob-next');
+
+        // Hard rule: username + password + client_id must all be present before sync.
+        var credMissing = [];
+        if (!state.credentials.username)  { credMissing.push('korisničko ime'); }
+        if (!state.credentials.password)  { credMissing.push('lozinka'); }
+        if (!state.credentials.client_id) { credMissing.push('Client ID (CClientID)'); }
+        if (credMissing.length) {
+            setBlockResult($result, '✗ Fali: ' + credMissing.join(', ') + '. Unesi API podatke u Koraku 2.', false);
+            obLog('warning', 'Korak 3 — blokirana sinhronizacija, nedostaju kredencijali: ' + credMissing.join(', '));
+            return;
+        }
 
         clearResult($result);
         $btn.prop('disabled', true);
@@ -453,50 +611,89 @@
     });
 
     // -----------------------------------------------------------------------
-    // Step 5 — Create shipping zone
+    // Step 5 — Method selection + apply to shipping zone
     // -----------------------------------------------------------------------
 
+    var METHOD_LABELS = {
+        'dexpress':              'D Express — kućna dostava',
+        'dexpress_package_shop': 'D Express — paketomat / paket shop',
+    };
+
+    function getSelectedMethods() {
+        var methods = [];
+        $('#dex-ob-panel-5 input[type="checkbox"]').each(function () {
+            if ($(this).is(':checked')) {
+                methods.push($(this).val());
+            }
+        });
+        return methods;
+    }
+
+    function renderZoneSummary(d) {
+        var lines = [];
+
+        var zoneInfo = d.zone_created
+            ? 'Kreirana nova zona: <strong>' + d.zone_name + '</strong>'
+            : 'Korišćena zona: <strong>' + d.zone_name + '</strong>';
+        lines.push(zoneInfo);
+
+        if (d.added && d.added.length) {
+            var addedNames = d.added.map(function (id) { return METHOD_LABELS[id] || id; });
+            lines.push('Dodato: ' + addedNames.join(', '));
+        }
+
+        if (d.skipped && d.skipped.length) {
+            var skippedNames = d.skipped.map(function (id) { return METHOD_LABELS[id] || id; });
+            lines.push('Već postoji: ' + skippedNames.join(', '));
+        }
+
+        return lines.join('<br>');
+    }
+
     $('#dex-ob-create-zone').on('click', function () {
-        var $btn    = $(this);
-        var $result = $('#dex-ob-zone-result');
-        var $next   = $('#dex-ob-panel-5 .dex-ob-next');
+        var $btn      = $(this);
+        var $result   = $('#dex-ob-zone-result');
+        var $next     = $('#dex-ob-panel-5 .dex-ob-next');
+        var $validMsg = $('#dex-ob-method-validation');
+        var methods   = getSelectedMethods();
 
         clearResult($result);
-        $btn.prop('disabled', true).text('Kreiranje...');
+        $validMsg.text('');
+
+        if (!methods.length) {
+            $validMsg.text('Izaberite barem jedan metod dostave pre primene.');
+            return;
+        }
+
+        $btn.prop('disabled', true);
 
         $.post(ob.ajaxUrl, {
-            action: 'dexpress_onboarding_create_zone',
-            nonce:  ob.nonces.createZone,
+            action:  'dexpress_onboarding_create_zone',
+            nonce:   ob.nonces.createZone,
+            methods: methods,
         })
         .done(function (response) {
             if (response.success) {
-                setBlockResult($result, '✓ ' + response.data.message, true);
-                if (ob.shippingSettingsUrl) {
-                    $result.append(
-                        $('<span>').text(' — ').add(
-                            $('<a>', { href: ob.shippingSettingsUrl, target: '_blank', rel: 'noopener' })
-                                .text('Proveri u WooCommerce → Dostava')
-                        )
-                    );
-                }
+                var d = response.data || {};
+                $result
+                    .html('✓ ' + renderZoneSummary(d))
+                    .removeClass('is-success is-error')
+                    .addClass('is-success');
                 $next.prop('disabled', false);
-                obLog('info', 'Korak 5 — shipping zona kreirana uspešno');
+                obLog('info', 'Korak 5 — metode primenjene. Zona: "' + d.zone_name + '", dodato: ' + JSON.stringify(d.added) + ', preskočeno: ' + JSON.stringify(d.skipped));
             } else {
-                var msg = response.data && response.data.message ? response.data.message : 'Greška pri kreiranju zone.';
-                setBlockResult($result, '✗ ' + msg, false);
-                obLog('warning', 'Korak 5 — kreiranje zone neuspešno: ' + msg);
+                var errMsg = response.data && response.data.message ? response.data.message : 'Greška pri primeni metoda dostave.';
+                setBlockResult($result, '✗ ' + errMsg, false);
+                obLog('warning', 'Korak 5 — primena neuspešna: ' + errMsg);
             }
         })
         .fail(function (xhr) {
-            var errMsg = 'HTTP ' + xhr.status + ' — proverite log za detalje.';
+            var errMsg = 'HTTP ' + xhr.status + ' — proverite server log.';
             setBlockResult($result, '✗ ' + errMsg, false);
-            obLog('warning', 'Korak 5 — AJAX greška pri kreiranju zone: ' + errMsg);
+            obLog('warning', 'Korak 5 — AJAX greška: ' + errMsg);
         })
         .always(function () {
             $btn.prop('disabled', false);
-            $btn.find('.dashicons').remove();
-            $btn.prepend('<span class="dashicons dashicons-plus-alt" aria-hidden="true"></span> ');
-            $btn.contents().filter(function () { return this.nodeType === 3; }).last().replaceWith('Kreiraj zonu dostave');
         });
     });
 

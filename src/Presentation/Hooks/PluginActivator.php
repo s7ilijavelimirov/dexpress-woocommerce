@@ -19,11 +19,13 @@ final class PluginActivator
         self::generateWebhookPasscode();
         self::scheduleCronEvents();
 
-        // Prikazuje onboarding wizard novim instalacijama. Samo ako opcija još ne postoji (ne resetuje ponovnom aktivacijom).
-        if (get_option('dexpress_onboarding_complete') === false) {
+        // Redirect to onboarding wizard on every activation where onboarding has not been completed yet.
+        // This covers: fresh installs (option missing), reinstalls after clean uninstall, and
+        // deactivate→reactivate when the wizard was never finished.
+        if (get_option('dexpress_onboarding_complete') !== 'yes') {
             update_option('dexpress_onboarding_complete', 'no');
             // Transient signalizuje admin_init da preusmeri odmah nakon aktivacije (plugins.php → wizard).
-            set_transient('_dexpress_activation_redirect', true, 30);
+            set_transient('_dexpress_activation_redirect', true, 60);
         }
 
         // Forsira ponovno flush na prvom init-u nakon aktivacije (WC My Account endpointi se registruju tek kad je plugin boot-ovan).

@@ -153,12 +153,12 @@
 .dex-bulk-orders-table td {
   padding: var(--dex-space-2) var(--dex-space-3);
   border-bottom: var(--dex-border);
-  vertical-align: middle;
+  vertical-align: top;
 }
 
 .dex-bulk-orders-table tr:last-child td { border-bottom: 0; }
 .dex-bulk-orders-table input[type="number"],
-.dex-bulk-orders-table input[type="text"] { width: 100%; min-width: 60px; }
+.dex-bulk-orders-table input[type="text"] { box-sizing: border-box; }
 
 /* ── Results table (Step 3) ──────────────────────────────────── */
 .dex-bulk-results-table {
@@ -251,9 +251,10 @@
 
 .dex-bulk-step2-header h3 { margin: 0; }
 
-.dex-bulk-orders-table .dex-col-dims { white-space: nowrap; }
-.dex-bulk-orders-table .dex-dim-input { width: 52px; min-width: 52px; }
-.dex-bulk-orders-table .dex-text-medium { width: 120px; min-width: 120px; }
+.dex-bulk-orders-table .dex-col-dims { white-space: nowrap; width: 200px; }
+/* Higher specificity (0,3,1) overrides generic (0,2,1) */
+.dex-bulk-orders-table input[type="number"].dex-dim-input { width: 50px; min-width: 50px; }
+.dex-bulk-orders-table .dex-text-medium { width: 100%; min-width: 90px; }
 
 /* ── Final summary card (posle send faze) ────────────────────── */
 .dex-bulk-summary {
@@ -322,4 +323,141 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--dex-space-2);
+}
+
+/* ── Step 2 table: novi elementi ─────────────────────────────── */
+
+/* Adresa ispod broja narudžbine */
+.dex-bulk-addr {
+  font-size: var(--dex-text-xs);
+  color: var(--dex-gray-500);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 160px;
+}
+
+/* Bedževi: Pouzećem / Paketomat */
+.dex-bulk-badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-top: 4px;
+}
+
+.dex-bulk-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: 99px;
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.dex-bulk-badge--cod  { background: #fef3c7; color: #92400e; }
+.dex-bulk-badge--shop { background: var(--dex-info-light, #e0f2fe); color: var(--dex-info, #0369a1); }
+
+/* Lista proizvoda u Step 2 */
+.dex-bulk-prod-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--dex-text-xs);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dex-bulk-qty {
+  font-weight: 600;
+  color: var(--dex-gray-500);
+  margin-right: 2px;
+}
+
+.dex-bulk-wg {
+  color: var(--dex-gray-400);
+  font-size: 10px;
+}
+
+.dex-bulk-more {
+  color: var(--dex-gray-400);
+  font-style: italic;
+}
+
+.dex-bulk-empty {
+  color: var(--dex-gray-400);
+}
+
+/* Hint sa izračunatom masom ispod weight inputa */
+.dex-bulk-calc-hint {
+  font-size: 10px;
+  color: var(--dex-gray-400);
+  margin-top: 3px;
+}
+
+/* Kupac + iznos u jednoj liniji unutar order ćelije */
+.dex-bulk-order-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.dex-bulk-customer {
+  font-size: var(--dex-text-xs);
+  color: var(--dex-gray-600);
+}
+
+.dex-bulk-total {
+  font-size: var(--dex-text-xs);
+  font-weight: 600;
+  color: var(--dex-gray-700);
+}
+
+/* Greška u results tabeli — vizuelno isticanje reda */
+.dex-row-has-error { background: var(--dex-error-light, #fef2f2) !important; }
+.dex-row-has-error td { border-color: var(--dex-error, #dc2626) !important; }
+
+/* ── Kolone: fiksne širine da tabela ne poskakuje ───────────── */
+.dex-bulk-orders-table .dex-col-order  { width: 200px; max-width: 200px; }
+.dex-bulk-orders-table .dex-col-weight { width: 110px; }
+
+/* Weight input eksplicitna širina — (0,3,1) > generic (0,2,1) */
+.dex-bulk-orders-table .dex-col-weight input[type="number"] { width: 80px; }
+
+/* Text inputs (content, note) pune širine kolone */
+.dex-bulk-orders-table input[type="text"].dex-text-medium { width: 100%; }
+
+/* Dim inputs u flex wrapperu */
+.dex-bulk-dims-cell {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: nowrap;
+}
+
+.dex-bulk-dims-cell > span {
+  color: var(--dex-gray-400);
+  font-size: 11px;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+/* Order cell — addr ne sme da širi kolonu */
+.dex-bulk-orders-table td.dex-col-order .dex-bulk-addr {
+  max-width: 180px;
+}
+
+/* Wizard kontejner — puna širina WP admin content areaa */
+.dex-bulk-wrap {
+  max-width: 100%;
+}
+
+/* Stepper — 4 koraka, širi opseg */
+.dex-bulk-stepper {
+  max-width: 640px;
+  margin-left: auto;
+  margin-right: auto;
 }

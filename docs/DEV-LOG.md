@@ -9,6 +9,85 @@ Plugin header (`dexpress-woocommerce.php`) is locked at **2.0.1** until a public
 
 ---
 
+## [2.6.0] — 2026-05-12
+
+### Fixed
+- `src/Presentation/Admin/Pages/OnboardingPage.php` — Removed stray `WC()->shipping()` call from `handleCreateZone()`. This call internally invokes `WC_Shipping::load()` which does not exist in WooCommerce 8.x+ and caused a fatal `Call to undefined method` that was logged on every zone-creation AJAX request. The call was vestigial: `attachMethodsToZone()` already uses direct `$wpdb` queries, so no WC shipping registry warm-up is needed.
+
+- `assets/js/admin-bulk-shipment.js` — **Weight calculation persistence**: Step 1 weight field was required (`validateStep1` blocked proceeding if empty), making the global weight always filled and always winning in `initOrderState`. Removed weight from Step 1 validation — it is now an optional batch override. `initOrderState` logic was already correct: per-order `calc_weight_kg` (500g base + WC product weights) is used as primary; global weight overrides only when explicitly entered. Step 2 per-row validation still enforces `weight_kg > 0`, which always passes since calc weight is at least 0.500 kg.
+
+- `assets/js/admin-bulk-shipment.js` — **Step 2 table layout**: Reduced from 8 columns to 6 by merging Kupac and Iznos into the Narudžbina cell (`dex-bulk-order-meta` row with customer name + total amount inline). Calc weight hint simplified to just show the total kg (removed breakdown since it clutters the input area).
+
+- `assets/js/admin-bulk-shipment.js` — **Error row visibility in Step 3 results**: Error `<tr>` elements now carry `class="dex-row-has-error"` for visual differentiation. Corresponding CSS rule added to `admin-bulk-shipment.css`.
+
+- `assets/js/admin-bulk-shipment.js` — **Print-before-send enforcement**: "Pošalji sve u D-Express" button is now hidden after save phase completes (per CLAUDE.md: *"Call this method after shipment is packaged, properly labeled and ready for pickup"*). The button is revealed only after admin clicks "Štampaj sve nalepnice" (print-all), enforcing the correct workflow: save → print → physically package → send to API.
+
+- `src/Presentation/Admin/Pages/BulkShipmentPage.php` — Removed asterisk from "Masa (kg)" field label in Step 1 since weight is no longer required at that step.
+
+### Added
+- `assets/css/admin-bulk-shipment.css` — `.dex-bulk-order-meta`, `.dex-bulk-customer`, `.dex-bulk-total` for merged order cell layout; `.dex-row-has-error` + `.dex-row-has-error td` for error row highlighting in Step 3 results table.
+
+### Architecture Notes
+- The bulk wizard now fully respects the two-step shipment flow: `save()` creates the DB record and returns a label URL; the admin must open labels (print-all click) before the send button unlocks. This matches the state machine described in CLAUDE.md.
+- Step 1 weight field is now "batch override" semantics: leave blank = each order uses its own calculated weight; fill in = override all orders with a single value. This is a UX improvement over the previous "required" model, which defeated the purpose of per-product weight data.
+
+### Revision — 2026-05-12 (UI + 4-step flow)
+
+#### Root causes fixed
+- **CSS specificity collision on inputs**: `.dex-bulk-orders-table input[type="number"]` has specificity (0,2,1) which outranks `.dex-bulk-orders-table .dex-dim-input` at (0,2,0) — the generic `width: 100%; min-width: 60px` was overriding the 52px dim-input width. Fixed by changing the generic rule to `box-sizing: border-box` only, and using `input[type="number"].dex-dim-input` (0,3,1) for the dim-specific override.
+- **`vertical-align: middle` on tall order cell**: Cell with 4 stacked sub-elements (link, meta, address, badges) forced all other cells to center-align their inputs, causing visual collision. Fixed by changing `td` to `vertical-align: top`.
+- **`white-space: nowrap` on calc-hint**: Prevented wrapping of "Kalkulacija: X.XXX kg" text, forcing the weight column to expand and compressing all other columns. Removed.
+- **Dims `×` naked text nodes**: Three inputs separated by raw `×` characters with no wrapper caused inline layout instability. Wrapped in `<div class="dex-bulk-dims-cell">` with `display: flex; align-items: center; gap: 4px`.
+- **Send-phase status selector**: `$('[data-order-id="..."]').closest('tr')` only finds retry buttons (not first-send rows). Fixed by adding `data-order-id` to every `<tr>` in the results table and selecting with `tr[data-order-id="..."]`.
+
+#### 4-step wizard refactor
+- Stepper extended to 4 steps: Podešavanja → Pregled → Štampa → Slanje
+- Step 3 is now "Kreiranje i štampa nalepnica": save phase progress + results table + "Štampaj sve nalepnice" + disabled "Nastavi na slanje →" button (unlocks only after print-all click)
+- Step 4 is new "Slanje u D-Express": warning notice + results table re-rendered into `#dex-bulk-send-results-wrap` + "Pošalji sve" button + final summary card in `#dex-bulk-final-summary-wrap`
+- `renderResultsTable(target, showPrintActions)` now accepts a container selector and a flag; the same function renders both Step 3 save view and Step 4 send view
+- Send-phase inline status updates target `#dex-bulk-send-results-wrap tr[data-order-id="..."]` (correct context)
+- `renderFinalSummary()` appends into `#dex-bulk-final-summary-wrap` (Step 4) instead of `#dex-bulk-results-wrap`
+- `savedShipmentIds` is now a module-level variable populated by `renderResultsTable`, available to both print and send phases
+
+---
+
+## [2.5.0] — 2026-05-10
+
+### Added
+- `assets/css/admin-shipments.css` — External stylesheet for the shipments admin page. All previously inline `<style>` rules from `ShipmentsPage::renderPendingOrders()` migrated here and expanded with new column and badge rules. Enqueued via `AdminMenu::enqueueAdminAssets()` when `page=dexpress-shipments`.
+
+### Changed
+- `src/Presentation/Admin/Pages/ShipmentsPage.php` — Major expansion of `getPendingOrders()` and `renderPendingOrders()`:
+  - **Constructor**: added `WpdbPackageProfileRepository` dependency for the profile dropdown.
+  - **`getPendingOrders()`**: added `phone` (billing phone), `shipping_address` (D-Express šifarnik meta `_shipping_street_name` + `_shipping_street_number`, fallback to `get_formatted_shipping_address()`), `payment_method`, `payment_method_title`, `is_paid`. Edit URL is now HPOS-aware via `\Automattic\WooCommerce\Utilities\OrderUtil::custom_orders_table_usage_is_enabled()`.
+  - **`renderPendingOrders()`**: new columns — Narudžbina (linked order # + "Pogledaj" link), Telefon, Adresa dostave (truncated with title tooltip), Plaćanje (badge: "Pouzećem" in warning color for COD, "Plaćeno" in success color for paid, neutral for other), Tip dostave (pill badge: "Paketomat / Paket Shop" or "Obična dostava"). Added package profile `<select>` dropdown in header (pre-selects default profile); if no profiles exist, shows a notice with a link to the profiles page. Profile ID is passed as `profile_id` query param when the bulk button is clicked.
+  - All inline `<style>` removed — styles moved to `admin-shipments.css`.
+- `src/Container/Providers/AdminServiceProvider.php` — `ShipmentsPage` singleton factory updated to inject `WpdbPackageProfileRepository`.
+- `src/Presentation/Admin/Menu/AdminMenu.php` — Added `dexpress-shipments` conditional in `enqueueAdminAssets()` to load `admin-shipments.css`.
+- `src/Presentation/Admin/Pages/BulkShipmentPage.php`:
+  - **Fix — PHP 8.1 deprecation `strip_tags(null)`**: Hidden submenu pages (parent slug `''`) are not always resolved by WordPress's `get_admin_page_title()`, which then passes `null` to PHP's `strip_tags()`. Fixed by setting `$GLOBALS['title']` explicitly at the top of `render()`. This is the standard WordPress pattern for hidden submenus.
+  - **Back button**: href changed from WooCommerce orders list URL to `admin_url('admin.php?page=dexpress-shipments')`, label changed from "← Nazad na narudžbine" to "← Nazad na pošiljke".
+- `assets/css/admin-package-profiles.css` — Added new rules for Task 4 of the package profiles redesign: `.dex-pp-page-subtitle`, `.dex-pp-dim-group`, `.dex-pp-dim-label`, `.dex-pp-dim-hint`, `.dex-pp-dims-sep`, `.dex-pp-weight-g`, `.dex-pp-form-note`, `.dex-pp-tab-badge`. Updated `.dex-pp-dims` from `align-items: center` to `align-items: flex-end`.
+- `src/Presentation/Admin/Pages/PackageProfilesPage.php` — Full redesign completed across two prior sessions:
+  - Card grid layout replacing `WP_List_Table` (auto-fill, minmax 220px).
+  - Empty state with SVG illustration and CTA button.
+  - Two-column layout (main + 350px sidebar) with responsive breakpoint.
+  - Centered modal overlay replacing inline slide-down form; `form="dex-pp-form"` associates submit button in footer to the `<form>` in body.
+  - Modal form: full Serbian labels ("Masa prazne kutije (kg)", "Dimenzije prazne kutije (cm)"), labeled dimension sub-fields (Dužina/Širina/Visina), gram converter display, form note.
+  - Sidebar: two-tab rules panel (Obična pošiljka / Paketomat) with "loker" badge on Paketomat tab, accurate D-Express constraint data, girth formula `2×(Visina+Širina)+Dužina ≤ 360 cm`.
+  - Page subtitle paragraph after `<hr class="wp-header-end" />`.
+- `assets/js/admin-package-profiles.js` — Updated `buildCard()` and `refreshTable()` to match card-based PHP render output; `openForm()`/`closeForm()` now toggle `.is-open` on `#dex-pp-modal`; edit handler updated from `$(this).closest('tr')` to `$(this).closest('[data-profile]')`.
+
+### Architecture Notes
+- `ShipmentsPage` now owns the profile selector UI that feeds into `BulkShipmentPage`. The profile_id query param is read by `BulkShipmentPage` but not yet used to pre-select a profile card in Step 1 — that wire-up is a natural next step if needed.
+- HPOS-aware URL pattern in `ShipmentsPage` mirrors `ShipmentListTable::orderEditUrl()`. Both use `\Automattic\WooCommerce\Utilities\OrderUtil::custom_orders_table_usage_is_enabled()` — the canonical WooCommerce utility method (simpler than the `CustomOrdersTableController` approach used in `BulkShipmentPage`).
+
+### Known Issues / Tech Debt
+- `BulkShipmentPage` does not yet consume `profile_id` from the URL to pre-select a profile card. The URL param is passed from `ShipmentsPage` but ignored on the bulk page. A JS one-liner on page load (`if (urlParam('profile_id')) { applyProfile(id) }`) would complete the wire-up.
+- `ShipmentsPage::getPendingOrders()` shipping address falls back to `get_formatted_shipping_address()` for orders without D-Express šifarnik meta. This produces a multi-line HTML string that is collapsed to a single line via regex. For very long addresses, this may truncate awkwardly at the column width — handled with CSS `text-overflow: ellipsis` and full address in the `title` attribute.
+
+---
+
 ## [2.4.0] — 2026-05-09
 
 ### Fixed

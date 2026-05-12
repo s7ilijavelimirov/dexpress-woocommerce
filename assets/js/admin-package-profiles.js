@@ -5,20 +5,21 @@
 (function ($) {
     'use strict';
 
-    var cfg = window.dexpressProfiles || {};
-    var ajax = cfg.ajaxUrl || '';
-    var nonces = cfg.nonces || {};
-    var i18n = cfg.i18n || {};
+    var cfg     = window.dexpressProfiles || {};
+    var ajax    = cfg.ajaxUrl || '';
+    var nonces  = cfg.nonces || {};
+    var i18n    = cfg.i18n || {};
+    var iconUrl = cfg.iconUrl || '';
 
     // ── DOM references ─────────────────────────────────────────────────────────
-    var $formWrap   = $('#dex-pp-form-wrap');
-    var $formTitle  = $('#dex-pp-form-title');
-    var $form       = $('#dex-pp-form');
-    var $tableWrap  = $('#dex-pp-table-wrap');
-    var $msg        = $('#dex-pp-msg');
-    var $addBtn     = $('#dex-pp-add-btn');
-    var $cancelBtn  = $('#dex-pp-cancel-btn');
-    var $saveBtn    = $('#dex-pp-save-btn');
+    var $modal     = $('#dex-pp-modal');
+    var $formTitle = $('#dex-pp-form-title');
+    var $form      = $('#dex-pp-form');
+    var $tableWrap = $('#dex-pp-table-wrap');
+    var $msg       = $('#dex-pp-msg');
+    var $addBtn    = $('#dex-pp-add-btn');
+    var $cancelBtn = $('#dex-pp-cancel-btn');
+    var $saveBtn   = $('#dex-pp-save-btn');
 
     // ── Helpers ────────────────────────────────────────────────────────────────
     function showMsg(text, type) {
@@ -37,72 +38,15 @@
     }
 
     function openForm() {
-        $formWrap.slideDown(150);
-        $addBtn.hide();
+        $modal.addClass('is-open');
+        $('body').addClass('dex-pp-modal-open');
         $('#dex-pp-name').focus();
     }
 
     function closeForm() {
-        $formWrap.slideUp(150);
-        $addBtn.show();
+        $modal.removeClass('is-open');
+        $('body').removeClass('dex-pp-modal-open');
         resetForm();
-    }
-
-    /** Zamenjuje sadržaj tabele svežim listom profila (JSON odgovor servera). */
-    function refreshTable(profiles) {
-        if (!Array.isArray(profiles) || profiles.length === 0) {
-            $tableWrap.html('<p class="description">Nema sačuvanih profila paketa. Kliknite "+ Dodaj profil" da kreirate prvi.</p>');
-            return;
-        }
-
-        var rows = profiles.map(function (p) {
-            var dimParts = ['dim_x', 'dim_y', 'dim_z'].map(function (k) {
-                return p[k] != null ? parseFloat(p[k] / 10).toFixed(1) : '—';
-            });
-            var dims = dimParts.join(' × ');
-            var wG   = parseInt(p.weight_grams, 10) || 0;
-            var wKg  = wG > 0 ? (wG / 1000).toFixed(3) + ' kg' : '—';
-            var dflt = parseInt(p.is_default, 10) ? '<span class="dex-pp-badge dex-pp-badge--default">Podrazumevani</span>' : '';
-
-            // Podaci za edit dugme (JSON u data atributu).
-            var profileJson = JSON.stringify({
-                id:              p.id,
-                name:            p.name,
-                description:     p.description || '',
-                weight_kg:       wG > 0 ? (wG / 1000).toFixed(3) : '',
-                dim_x:           p.dim_x != null ? (p.dim_x / 10).toFixed(1) : '',
-                dim_y:           p.dim_y != null ? (p.dim_y / 10).toFixed(1) : '',
-                dim_z:           p.dim_z != null ? (p.dim_z / 10).toFixed(1) : '',
-                default_content: p.default_content || '',
-            });
-
-            var defaultBtn = !parseInt(p.is_default, 10)
-                ? '<button type="button" class="button button-small dex-pp-default-btn" data-id="' + p.id + '">Postavi kao podrazumevani</button> '
-                : '';
-
-            return '<tr data-profile=\'' + profileJson.replace(/'/g, '&#39;') + '\'>'
-                + '<td><strong>' + escHtml(p.name) + '</strong> ' + dflt
-                + (p.description ? '<br><span class="description">' + escHtml(p.description) + '</span>' : '')
-                + '</td>'
-                + '<td>' + escHtml(dims) + '</td>'
-                + '<td>' + escHtml(wKg) + '</td>'
-                + '<td>' + escHtml(p.default_content || '—') + '</td>'
-                + '<td class="dex-pp-actions">'
-                + '<button type="button" class="button button-small dex-pp-edit-btn" data-id="' + p.id + '">Izmeni</button> '
-                + defaultBtn
-                + '<button type="button" class="button button-small button-link-delete dex-pp-delete-btn" data-id="' + p.id + '" data-name="' + escAttr(p.name) + '">Obriši</button>'
-                + '</td>'
-                + '</tr>';
-        });
-
-        var html = '<table class="wp-list-table widefat fixed striped dex-pp-table">'
-            + '<thead><tr>'
-            + '<th>Naziv</th><th>Dimenzije (cm)</th><th>Masa</th><th>Sadržaj</th><th>Akcije</th>'
-            + '</tr></thead>'
-            + '<tbody>' + rows.join('') + '</tbody>'
-            + '</table>';
-
-        $tableWrap.html(html);
     }
 
     function escHtml(str) {
@@ -113,10 +57,107 @@
 
     function escAttr(str) { return escHtml(str); }
 
-    // ── Event: otvori formu za novi profil ─────────────────────────────────────
+    /** Gradi HTML jedne kartice profila iz JSON objekta */
+    function buildCard(p) {
+        var wG       = parseInt(p.weight_grams, 10) || 0;
+        var wKg      = wG > 0 ? (wG / 1000).toFixed(3) + ' kg' : '—';
+        var dimParts = ['dim_x', 'dim_y', 'dim_z'].map(function (k) {
+            return p[k] != null ? parseFloat(p[k] / 10).toFixed(1) : '—';
+        });
+        var dims      = dimParts.join(' × ') + ' cm';
+        var isDefault = parseInt(p.is_default, 10);
+
+        var profileJson = JSON.stringify({
+            id:              p.id,
+            name:            p.name,
+            description:     p.description || '',
+            weight_kg:       wG > 0 ? (wG / 1000).toFixed(3) : '',
+            dim_x:           p.dim_x != null ? (p.dim_x / 10).toFixed(1) : '',
+            dim_y:           p.dim_y != null ? (p.dim_y / 10).toFixed(1) : '',
+            dim_z:           p.dim_z != null ? (p.dim_z / 10).toFixed(1) : '',
+            default_content: p.default_content || '',
+        });
+
+        var badge      = isDefault ? ' <span class="dex-pp-badge dex-pp-badge--default">Podrazumevani</span>' : '';
+        var defaultBtn = !isDefault
+            ? '<button type="button" class="button button-small dex-pp-default-btn" data-id="' + p.id + '">Podrazumevani</button>'
+            : '';
+        var descHtml   = p.description
+            ? '<p class="dex-pp-card-desc">' + escHtml(p.description) + '</p>'
+            : '';
+        var contentRow = p.default_content
+            ? '<dt>Sadržaj</dt><dd>' + escHtml(p.default_content) + '</dd>'
+            : '';
+
+        return '<div class="dex-pp-card" data-profile="' + escAttr(profileJson) + '">'
+            +   '<div class="dex-pp-card-inner">'
+            +     '<div class="dex-pp-card-header">'
+            +       (iconUrl ? '<img src="' + escAttr(iconUrl) + '" class="dex-pp-card-icon" alt="" />' : '')
+            +       '<div class="dex-pp-card-title">'
+            +         '<strong class="dex-pp-card-name">' + escHtml(p.name) + '</strong>'
+            +         badge
+            +       '</div>'
+            +     '</div>'
+            +     '<dl class="dex-pp-card-meta">'
+            +       '<dt>Dimenzije</dt><dd>' + escHtml(dims) + '</dd>'
+            +       '<dt>Masa</dt><dd>' + escHtml(wKg) + '</dd>'
+            +       contentRow
+            +     '</dl>'
+            +     descHtml
+            +   '</div>'
+            +   '<div class="dex-pp-card-actions">'
+            +     '<button type="button" class="button button-small dex-pp-edit-btn" data-id="' + p.id + '">Izmeni</button>'
+            +     defaultBtn
+            +     '<button type="button" class="button button-small button-link-delete dex-pp-delete-btn" data-id="' + p.id + '" data-name="' + escAttr(p.name) + '">Obriši</button>'
+            +   '</div>'
+            + '</div>';
+    }
+
+    /** Zamenjuje sadržaj grida svežim listom profila (JSON odgovor servera). */
+    function refreshTable(profiles) {
+        if (!Array.isArray(profiles) || profiles.length === 0) {
+            var emptyIcon = iconUrl ? '<img src="' + escAttr(iconUrl) + '" class="dex-pp-empty-icon" alt="" />' : '';
+            $tableWrap.html(
+                '<div class="dex-pp-empty">'
+                + emptyIcon
+                + '<h2 class="dex-pp-empty-title">Još nema profila paketa</h2>'
+                + '<p class="dex-pp-empty-desc">Definišite dimenzije i težinu kutija koje koristite za pakovanje. Jednom sačuvan profil možete koristiti za brzo kreiranje pošiljki.</p>'
+                + '<button type="button" class="button button-primary dex-pp-open-form">＋ Kreiraj prvi profil</button>'
+                + '</div>'
+            );
+            return;
+        }
+
+        var addCard = '<button type="button" class="dex-pp-card dex-pp-card--add dex-pp-open-form">'
+            + '<span class="dex-pp-card-add-plus">＋</span>'
+            + '<span class="dex-pp-card-add-label">Dodaj profil</span>'
+            + '</button>';
+
+        $tableWrap.html(
+            '<div class="dex-pp-grid">'
+            + profiles.map(buildCard).join('')
+            + addCard
+            + '</div>'
+        );
+    }
+
+    // ── Event: otvori modal za novi profil ─────────────────────────────────────
     $addBtn.on('click', function () {
         resetForm();
         openForm();
+    });
+
+    // ── Event: zatvori modal — dugme ✕ ─────────────────────────────────────────
+    $('#dex-pp-modal-close').on('click', function () { closeForm(); });
+
+    // ── Event: zatvori modal — backdrop ───────────────────────────────────────
+    $modal.on('click', function (e) {
+        if ($(e.target).hasClass('dex-pp-modal__backdrop')) { closeForm(); }
+    });
+
+    // ── Event: zatvori modal — tipka Escape ───────────────────────────────────
+    $(document).on('keydown.dex-pp-modal', function (e) {
+        if (e.key === 'Escape' && $modal.hasClass('is-open')) { closeForm(); }
     });
 
     // ── Event: otkaži ──────────────────────────────────────────────────────────
@@ -163,13 +204,11 @@
 
     // ── Event: izmeni (delegirano) ─────────────────────────────────────────────
     $tableWrap.on('click', '.dex-pp-edit-btn', function () {
-        var $tr  = $(this).closest('tr');
+        var $card = $(this).closest('[data-profile]');
         var data;
 
         try {
-            // Koristimo .attr() umesto .data() jer jQuery automatski parsira JSON
-            // na .data() i vraća objekat — JSON.parse(objekat) bi dao "[object Object]".
-            data = JSON.parse($tr.attr('data-profile') || '{}');
+            data = JSON.parse($card.attr('data-profile') || '{}');
         } catch (ex) {
             data = {};
         }

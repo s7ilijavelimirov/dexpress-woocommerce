@@ -26,6 +26,7 @@ final class OnboardingPage
     public function register(): void
     {
         add_action('wp_ajax_dexpress_onboarding_complete', [$this, 'handleComplete']);
+        add_action('wp_ajax_dexpress_onboarding_save_credentials', [$this, 'handleSaveCredentials']);
         add_action('wp_ajax_dexpress_onboarding_create_zone', [$this, 'handleCreateZone']);
         add_action('wp_ajax_dexpress_dismiss_onboarding_notice', [$this, 'handleDismissNotice']);
         add_action('wp_ajax_dexpress_onboarding_log', [$this, 'handleLog']);
@@ -62,6 +63,7 @@ final class OnboardingPage
             'ajaxUrl' => admin_url('admin-ajax.php'),
             'nonces'  => [
                 'testConnection'    => wp_create_nonce('dexpress_test_connection'),
+                'saveCredentials'   => wp_create_nonce('dexpress_onboarding_save_credentials'),
                 'manualSync'        => wp_create_nonce('dexpress_manual_sync'),
                 'saveSenderLocation'=> wp_create_nonce('dexpress_save_sender_location'),
                 'searchTowns'       => wp_create_nonce('dexpress_admin_search_towns'),
@@ -73,11 +75,71 @@ final class OnboardingPage
             'dashboardUrl'        => esc_url(admin_url('admin.php?page=dexpress')),
             'settingsUrl'         => esc_url(admin_url('admin.php?page=dexpress-settings')),
             'shippingSettingsUrl' => esc_url(admin_url('admin.php?page=wc-settings&tab=shipping')),
+            'credentialsSaved'    => [
+                'username' => $this->options->getString('api.username') !== '',
+                'password' => !EncryptedString::fromString($this->options->getString('api.password'))->isEmpty(),
+                'clientId' => trim($this->options->getString('api.client_id')) !== '',
+            ],
         ]);
 
         echo '<div class="wrap dex-ob-page">';
         $this->renderWizard();
         echo '</div>';
+    }
+
+    /**
+     * AJAX: čuva API kredencijale u bazu odmah po uspešnom testu konekcije (Korak 2).
+     * Ne označava onboarding kao završen — to radi handleComplete() na Koraku 6.
+     */
+    public function handleSaveCredentials(): void
+    {
+        if (!check_ajax_referer('dexpress_onboarding_save_credentials', 'nonce', false)) {
+            $this->logger->warning('[ONBOARDING] handleSaveCredentials: neispravan nonce', ['user_id' => get_current_user_id()]);
+            wp_send_json_error(['message' => 'Nevažeći sigurnosni token.'], 403);
+        }
+
+        if (!current_user_can('manage_woocommerce')) {
+            $this->logger->warning('[ONBOARDING] handleSaveCredentials: nedovoljne privilegije', ['user_id' => get_current_user_id()]);
+            wp_send_json_error(['message' => 'Nemate dozvolu.'], 403);
+        }
+
+        $username = sanitize_text_field(wp_unslash($_POST['username'] ?? ''));
+        $password = sanitize_text_field(wp_unslash($_POST['password'] ?? ''));
+        $clientId = sanitize_text_field(wp_unslash($_POST['client_id'] ?? ''));
+
+        if ($password === '') {
+            wp_send_json_error(['message' => 'Lozinka ne može biti prazna.']);
+        }
+
+        try {
+            $encrypted = EncryptedString::encrypt($password)->toString();
+        } catch (\RuntimeException $e) {
+            $this->logger->error('[ONBOARDING] handleSaveCredentials: enkripcija neuspešna — ' . $e->getMessage());
+            wp_send_json_error(['message' => 'Greška pri enkripciji lozinke: ' . $e->getMessage()]);
+        }
+
+        if ($username !== '') {
+            $this->options->set('api.username', $username);
+        }
+
+        $this->options->set('api.password', $encrypted);
+
+        if ($clientId !== '') {
+            $this->options->set('api.client_id', $clientId);
+        }
+
+        $saved = $this->options->save();
+
+        $this->logger->info('[ONBOARDING] handleSaveCredentials: kredencijali sačuvani', [
+            'user_id'  => get_current_user_id(),
+            'username' => $username !== '' ? $username : '(unchanged)',
+            'saved'    => $saved,
+        ]);
+
+        wp_send_json_success([
+            'message'  => 'Kredencijali su sačuvani.',
+            'clientId' => $clientId !== '',
+        ]);
     }
 
     /** AJAX: čuva kredencijale i označava onboarding kao završen. */
@@ -120,7 +182,7 @@ final class OnboardingPage
         wp_send_json_success(['redirect' => admin_url('admin.php?page=dexpress')]);
     }
 
-    /** AJAX: kreira WooCommerce shipping zonu za Srbiju sa oba D Express metoda. */
+    /** AJAX: dodaje izabrane D Express metode dostave u odgovarajuću WooCommerce zonu za Srbiju. */
     public function handleCreateZone(): void
     {
         if (!check_ajax_referer('dexpress_onboarding_create_zone', 'nonce', false)) {
@@ -138,75 +200,58 @@ final class OnboardingPage
             wp_send_json_error(['message' => 'WooCommerce nije aktivan.']);
         }
 
-        // Inicijalizuj WC shipping pre manipulacije zonama.
-        WC()->shipping();
+        $allowed   = [DexpressShippingMethod::METHOD_ID, DexpressPackageShopShippingMethod::METHOD_ID];
+        $requested = array_values(array_filter(
+            array_map('sanitize_text_field', (array) wp_unslash($_POST['methods'] ?? [])),
+            static fn (string $m): bool => in_array($m, $allowed, true),
+        ));
+
+        $this->logger->info('[ONBOARDING] handleCreateZone: primljeni metodi', [
+            'user_id'   => get_current_user_id(),
+            'requested' => $requested,
+        ]);
+
+        if (empty($requested)) {
+            wp_send_json_error(['message' => __('Niste izabrali nijedan metod dostave.', 'dexpress-woocommerce')]);
+        }
 
         try {
-            $dexpressMethods = [DexpressShippingMethod::METHOD_ID, DexpressPackageShopShippingMethod::METHOD_ID];
+            $zone        = $this->findSerbiaZone();
+            $zoneCreated = false;
 
-            // Pronađi sve zone koje već imaju barem jedan D-Express metod.
-            $foundZoneIds = [];
-            foreach (\WC_Shipping_Zones::get_zones() as $zoneData) {
-                $existingZone = new \WC_Shipping_Zone((int) $zoneData['id']);
-                foreach ($existingZone->get_shipping_methods(false) as $method) {
-                    if (in_array($method->id, $dexpressMethods, true)) {
-                        $foundZoneIds[] = (int) $zoneData['id'];
-                        break;
-                    }
-                }
-            }
+            if ($zone === null) {
+                $zone = new \WC_Shipping_Zone();
+                $zone->set_zone_name(__('Srbija — D Express', 'dexpress-woocommerce'));
+                $zone->add_location('RS', 'country');
+                $zoneId = $zone->save();
 
-            // Ako postoji više zona sa D-Express metodama, obriši duplikate (zadrži prvu).
-            if (count($foundZoneIds) > 1) {
-                $keep = array_shift($foundZoneIds);
-                foreach ($foundZoneIds as $dupId) {
-                    $dupZone = new \WC_Shipping_Zone($dupId);
-                    $dupZone->delete();
-                    $this->logger->info('[ONBOARDING] Obrisana duplikat zona', ['zone_id' => $dupId]);
+                if (!$zoneId) {
+                    $this->logger->error('[ONBOARDING] handleCreateZone: save() vratio falsy ID');
+                    wp_send_json_error(['message' => __('Zona nije kreirana — WooCommerce nije vratio ID zone.', 'dexpress-woocommerce')]);
                 }
 
-                WC()->shipping()->load();
-                \WC_Cache_Helper::get_transient_version('shipping', true);
-
-                $this->logger->info('[ONBOARDING] Duplikati obrisani, zadržana zona', ['kept_zone_id' => $keep]);
-                wp_send_json_success([
-                    'message' => __('Zona sa D-Express metodama već postoji. Duplikati su obrisani.', 'dexpress-woocommerce'),
-                ]);
+                $zoneCreated = true;
+                $this->logger->info('[ONBOARDING] Nova shipping zona kreirana', ['zone_id' => $zoneId]);
             }
 
-            // Tačno jedna zona već postoji — ništa ne radimo.
-            if (count($foundZoneIds) === 1) {
-                $this->logger->info('[ONBOARDING] Zona već postoji, preskačemo kreiranje', ['zone_id' => $foundZoneIds[0]]);
-                wp_send_json_success([
-                    'message' => __('Zona sa D-Express metodama dostave već postoji.', 'dexpress-woocommerce'),
-                ]);
-            }
-
-            // Nema zone sa D-Express metodama — kreiraj novu.
-            $zone = new \WC_Shipping_Zone();
-            $zone->set_zone_name(__('Srbija — D Express', 'dexpress-woocommerce'));
-            $zone->add_location('RS', 'country');
-            $zoneId = $zone->save();
-
-            if (!$zoneId) {
-                $this->logger->error('[ONBOARDING] handleCreateZone: save() vratio falsy ID');
-                wp_send_json_error(['message' => __('Zona nije kreirana — WooCommerce nije vratio ID zone.', 'dexpress-woocommerce')]);
-            }
-
-            $zone->add_shipping_method(DexpressShippingMethod::METHOD_ID);
-            $zone->add_shipping_method(DexpressPackageShopShippingMethod::METHOD_ID);
-
-            // Reinicijalizuj WC shipping i obriši keš kako bi metodi bili odmah vidljivi na frontendu.
-            WC()->shipping()->load();
+            // Clear shipping cache before reading existing methods to avoid stale data.
             \WC_Cache_Helper::get_transient_version('shipping', true);
 
-            $this->logger->info('[ONBOARDING] Shipping zona kreirana', [
-                'zone_id' => $zoneId,
-                'methods' => $dexpressMethods,
+            ['added' => $added, 'skipped' => $skipped] = $this->attachMethodsToZone($zone, $requested);
+
+            $this->logger->info('[ONBOARDING] Metode dostave primenjene', [
+                'zone_id'      => $zone->get_id(),
+                'zone_name'    => $zone->get_zone_name(),
+                'zone_created' => $zoneCreated,
+                'added'        => $added,
+                'skipped'      => $skipped,
             ]);
 
             wp_send_json_success([
-                'message' => __('Zona "Srbija — D Express" je kreirana sa oba metoda dostave.', 'dexpress-woocommerce'),
+                'zone_name'    => $zone->get_zone_name(),
+                'zone_created' => $zoneCreated,
+                'added'        => $added,
+                'skipped'      => $skipped,
             ]);
         } catch (\Throwable $e) {
             $this->logger->error('[ONBOARDING] handleCreateZone: iznimka — ' . $e->getMessage(), [
@@ -216,11 +261,59 @@ final class OnboardingPage
             wp_send_json_error([
                 'message' => sprintf(
                     /* translators: %s: PHP error message */
-                    __('Greška pri kreiranju zone: %s', 'dexpress-woocommerce'),
+                    __('Greška pri primeni metoda dostave: %s', 'dexpress-woocommerce'),
                     $e->getMessage()
                 ),
             ]);
         }
+    }
+
+    /**
+     * Pronalazi prvu WooCommerce shipping zonu koja pokriva Srbiju (country: RS).
+     * Ako ne postoji, vraća null.
+     */
+    private function findSerbiaZone(): ?\WC_Shipping_Zone
+    {
+        foreach (\WC_Shipping_Zones::get_zones() as $zoneData) {
+            $zone = new \WC_Shipping_Zone((int) $zoneData['id']);
+            foreach ($zone->get_zone_locations() as $location) {
+                if ($location->type === 'country' && $location->code === 'RS') {
+                    return $zone;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Dodaje tražene metode u zonu, preskačući one koji već postoje.
+     *
+     * @param  list<string>                              $methodIds
+     * @return array{added: list<string>, skipped: list<string>}
+     */
+    private function attachMethodsToZone(\WC_Shipping_Zone $zone, array $methodIds): array
+    {
+        // Read method type IDs directly from DB to avoid WC object cache issues.
+        global $wpdb;
+        $existing = $wpdb->get_col($wpdb->prepare(
+            "SELECT method_id FROM {$wpdb->prefix}woocommerce_shipping_zone_methods WHERE zone_id = %d",
+            $zone->get_id(),
+        )) ?: [];
+
+        $added   = [];
+        $skipped = [];
+
+        foreach ($methodIds as $methodId) {
+            if (in_array($methodId, $existing, true)) {
+                $skipped[] = $methodId;
+            } else {
+                $zone->add_shipping_method($methodId);
+                $added[] = $methodId;
+            }
+        }
+
+        return ['added' => $added, 'skipped' => $skipped];
     }
 
     /** AJAX: trajno sakriva admin notice za tekućeg korisnika (user meta). */
@@ -599,26 +692,48 @@ final class OnboardingPage
             </div>
             <h2><?php esc_html_e('Metode dostave', 'dexpress-woocommerce'); ?></h2>
             <p>
-                <?php esc_html_e('Plugin može automatski kreirati WooCommerce zonu dostave "Srbija — D Express" i dodati oba metoda:', 'dexpress-woocommerce'); ?>
+                <?php esc_html_e('Izaberi koje D Express metode dostave želiš da aktiviraš u svojoj prodavnici.', 'dexpress-woocommerce'); ?>
             </p>
-            <ul class="dex-ob-feature-list">
-                <li>
-                    <span class="dashicons dashicons-yes-alt" aria-hidden="true"></span>
-                    <strong><?php esc_html_e('D Express — kućna dostava', 'dexpress-woocommerce'); ?></strong>
-                </li>
-                <li>
-                    <span class="dashicons dashicons-yes-alt" aria-hidden="true"></span>
-                    <strong><?php esc_html_e('D Express — paketomat', 'dexpress-woocommerce'); ?></strong>
-                </li>
-            </ul>
-            <p class="description">
-                <?php esc_html_e('Ako već imaš podešene zone dostave, možeš preskočiti ovaj korak i ručno dodati metode u WooCommerce → Podešavanja → Dostava.', 'dexpress-woocommerce'); ?>
-            </p>
+
+            <div class="dex-ob-method-list" role="group" aria-labelledby="dex-ob-methods-legend">
+                <p id="dex-ob-methods-legend" class="dex-ob-methods-legend">
+                    <?php esc_html_e('Metode dostave:', 'dexpress-woocommerce'); ?>
+                </p>
+
+                <div class="dex-ob-method-row">
+                    <label class="dex-ob-method-label" for="dex-ob-method-standard">
+                        <input type="checkbox"
+                               id="dex-ob-method-standard"
+                               value="<?php echo esc_attr(DexpressShippingMethod::METHOD_ID); ?>">
+                        <span class="dex-ob-method-label-text">
+                            <strong><?php esc_html_e('D Express — kućna dostava', 'dexpress-woocommerce'); ?></strong>
+                            <span class="description">
+                                <?php esc_html_e('Standardna kurirska dostava direktno na adresu kupca.', 'dexpress-woocommerce'); ?>
+                            </span>
+                        </span>
+                    </label>
+                </div>
+
+                <div class="dex-ob-method-row">
+                    <label class="dex-ob-method-label" for="dex-ob-method-package-shop">
+                        <input type="checkbox"
+                               id="dex-ob-method-package-shop"
+                               value="<?php echo esc_attr(DexpressPackageShopShippingMethod::METHOD_ID); ?>">
+                        <span class="dex-ob-method-label-text">
+                            <strong><?php esc_html_e('D Express — paketomat / paket shop', 'dexpress-woocommerce'); ?></strong>
+                            <span class="description">
+                                <?php esc_html_e('Preuzimanje na paketomatu ili u paket shopu po izboru kupca.', 'dexpress-woocommerce'); ?>
+                            </span>
+                        </span>
+                    </label>
+                </div>
+            </div>
+
+            <p id="dex-ob-method-validation" class="dex-ob-field-error" aria-live="polite"></p>
 
             <div class="dex-ob-action-row">
                 <button class="button button-secondary" id="dex-ob-create-zone">
-                    <span class="dashicons dashicons-plus-alt" aria-hidden="true"></span>
-                    <?php esc_html_e('Kreiraj zonu dostave', 'dexpress-woocommerce'); ?>
+                    <?php esc_html_e('Primeni metode dostave', 'dexpress-woocommerce'); ?>
                 </button>
             </div>
             <div class="dex-ob-result-block" id="dex-ob-zone-result" aria-live="polite"></div>
@@ -638,7 +753,7 @@ final class OnboardingPage
 
     private function renderPanel6(): void
     {
-        $clientIdMissing = trim($this->options->getString('api.client_id')) === '';
+        $clientIdInDb = trim($this->options->getString('api.client_id')) !== '';
         ?>
         <div class="dex-ob-panel" id="dex-ob-panel-6" hidden>
             <div class="dex-ob-panel-icon dex-ob-panel-icon--success">
@@ -649,8 +764,10 @@ final class OnboardingPage
                 <?php esc_html_e('Tvoja prodavnica je sada spremna za korišćenje D Express dostave. Klikni dugme ispod da završiš podešavanje i odeš na pregled naloga.', 'dexpress-woocommerce'); ?>
             </p>
 
-            <?php if ($clientIdMissing) : ?>
-            <div class="notice notice-warning inline" style="margin-bottom:16px;">
+            <div class="notice notice-warning inline"
+                 id="dex-ob-clientid-warning"
+                 <?php if ($clientIdInDb) { echo 'hidden'; } ?>
+                 style="margin-bottom:16px;">
                 <p>
                     <strong><?php esc_html_e('Upozorenje:', 'dexpress-woocommerce'); ?></strong>
                     <?php printf(
@@ -660,7 +777,6 @@ final class OnboardingPage
                     ); ?>
                 </p>
             </div>
-            <?php endif; ?>
 
             <ul class="dex-ob-feature-list">
                 <li>
