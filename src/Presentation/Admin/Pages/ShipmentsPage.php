@@ -128,7 +128,6 @@ final class ShipmentsPage
                         <?php endforeach; ?>
                     </div>
                 </div>
-                <div class="dex-config-divider"></div>
                 <?php endif; ?>
 
                 <div class="dex-config-form">
@@ -290,7 +289,9 @@ final class ShipmentsPage
                     <div class="dex-order-row<?= $o['is_shop'] ? ' dex-order-row--shop' : '' ?>"
                          data-id="<?= (int) $o['id'] ?>"
                          data-cod="<?= $o['payment_method'] === 'cod' ? '1' : '0' ?>"
-                         data-shop="<?= $o['is_shop'] ? '1' : '0' ?>">
+                         data-shop="<?= $o['is_shop'] ? '1' : '0' ?>"
+                         data-product-weight-kg="<?= esc_attr($o['weight_g'] > 0 ? number_format($o['weight_g'] / 1000, 3, '.', '') : '0') ?>"
+                         data-content-suggestion="<?= esc_attr($o['content_suggestion']) ?>">
 
                         <div class="dex-order-row__check">
                             <input type="checkbox" class="dex-order-cb" value="<?= (int) $o['id'] ?>">
@@ -312,6 +313,7 @@ final class ShipmentsPage
                                         <?php endif; ?>
                                         <?php if ($o['is_shop']): ?>
                                         <span class="dex-badge dex-badge--info"><?= esc_html__('Paket Shop', 'dexpress-woocommerce') ?></span>
+                                        <span class="dex-badge dex-badge--muted"><?= esc_html__('Bez povraćaja', 'dexpress-woocommerce') ?></span>
                                         <?php endif; ?>
                                     </div>
                                 </div>
@@ -359,6 +361,7 @@ final class ShipmentsPage
                                 <div class="dex-row-fg dex-row-fg--content">
                                     <label class="dex-row-fg__label"><?= esc_html__('Sadržaj', 'dexpress-woocommerce') ?></label>
                                     <input type="text" class="dex-input dex-row-content" maxlength="50"
+                                           value="<?= esc_attr($o['content_suggestion']) ?>"
                                            placeholder="<?= esc_attr__('Sadržaj paketa', 'dexpress-woocommerce') ?>">
                                 </div>
                                 <div class="dex-row-fg dex-row-fg--note">
@@ -468,12 +471,11 @@ final class ShipmentsPage
             "SELECT DISTINCT oi.order_id
              FROM `{$orderItemsTable}` oi
              INNER JOIN `{$orderItemMetaTable}` oim ON oim.order_item_id = oi.order_item_id
+             LEFT JOIN `{$shipmentsTable}` sx ON sx.order_id = oi.order_id AND sx.deleted_at IS NULL
              WHERE oi.order_item_type = 'shipping'
                AND oim.meta_key = 'method_id'
                AND oim.meta_value IN ('dexpress', 'dexpress_package_shop')
-               AND oi.order_id NOT IN (
-                 SELECT DISTINCT order_id FROM `{$shipmentsTable}` WHERE deleted_at IS NULL
-               )
+               AND sx.id IS NULL
              ORDER BY oi.order_id DESC
              LIMIT 100",
         );
@@ -489,6 +491,28 @@ final class ShipmentsPage
             'orderby' => 'date',
             'order'   => 'DESC',
         ]);
+
+        if (empty($wcOrders)) {
+            return [];
+        }
+
+        // PHP-level safety net: exclude any orders that already have a shipment record,
+        // in case the SQL LEFT JOIN missed them due to caching or replication lag.
+        $fetchedIds = array_map(static fn($o) => (int) $o->get_id(), $wcOrders);
+        $ph         = implode(',', array_fill(0, count($fetchedIds), '%d'));
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        $alreadyShipped = array_map('intval', (array) $this->wpdb->get_col(
+            $this->wpdb->prepare(
+                "SELECT DISTINCT order_id FROM `{$shipmentsTable}` WHERE deleted_at IS NULL AND order_id IN ({$ph})",
+                ...$fetchedIds,
+            ),
+        ));
+        if (!empty($alreadyShipped)) {
+            $wcOrders = array_values(array_filter(
+                $wcOrders,
+                static fn($o) => !in_array((int) $o->get_id(), $alreadyShipped, true),
+            ));
+        }
 
         if (empty($wcOrders)) {
             return [];
@@ -557,10 +581,11 @@ final class ShipmentsPage
             $addressParts    = array_filter([$townName, $street, $postcode], static fn(string $p) => $p !== '');
             $shippingAddress = implode(', ', $addressParts);
 
-            $rawItems  = $order->get_items();
-            $items     = [];
-            $itemCount = 0;
-            $weightG   = 0;
+            $rawItems     = $order->get_items();
+            $items        = [];
+            $itemCount    = 0;
+            $weightG      = 0;
+            $allItemNames = [];
 
             foreach ($rawItems as $item) {
                 if ($itemCount < 3) {
@@ -569,6 +594,7 @@ final class ShipmentsPage
                         'qty'  => (int) $item->get_quantity(),
                     ];
                 }
+                $allItemNames[] = (string) $item->get_name();
                 $itemCount++;
 
                 $product = $item->get_product();
@@ -590,20 +616,26 @@ final class ShipmentsPage
                 ];
             }
 
+            $contentSuggestion = implode(', ', $allItemNames);
+            if (mb_strlen($contentSuggestion) > 50) {
+                $contentSuggestion = mb_substr($contentSuggestion, 0, 47) . '...';
+            }
+
             $result[] = [
-                'id'               => $orderId,
-                'number'           => $order->get_order_number(),
-                'customer'         => $customer,
-                'customer_email'   => (string) $order->get_billing_email(),
-                'customer_phone'   => (string) $order->get_billing_phone(),
-                'order_total'      => wp_strip_all_tags((string) wc_price($order->get_total())),
-                'edit_url'         => $editUrl,
-                'is_shop'          => $isShop,
-                'shipping_address' => $shippingAddress,
-                'payment_method'   => (string) $order->get_payment_method(),
-                'is_paid'          => $order->is_paid(),
-                'items'            => $items,
-                'weight_g'         => $weightG,
+                'id'                 => $orderId,
+                'number'             => $order->get_order_number(),
+                'customer'           => $customer,
+                'customer_email'     => (string) $order->get_billing_email(),
+                'customer_phone'     => (string) $order->get_billing_phone(),
+                'order_total'        => wp_strip_all_tags((string) wc_price($order->get_total())),
+                'edit_url'           => $editUrl,
+                'is_shop'            => $isShop,
+                'shipping_address'   => $shippingAddress,
+                'payment_method'     => (string) $order->get_payment_method(),
+                'is_paid'            => $order->is_paid(),
+                'items'              => $items,
+                'weight_g'           => $weightG,
+                'content_suggestion' => $contentSuggestion,
             ];
         }
 

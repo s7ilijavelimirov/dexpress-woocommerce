@@ -14,7 +14,7 @@
 		selfDropOff      : false,
 		defaultContent   : '',
 		defaultNote      : '',
-		defaultWeightKg  : 0,
+		defaultWeightKg  : 0,   /* box/packaging weight from profile */
 		defaultDimX      : 0,
 		defaultDimY      : 0,
 		defaultDimZ      : 0,
@@ -30,6 +30,15 @@
 		cfg.paymentType      = parseInt($('#dex-cfg-payment').val(), 10) || 2;
 		cfg.returnDoc        = parseInt($('#dex-cfg-returndoc').val(), 10) || 0;
 		cfg.selfDropOff      = $('#dex-cfg-selfdrop').is(':checked');
+
+		/* Mark content dirty for any row pre-filled from product names */
+		$('.dex-order-row').each(function () {
+			var $c = $(this).find('.dex-row-content');
+			if ($c.val().trim() !== '') {
+				$c.data('dirty', true);
+			}
+		});
+
 		updateActionBar();
 	});
 
@@ -44,6 +53,7 @@
 		var dimZ    = $(this).data('dim-z');
 		var content = String($(this).data('content') || '');
 
+		/* cfg.defaultWeightKg = box/packaging weight; rows add product weight on top */
 		if (wG > 0) {
 			cfg.defaultWeightKg = wG / 1000;
 			$('#dex-cfg-weight').val(cfg.defaultWeightKg.toFixed(2));
@@ -81,7 +91,7 @@
 	$(document).on('change',       '#dex-cfg-returndoc', function () { cfg.returnDoc    = parseInt($(this).val(), 10) || 0; });
 	$(document).on('change',       '#dex-cfg-selfdrop',  function () { cfg.selfDropOff  = this.checked; });
 
-	/* ─── Apply global defaults to row fields ─────────────────────── */
+	/* ─── Apply global defaults to all rows ────────────────────────── */
 	function applyDefaultsToAllRows() {
 		$('.dex-order-row').each(function () {
 			applyDefaultsToRow($(this));
@@ -89,6 +99,7 @@
 	}
 
 	function applyDefaultsToRow($row) {
+		var productWeightKg = parseFloat($row.data('product-weight-kg')) || 0;
 		var $w  = $row.find('.dex-row-weight');
 		var $dx = $row.find('.dex-row-dim-x');
 		var $dy = $row.find('.dex-row-dim-y');
@@ -96,10 +107,16 @@
 		var $c  = $row.find('.dex-row-content');
 		var $n  = $row.find('.dex-row-note');
 
-		if (!$w.data('dirty')  && cfg.defaultWeightKg > 0) { $w.val(cfg.defaultWeightKg.toFixed(2)); }
-		if (!$dx.data('dirty') && cfg.defaultDimX > 0)      { $dx.val(cfg.defaultDimX); }
-		if (!$dy.data('dirty') && cfg.defaultDimY > 0)      { $dy.val(cfg.defaultDimY); }
-		if (!$dz.data('dirty') && cfg.defaultDimZ > 0)      { $dz.val(cfg.defaultDimZ); }
+		/* Weight = product weight + box weight (additive) */
+		if (!$w.data('dirty')) {
+			var total = productWeightKg + cfg.defaultWeightKg;
+			if (total > 0) { $w.val(total.toFixed(2)); }
+			else if (productWeightKg > 0) { $w.val(productWeightKg.toFixed(2)); }
+		}
+		if (!$dx.data('dirty') && cfg.defaultDimX > 0) { $dx.val(cfg.defaultDimX); }
+		if (!$dy.data('dirty') && cfg.defaultDimY > 0) { $dy.val(cfg.defaultDimY); }
+		if (!$dz.data('dirty') && cfg.defaultDimZ > 0) { $dz.val(cfg.defaultDimZ); }
+		/* Content: only fill if no product-name pre-fill (dirty) and global content is set */
 		if (!$c.data('dirty')  && cfg.defaultContent !== '') { $c.val(cfg.defaultContent); }
 		if (!$n.data('dirty'))                               { $n.val(cfg.defaultNote); }
 	}
@@ -109,11 +126,23 @@
 		$(this).data('dirty', true);
 	});
 
-	/* ─── Reset row to global defaults ───────────────────────────── */
+	/* ─── Reset row — restore to product-based values + profile defaults ── */
 	$(document).on('click', '.dex-row-reset', function () {
 		var $row = $(this).closest('.dex-order-row');
-		$row.find('.dex-row-weight, .dex-row-dim-x, .dex-row-dim-y, .dex-row-dim-z, .dex-row-content, .dex-row-note')
+
+		/* Clear dirty flags on weight and dims */
+		$row.find('.dex-row-weight, .dex-row-dim-x, .dex-row-dim-y, .dex-row-dim-z, .dex-row-note')
 			.each(function () { $(this).data('dirty', false); });
+
+		/* Restore content to product name suggestion */
+		var $c         = $row.find('.dex-row-content');
+		var suggestion = String($row.data('content-suggestion') || '');
+		if (suggestion) {
+			$c.val(suggestion).data('dirty', true);
+		} else {
+			$c.data('dirty', false);
+		}
+
 		applyDefaultsToRow($row);
 	});
 
@@ -168,7 +197,7 @@
 		$btn.prop('disabled', count === 0);
 
 		if (count > 0) {
-			$btn.text('Kreiraj pošiljke (' + count + ')');
+			$btn.text('⚡ Kreiraj pošiljke (' + count + ')');
 			$('#dex-action-info').text(count + ' ' + (count === 1 ? 'narudžbina izabrana' : 'narudžbine izabrane'));
 		} else {
 			$btn.text('Kreiraj pošiljke');
@@ -183,15 +212,16 @@
 		if (!cfg.senderLocationId) {
 			errors.push(i18n.locationReq || 'Izaberite lokaciju pošiljaoca.');
 		}
-		if (!$('#dex-cfg-content').val().trim()) {
-			errors.push(i18n.contentReq || 'Unesite sadržaj paketa.');
-		}
 
 		var weightErr = false;
 		$('.dex-order-cb:checked').each(function () {
 			var $row   = $(this).closest('.dex-order-row');
 			var weight = parseFloat($row.find('.dex-row-weight').val()) || 0;
 			if (weight <= 0) { weightErr = true; }
+			var content = $row.find('.dex-row-content').val().trim();
+			if (!content && !cfg.defaultContent.trim()) {
+				errors.push('Narudžbina #' + $row.data('id') + ': unesite sadržaj paketa.');
+			}
 		});
 		if (weightErr) {
 			errors.push(i18n.weightReq || 'Masa mora biti veća od 0 za sve izabrane narudžbine.');
@@ -226,12 +256,14 @@
 			var $row    = $(this).closest('.dex-order-row');
 			var orderId = String($(this).val());
 			var info    = (d.orders || []).find(function (o) { return String(o.id) === orderId; }) || {};
+			var isShop  = $row.data('shop') === 1;
 
 			toCreate.push({
 				orderId  : orderId,
 				number   : info.number   || orderId,
 				customer : info.customer || '',
-				weightKg : parseFloat($row.find('.dex-row-weight').val()) || cfg.defaultWeightKg,
+				isShop   : isShop,
+				weightKg : parseFloat($row.find('.dex-row-weight').val()) || (parseFloat($row.data('product-weight-kg')) || 0) + cfg.defaultWeightKg,
 				dimX     : parseFloat($row.find('.dex-row-dim-x').val()) || cfg.defaultDimX || null,
 				dimY     : parseFloat($row.find('.dex-row-dim-y').val()) || cfg.defaultDimY || null,
 				dimZ     : parseFloat($row.find('.dex-row-dim-z').val()) || cfg.defaultDimZ || null,
@@ -298,7 +330,7 @@
 				sender_location_id : cfg.senderLocationId,
 				delivery_type      : cfg.deliveryType,
 				payment_type       : cfg.paymentType,
-				return_doc         : cfg.returnDoc,
+				return_doc         : o.isShop ? 0 : cfg.returnDoc,  /* Paket Shop: must be 0 */
 				self_drop_off      : cfg.selfDropOff ? '1' : '',
 				content            : o.content,
 				note               : o.note,
@@ -366,13 +398,13 @@
 				savedIds.join(',') + '&nonce=' + encodeURIComponent(d.bulkPrintNonce);
 			$('#dex-print-all-btn')
 				.data('print-url', printUrl)
-				.text((i18n.printAll || 'Štampaj sve etikete') + ' (' + savedIds.length + ')');
+				.text('🖨 ' + (i18n.printAll || 'Štampaj sve etikete') + ' (' + savedIds.length + ')');
 		} else {
 			$('#dex-print-all-btn').prop('disabled', true);
 		}
 
 		$('#dex-send-all-btn')
-			.text((i18n.sendAll || 'Pošalji D-Expressu') + ' (' + savedIds.length + ')')
+			.text('→ ' + (i18n.sendAll || 'Pošalji D-Expressu') + ' (' + savedIds.length + ')')
 			.prop('disabled', savedIds.length === 0);
 
 		$('#dex-results-footer').removeAttr('hidden');
@@ -464,11 +496,11 @@
 
 		var $stats = $('#dex-summary-stats').empty();
 		$stats.append(
-			'<span class="dex-stat dex-stat--success">' + doneCount + ' ' + esc(i18n.sentCount || 'poslato') + '</span>'
+			'<span class="dex-stat dex-stat--success">✓ ' + doneCount + ' ' + esc(i18n.sentCount || 'poslato') + '</span>'
 		);
 		if (failed > 0) {
 			$stats.append(
-				'<span class="dex-stat dex-stat--error">' + failed + ' ' + esc(i18n.errorCount || 'greška') + '</span>'
+				'<span class="dex-stat dex-stat--error">✕ ' + failed + ' ' + esc(i18n.errorCount || 'greška') + '</span>'
 			);
 		}
 
@@ -484,7 +516,7 @@
 		$('#dex-results-summary').removeAttr('hidden');
 	}
 
-	/* ─── Copy tracking codes ──────────────────────────────────────── */
+	/* ─── Copy tracking codes ─────────────────────────────────────── */
 	$(document).on('click', '#dex-copy-btn', function () {
 		var text = $('#dex-tracking-textarea').val();
 		var $btn = $(this);
