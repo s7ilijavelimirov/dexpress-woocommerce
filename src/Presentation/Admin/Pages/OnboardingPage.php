@@ -1005,7 +1005,7 @@ final class OnboardingPage
         $urlProfiles   = admin_url('admin.php?page=' . PackageProfilesPage::PAGE_SLUG);
         $urlSettings   = admin_url('admin.php?page=dexpress-settings');
         $urlPayments   = admin_url('admin.php?page=dexpress-payments');
-        $urlBulk       = admin_url('admin.php?page=' . BulkShipmentPage::PAGE_SLUG);
+        $urlBulk       = admin_url('admin.php?page=dexpress-shipments');
         ?>
         <div class="dex-ob-panel dex-card__body dex-ob-panel--finish-step" id="dex-ob-panel-6" hidden>
             <div class="dex-ob-finish-screen">

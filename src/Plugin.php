@@ -31,7 +31,6 @@ use S7codedesign\DExpress\Presentation\Admin\Handlers\SettingsSaveHandler;
 use S7codedesign\DExpress\Presentation\Admin\Menu\AdminMenu;
 use S7codedesign\DExpress\Presentation\Admin\Ajax\BulkShipmentController;
 use S7codedesign\DExpress\Presentation\Admin\Ajax\PackageProfileController;
-use S7codedesign\DExpress\Presentation\Admin\Hooks\OrdersBulkAction;
 use S7codedesign\DExpress\Presentation\Admin\Hooks\OrdersListDeliveryStatusColumn;
 use S7codedesign\DExpress\Presentation\Admin\Metabox\OrderShipmentMetabox;
 use S7codedesign\DExpress\Presentation\Admin\Pages\OnboardingPage;
@@ -174,7 +173,6 @@ final class Plugin
         $this->container->get(OrdersListDeliveryStatusColumn::class)->register();
         $this->container->get(PackageProfileController::class)->register();
         $this->container->get(BulkShipmentController::class)->register();
-        $this->container->get(OrdersBulkAction::class)->register();
     }
 
     private function loadTextDomain(): void

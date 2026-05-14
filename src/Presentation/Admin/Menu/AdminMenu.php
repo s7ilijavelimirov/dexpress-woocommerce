@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace S7codedesign\DExpress\Presentation\Admin\Menu;
 
 use S7codedesign\DExpress\Application\Sync\SyncCatalogOrder;
-use S7codedesign\DExpress\Presentation\Admin\Pages\BulkShipmentPage;
 use S7codedesign\DExpress\Presentation\Admin\Pages\DashboardPage;
 use S7codedesign\DExpress\Presentation\Admin\Pages\DiagnosticsPage;
 use S7codedesign\DExpress\Presentation\Admin\Pages\OnboardingPage;
@@ -37,7 +36,6 @@ final class AdminMenu
             DiagnosticsPage::PAGE_SLUG,
             OnboardingPage::PAGE_SLUG,
             PackageProfilesPage::PAGE_SLUG,
-            BulkShipmentPage::PAGE_SLUG,
         ];
     }
 
@@ -49,12 +47,10 @@ final class AdminMenu
         private readonly PaymentsPage        $paymentsPage,
         private readonly OnboardingPage      $onboardingPage,
         private readonly PackageProfilesPage $packageProfilesPage,
-        private readonly BulkShipmentPage    $bulkShipmentPage,
     ) {}
 
     public function register(): void
     {
-        $this->bulkShipmentPage->register();
         add_action('admin_menu', [$this, 'addMenuItems'], 54);
         add_action('admin_enqueue_scripts', [$this, 'enqueueAdminAssets']);
         add_action('admin_head', [$this, 'printIconStyles']);
@@ -227,21 +223,21 @@ final class AdminMenu
             ]);
         }
 
-        if ($page === BulkShipmentPage::PAGE_SLUG) {
+        if ($page === 'dexpress-shipments') {
             wp_enqueue_style(
-                'dex-bulk-shipment',
+                'dex-shipments',
                 DEXPRESS_PLUGIN_URL . 'assets/css/admin-bulk-shipment.css',
                 ['dex-admin'],
                 DEXPRESS_VERSION,
             );
             wp_enqueue_script(
-                'dex-bulk-shipment',
+                'dex-shipments',
                 DEXPRESS_PLUGIN_URL . 'assets/js/admin-bulk-shipment.js',
                 ['jquery'],
                 DEXPRESS_VERSION,
                 true,
             );
-            // Nonce za štampu nalepnica prosleđujemo ovde (BulkShipmentPage::render() doda ostatak podataka).
+            // wp_localize_script is called inside ShipmentsPage::render() with handle 'dex-shipments'.
         }
 
         if ($page === DiagnosticsPage::PAGE_SLUG) {
@@ -341,16 +337,6 @@ final class AdminMenu
             'manage_woocommerce',
             PackageProfilesPage::PAGE_SLUG,
             [$this->packageProfilesPage, 'render'],
-        );
-
-        // Skriveni podmeni — pristupačan samo putem redirect-a iz bulk akcije.
-        add_submenu_page(
-            '',
-            __('D Express — grupno kreiranje pošiljaka', 'dexpress-woocommerce'),
-            __('Grupno kreiranje', 'dexpress-woocommerce'),
-            'manage_woocommerce',
-            BulkShipmentPage::PAGE_SLUG,
-            [$this->bulkShipmentPage, 'render'],
         );
 
         add_submenu_page(

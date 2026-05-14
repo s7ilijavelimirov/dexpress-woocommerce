@@ -1,603 +1,523 @@
-/**
- * D Express — Bulk Shipment Wizard JS
- *
- * Korak 1: Globalna podešavanja (lokacija, masa, dimenzije, sadržaj)
- * Korak 2: Pregled i izmena po narudžbini (editabilna tabela)
- * Korak 3: Sekvencijalni AJAX save → prikaz rezultata → štampa nalepnica
- * Korak 4: Slanje u D-Express API
- */
+/* global dexShipments */
 (function ($) {
-    'use strict';
-
-    var cfg      = window.dexpressBulk || {};
-    var ajax     = cfg.ajaxUrl || '';
-    var nonces   = cfg.nonces || {};
-    var orders   = cfg.orders || [];
-    var i18n     = cfg.i18n || {};
-    var labelBase = cfg.labelBase || '';
-
-    var currentStep = 1;
-
-    // Stanje per-narudžbina: dimenzije/masa/sadržaj/napomena.
-    var orderState = {};
-
-    // Rezultati save/send faze.
-    var saveResults = {};
-
-    // IDs pošiljaka koje su uspešno sačuvane (za print i send).
-    var savedShipmentIds = [];
-
-    // ── Stepper ────────────────────────────────────────────────────────────────
-    function setStep(n) {
-        currentStep = n;
-        $('.dex-bulk-step').each(function () {
-            var s = parseInt($(this).data('step'), 10);
-            $(this).removeClass('dex-bulk-step--active dex-bulk-step--done');
-            if (s === n) { $(this).addClass('dex-bulk-step--active'); }
-            else if (s < n) { $(this).addClass('dex-bulk-step--done'); }
-        });
-        $('#dex-bulk-step1, #dex-bulk-step2, #dex-bulk-step3, #dex-bulk-step4').hide();
-        $('#dex-bulk-step' + n).show();
-        window.scrollTo(0, 0);
-    }
-
-    // ── Čitanje globalnih defaulta iz Step 1 forme ─────────────────────────────
-    function readDefaults() {
-        return {
-            sender_location_id: $('#dex-bulk-location').val(),
-            delivery_type:      $('#dex-bulk-delivery').val(),
-            payment_type:       $('#dex-bulk-payment').val(),
-            return_doc:         $('#dex-bulk-returndoc').val(),
-            self_drop_off:      $('#dex-bulk-selfdrop').is(':checked') ? '1' : '0',
-            weight_kg:          $('#dex-bulk-weight').val().replace(',', '.'),
-            dim_x:              $('#dex-bulk-dx').val().replace(',', '.'),
-            dim_y:              $('#dex-bulk-dy').val().replace(',', '.'),
-            dim_z:              $('#dex-bulk-dz').val().replace(',', '.'),
-            content:            $('#dex-bulk-content').val(),
-            note:               $('#dex-bulk-note').val(),
-        };
-    }
-
-    // ── Validacija Koraka 1 ────────────────────────────────────────────────────
-    function validateStep1() {
-        var d = readDefaults();
-        if (!d.sender_location_id || d.sender_location_id === '0') {
-            alert('Lokacija pošiljaoca je obavezna.');
-            return false;
-        }
-        if (!d.content.trim()) {
-            alert(i18n.contentReq || 'Sadržaj je obavezan za sve narudžbine.');
-            return false;
-        }
-        return true;
-    }
-
-    // ── Inicijalizuj stanje narudžbina iz defaulta ─────────────────────────────
-    function initOrderState(defaults) {
-        orders.forEach(function (o) {
-            // Per-order kalkulacija (baza + proizvodi) je primarna vrednost.
-            // Globalna masa iz Step 1 je override samo ako je eksplicitno uneta.
-            var weightKg = (defaults.weight_kg && parseFloat(defaults.weight_kg) > 0)
-                ? defaults.weight_kg
-                : (o.calc_weight_kg || '');
-            orderState[o.id] = {
-                weight_kg: weightKg,
-                dim_x:     defaults.dim_x,
-                dim_y:     defaults.dim_y,
-                dim_z:     defaults.dim_z,
-                content:   defaults.content,
-                note:      defaults.note,
-            };
-        });
-    }
-
-    // ── Primeni defaulte na sva polja u Step 2 tabeli ─────────────────────────
-    function applyDefaultsToAll() {
-        var d = readDefaults();
-        orders.forEach(function (o) {
-            var id = o.id;
-            $('#dex-row-weight-' + id).val(d.weight_kg);
-            $('#dex-row-dx-' + id).val(d.dim_x);
-            $('#dex-row-dy-' + id).val(d.dim_y);
-            $('#dex-row-dz-' + id).val(d.dim_z);
-            $('#dex-row-content-' + id).val(d.content);
-            $('#dex-row-note-' + id).val(d.note);
-            orderState[id] = {
-                weight_kg: d.weight_kg,
-                dim_x: d.dim_x,
-                dim_y: d.dim_y,
-                dim_z: d.dim_z,
-                content: d.content,
-                note: d.note,
-            };
-        });
-    }
-
-    // ── Rendera Step 2 tabelu ─────────────────────────────────────────────────
-    function renderOrdersTable() {
-        if (!orders.length) {
-            $('#dex-bulk-orders-table-wrap').html('<p class="description">Nema narudžbina.</p>');
-            return;
-        }
-
-        var rows = orders.map(function (o) {
-            var s = orderState[o.id] || {};
-
-            // Kolona: Proizvodi
-            var prodHtml = '<span class="dex-bulk-empty">—</span>';
-            if (o.products && o.products.length) {
-                var shown = o.products.slice(0, 3).map(function (p) {
-                    return '<li>'
-                        + '<span class="dex-bulk-qty">' + escHtml(String(p.qty)) + '×</span> '
-                        + escHtml(p.name)
-                        + (p.weight_g > 0 ? ' <span class="dex-bulk-wg">(' + p.weight_g + 'g)</span>' : '')
-                        + '</li>';
-                }).join('');
-                if (o.products.length > 3) {
-                    shown += '<li class="dex-bulk-more">+ ' + (o.products.length - 3) + ' više</li>';
-                }
-                prodHtml = '<ul class="dex-bulk-prod-list">' + shown + '</ul>';
-            }
-
-            // Kolona: Narudžbina — kupac, iznos, adresa + bedževi
-            var orderMeta = '<div class="dex-bulk-order-meta">'
-                + '<span class="dex-bulk-customer">' + escHtml(o.customer) + '</span>'
-                + '<span class="dex-bulk-total">' + escHtml(o.total) + '</span>'
-                + '</div>';
-            if (o.shipping_address) {
-                orderMeta += '<div class="dex-bulk-addr">' + escHtml(o.shipping_address) + '</div>';
-            }
-            var badges = [];
-            if (o.is_cod)  { badges.push('<span class="dex-bulk-badge dex-bulk-badge--cod">Pouzećem</span>'); }
-            if (o.is_shop) { badges.push('<span class="dex-bulk-badge dex-bulk-badge--shop">Paketomat</span>'); }
-            if (badges.length) {
-                orderMeta += '<div class="dex-bulk-badge-row">' + badges.join('') + '</div>';
-            }
-
-            // Hint ispod masa inputa
-            var weightHint = o.calc_weight_kg
-                ? '<div class="dex-bulk-calc-hint">≈ ' + escHtml(o.calc_weight_kg) + ' kg</div>'
-                : '';
-
-            // Dimenzije u flex wrapperu (fix za layout breakage)
-            var dimsHtml = '<div class="dex-bulk-dims-cell">'
-                + '<input type="number" id="dex-row-dx-' + o.id + '" class="dex-row-field dex-dim-input" data-id="' + o.id + '" data-field="dim_x" min="0" step="0.1" value="' + escAttr(s.dim_x || '') + '" placeholder="D" />'
-                + '<span>×</span>'
-                + '<input type="number" id="dex-row-dy-' + o.id + '" class="dex-row-field dex-dim-input" data-id="' + o.id + '" data-field="dim_y" min="0" step="0.1" value="' + escAttr(s.dim_y || '') + '" placeholder="Š" />'
-                + '<span>×</span>'
-                + '<input type="number" id="dex-row-dz-' + o.id + '" class="dex-row-field dex-dim-input" data-id="' + o.id + '" data-field="dim_z" min="0" step="0.1" value="' + escAttr(s.dim_z || '') + '" placeholder="V" />'
-                + '</div>';
-
-            return '<tr>'
-                + '<td class="dex-col-order"><a href="' + escHtml(o.edit_url) + '" target="_blank">#' + escHtml(o.number) + '</a>' + orderMeta + '</td>'
-                + '<td>' + prodHtml + '</td>'
-                + '<td class="dex-col-weight"><input type="number" id="dex-row-weight-' + o.id + '" class="dex-row-field" data-id="' + o.id + '" data-field="weight_kg" min="0.001" step="0.001" value="' + escAttr(s.weight_kg || '') + '" />' + weightHint + '</td>'
-                + '<td class="dex-col-dims">' + dimsHtml + '</td>'
-                + '<td><input type="text" id="dex-row-content-' + o.id + '" class="dex-row-field dex-text-medium" data-id="' + o.id + '" data-field="content" maxlength="50" value="' + escAttr(s.content || '') + '" /></td>'
-                + '<td><input type="text" id="dex-row-note-' + o.id + '" class="dex-row-field dex-text-medium" data-id="' + o.id + '" data-field="note" maxlength="150" value="' + escAttr(s.note || '') + '" /></td>'
-                + '</tr>';
-        });
-
-        var html = '<table class="wp-list-table widefat striped dex-bulk-orders-table">'
-            + '<thead><tr>'
-            + '<th class="dex-col-order">' + i18n.order + '</th>'
-            + '<th>Proizvodi</th>'
-            + '<th class="dex-col-weight">' + i18n.weight + '</th>'
-            + '<th class="dex-col-dims">' + i18n.dims + '</th>'
-            + '<th>' + i18n.content + '</th>'
-            + '<th>' + i18n.note + '</th>'
-            + '</tr></thead>'
-            + '<tbody>' + rows.join('') + '</tbody>'
-            + '</table>';
-
-        $('#dex-bulk-orders-table-wrap').html(html);
-    }
-
-    // ── Live sync Step 2 polja u orderState ───────────────────────────────────
-    $(document).on('change input', '.dex-row-field', function () {
-        var id    = $(this).data('id');
-        var field = $(this).data('field');
-        if (!orderState[id]) { orderState[id] = {}; }
-        orderState[id][field] = $(this).val();
-    });
-
-    // ── Validacija Step 2 ──────────────────────────────────────────────────────
-    function validateStep2() {
-        var valid = true;
-        orders.forEach(function (o) {
-            var s = orderState[o.id] || {};
-            if (!s.weight_kg || parseFloat(s.weight_kg) <= 0) { valid = false; }
-            if (!s.content || !s.content.trim()) { valid = false; }
-        });
-
-        if (!valid) {
-            alert((i18n.weightReq || 'Masa mora biti > 0.') + '\n' + (i18n.contentReq || 'Sadržaj je obavezan.'));
-        }
-        return valid;
-    }
-
-    // ── STEP 3: sekvencijalni save ─────────────────────────────────────────────
-    function startSavePhase() {
-        setStep(3);
-        saveResults = {};
-        savedShipmentIds = [];
-        var defaults = readDefaults();
-        var total    = orders.length;
-        var done     = 0;
-
-        $('#dex-bulk-progress-wrap').show();
-        $('#dex-bulk-results-wrap').hide();
-
-        function updateProgress() {
-            var pct = total > 0 ? Math.round((done / total) * 100) : 0;
-            $('#dex-bulk-progress-fill').css('width', pct + '%');
-            $('#dex-bulk-progress-label').text(i18n.saving + ' (' + done + '/' + total + ')');
-        }
-
-        updateProgress();
-
-        function saveNext(idx) {
-            if (idx >= orders.length) {
-                $('#dex-bulk-progress-wrap').hide();
-                renderResultsTable('#dex-bulk-results-table-wrap', true);
-                $('#dex-bulk-results-wrap').show();
-                return;
-            }
-
-            var o = orders[idx];
-            var s = orderState[o.id] || {};
-
-            $.post(ajax, {
-                action:             'dexpress_bulk_save_shipment',
-                nonce:              nonces.bulkSave,
-                order_id:           o.id,
-                sender_location_id: defaults.sender_location_id,
-                delivery_type:      defaults.delivery_type,
-                payment_type:       defaults.payment_type,
-                return_doc:         defaults.return_doc,
-                self_drop_off:      defaults.self_drop_off,
-                content:            (s.content !== undefined && s.content !== '') ? s.content : defaults.content,
-                note:               s.note !== undefined ? s.note : defaults.note,
-                weight_kg:          (s.weight_kg !== undefined && s.weight_kg !== '') ? s.weight_kg : defaults.weight_kg,
-                dim_x:              (s.dim_x !== undefined && s.dim_x !== '') ? s.dim_x : defaults.dim_x,
-                dim_y:              (s.dim_y !== undefined && s.dim_y !== '') ? s.dim_y : defaults.dim_y,
-                dim_z:              (s.dim_z !== undefined && s.dim_z !== '') ? s.dim_z : defaults.dim_z,
-            })
-            .done(function (res) {
-                if (res.success) {
-                    saveResults[o.id] = {
-                        shipment_id:   res.data.shipment_id,
-                        tracking_code: res.data.tracking_code,
-                        label_url:     res.data.label_url || null,
-                        error:         null,
-                        sent:          false,
-                        sendError:     null,
-                    };
-                } else {
-                    saveResults[o.id] = {
-                        shipment_id:   null,
-                        tracking_code: null,
-                        label_url:     null,
-                        error:         res.data.message || 'Greška',
-                        sent:          false,
-                        sendError:     null,
-                    };
-                }
-            })
-            .fail(function () {
-                saveResults[o.id] = {
-                    shipment_id: null, tracking_code: null, label_url: null,
-                    error: 'Greška pri slanju zahteva.', sent: false, sendError: null,
-                };
-            })
-            .always(function () {
-                done++;
-                updateProgress();
-                saveNext(idx + 1);
-            });
-        }
-
-        saveNext(0);
-    }
-
-    // ── Rendera rezultatnu tabelu ──────────────────────────────────────────────
-    // target: CSS selektor container diva (step 3 ili step 4 kontekst)
-    // showPrintActions: true = upravljaj print/continue dugmadima (samo Step 3)
-    function renderResultsTable(target, showPrintActions) {
-        savedShipmentIds = [];
-
-        var rows = orders.map(function (o) {
-            var r = saveResults[o.id] || {};
-            var statusHtml, actionsHtml = '';
-
-            if (r.error) {
-                statusHtml = '<span class="dex-row-status dex-row-status--error">' + escHtml(r.error) + '</span>';
-            } else if (r.sent) {
-                statusHtml = '<span class="dex-row-status dex-row-status--sent">✓ ' + i18n.sent + '</span>';
-                savedShipmentIds.push(r.shipment_id);
-            } else if (r.sendError) {
-                statusHtml = '<span class="dex-row-status dex-row-status--error">' + escHtml(r.sendError) + '</span>'
-                    + ' <button type="button" class="button button-small dex-retry-send-btn" data-order-id="' + o.id + '" data-shipment-id="' + r.shipment_id + '">' + i18n.retry + '</button>';
-                savedShipmentIds.push(r.shipment_id);
-            } else {
-                statusHtml = '<span class="dex-row-status dex-row-status--saved">✓ ' + i18n.saved + '</span>';
-                if (r.shipment_id) { savedShipmentIds.push(r.shipment_id); }
-            }
-
-            if (r.label_url) {
-                actionsHtml = '<a href="' + escHtml(r.label_url) + '" target="_blank" class="button button-small">' + i18n.printLabel + '</a>';
-            }
-
-            var trClass = r.error ? ' class="dex-row-has-error"' : '';
-            return '<tr data-order-id="' + o.id + '"' + trClass + '>'
-                + '<td><a href="' + escHtml(o.edit_url) + '" target="_blank">#' + escHtml(o.number) + '</a></td>'
-                + '<td>' + escHtml(o.customer) + '</td>'
-                + '<td><code>' + escHtml(r.tracking_code || '—') + '</code></td>'
-                + '<td>' + statusHtml + '</td>'
-                + '<td>' + actionsHtml + '</td>'
-                + '</tr>';
-        });
-
-        var html = '<table class="dex-bulk-results-table">'
-            + '<thead><tr>'
-            + '<th>' + i18n.order + '</th>'
-            + '<th>' + i18n.customer + '</th>'
-            + '<th>' + i18n.trackingCode + '</th>'
-            + '<th>' + i18n.status + '</th>'
-            + '<th></th>'
-            + '</tr></thead>'
-            + '<tbody>' + rows.join('') + '</tbody>'
-            + '</table>';
-
-        $(target).html(html);
-
-        if (showPrintActions) {
-            if (savedShipmentIds.length > 0) {
-                $('#dex-bulk-print-all').show().data('ids', savedShipmentIds);
-                $('#dex-bulk-step3-continue').show();
-            } else {
-                $('#dex-bulk-print-all').hide();
-                $('#dex-bulk-step3-continue').hide();
-            }
-            $('#dex-bulk-print-actions').show();
-        }
-    }
-
-    // ── Bulk print (Step 3) ───────────────────────────────────────────────────
-    $('#dex-bulk-print-all').on('click', function () {
-        var ids = $(this).data('ids') || [];
-        if (!ids.length) { return; }
-        var url = labelBase + '&shipment_ids=' + ids.join(',') + '&nonce=' + encodeURIComponent(nonces.bulkPrint);
-        window.open(url, '_blank');
-        // Otključaj "Nastavi na slanje" tek nakon štampe — enforce print-before-send.
-        $('#dex-bulk-step3-continue').prop('disabled', false);
-    });
-
-    // ── Nastavi na slanje (Step 3 → Step 4) ──────────────────────────────────
-    $('#dex-bulk-step3-continue').on('click', function () {
-        renderResultsTable('#dex-bulk-send-results-wrap', false);
-        setStep(4);
-    });
-
-    // ── Pošalji sve u D-Express (Step 4) ─────────────────────────────────────
-    $('#dex-bulk-send-all').on('click', function () {
-        if (!window.confirm(i18n.confirmSend || 'Poslati u D-Express?')) { return; }
-        $(this).prop('disabled', true);
-
-        var toSend = orders.filter(function (o) {
-            var r = saveResults[o.id];
-            return r && r.shipment_id && !r.sent && !r.sendError;
-        });
-
-        if (!toSend.length) {
-            $(this).prop('disabled', false);
-            return;
-        }
-
-        function sendNext(idx) {
-            if (idx >= toSend.length) {
-                renderResultsTable('#dex-bulk-send-results-wrap', false);
-                renderFinalSummary();
-                $('#dex-bulk-send-all').prop('disabled', false);
-                return;
-            }
-
-            var o  = toSend[idx];
-            var r  = saveResults[o.id];
-            // Ažuriraj status ćeliju direktno u Step 4 results tabeli.
-            var $statusCell = $('#dex-bulk-send-results-wrap tr[data-order-id="' + o.id + '"] td:nth-child(4)');
-            $statusCell.html('<span class="dex-row-status dex-row-status--sending">' + i18n.sending + '</span>');
-
-            $.post(ajax, {
-                action:      'dexpress_bulk_send_shipment',
-                nonce:       nonces.bulkSend,
-                shipment_id: r.shipment_id,
-            })
-            .done(function (res) {
-                if (res.success) {
-                    saveResults[o.id].sent      = true;
-                    saveResults[o.id].sendError = null;
-                } else {
-                    saveResults[o.id].sendError = res.data.message || 'Greška';
-                }
-            })
-            .fail(function () {
-                saveResults[o.id].sendError = 'Greška pri slanju zahteva.';
-            })
-            .always(function () { sendNext(idx + 1); });
-        }
-
-        sendNext(0);
-    });
-
-    // ── Retry send ────────────────────────────────────────────────────────────
-    $(document).on('click', '.dex-retry-send-btn', function () {
-        var orderId    = $(this).data('order-id');
-        var shipmentId = $(this).data('shipment-id');
-
-        $.post(ajax, {
-            action:      'dexpress_bulk_send_shipment',
-            nonce:       nonces.bulkSend,
-            shipment_id: shipmentId,
-        })
-        .done(function (res) {
-            if (res.success) {
-                saveResults[orderId].sent      = true;
-                saveResults[orderId].sendError = null;
-            } else {
-                saveResults[orderId].sendError = res.data.message || 'Greška';
-            }
-            renderResultsTable('#dex-bulk-send-results-wrap', false);
-        })
-        .fail(function () {
-            saveResults[orderId].sendError = 'Greška pri slanju zahteva.';
-            renderResultsTable('#dex-bulk-send-results-wrap', false);
-        });
-    });
-
-    // ── Profile kartica klik (Step 1) ─────────────────────────────────────────
-    $(document).on('click', '.dex-profile-card', function () {
-        $('.dex-profile-card').removeClass('dex-profile-card--active');
-        $(this).addClass('dex-profile-card--active');
-
-        var w = $(this).data('weight-kg');
-        var x = $(this).data('dim-x');
-        var y = $(this).data('dim-y');
-        var z = $(this).data('dim-z');
-        var c = $(this).data('content');
-
-        if (w) { $('#dex-bulk-weight').val(w); }
-        if (x) { $('#dex-bulk-dx').val(x); }
-        if (y) { $('#dex-bulk-dy').val(y); }
-        if (z) { $('#dex-bulk-dz').val(z); }
-        if (c) { $('#dex-bulk-content').val(c); }
-    });
-
-    // ── Navigacija ─────────────────────────────────────────────────────────────
-    $('#dex-bulk-step1-next').on('click', function () {
-        if (!validateStep1()) { return; }
-        initOrderState(readDefaults());
-        renderOrdersTable();
-        setStep(2);
-    });
-
-    $('#dex-bulk-step2-back').on('click', function () { setStep(1); });
-
-    $('#dex-bulk-reset-defaults').on('click', function () { applyDefaultsToAll(); });
-
-    $('#dex-bulk-step2-next').on('click', function () {
-        if (!validateStep2()) { return; }
-        startSavePhase();
-    });
-
-    // ── Finalni sažetak (posle send faze, u Step 4) ───────────────────────────
-    function renderFinalSummary() {
-        $('#dex-bulk-final-summary-wrap').empty();
-
-        var sentCount    = 0;
-        var sendErrCount = 0;
-        var saveErrCount = 0;
-        var trackingCodes = [];
-        var printIds      = [];
-
-        orders.forEach(function (o) {
-            var r = saveResults[o.id] || {};
-            if (r.error) {
-                saveErrCount++;
-            } else if (r.sent) {
-                sentCount++;
-                if (r.tracking_code) { trackingCodes.push(r.tracking_code); }
-                if (r.shipment_id)   { printIds.push(r.shipment_id); }
-            } else if (r.sendError) {
-                sendErrCount++;
-                if (r.shipment_id)   { printIds.push(r.shipment_id); }
-                if (r.tracking_code) { trackingCodes.push(r.tracking_code); }
-            }
-        });
-
-        var failCount    = sendErrCount + saveErrCount;
-        var isAllSuccess = failCount === 0 && sentCount > 0;
-
-        var headerClass = isAllSuccess
-            ? 'dex-bulk-summary__header dex-bulk-summary__header--success'
-            : 'dex-bulk-summary__header dex-bulk-summary__header--partial';
-
-        var headerText = isAllSuccess
-            ? '✓ ' + (i18n.allSent || 'Sve pošiljke su uspešno poslate u D-Express')
-            : sentCount + ' ' + (i18n.partialSent || 'pošiljaka poslato') + ', '
-                + failCount + ' ' + (i18n.partialFailed || 'nije uspelo');
-
-        var trackingBlock = '';
-        if (trackingCodes.length > 0) {
-            var rows = Math.min(trackingCodes.length, 5);
-            trackingBlock = '<div class="dex-bulk-summary__section">'
-                + '<strong>' + escHtml(i18n.trackingCodesTitle || 'Kodovi pošiljaka') + ':</strong>'
-                + '<textarea class="dex-bulk-tracking-codes" readonly rows="' + rows + '">'
-                + escHtml(trackingCodes.join('\n'))
-                + '</textarea>'
-                + '<button type="button" class="button button-small" id="dex-copy-tracking">'
-                + escHtml(i18n.copyTracking || 'Kopiraj kodove')
-                + '</button>'
-                + '</div>';
-        }
-
-        var printBtn = '';
-        if (printIds.length > 0) {
-            var printUrl = labelBase + '&shipment_ids=' + printIds.join(',')
-                + '&nonce=' + encodeURIComponent(nonces.bulkPrint);
-            printBtn = '<a href="' + escHtml(printUrl) + '" target="_blank" class="button button-primary">'
-                + escHtml(i18n.printAllLabels || 'Štampaj sve nalepnice') + '</a>';
-        }
-
-        var backBtn = '<a href="' + escHtml(cfg.shipmentsUrl || '') + '" class="button">'
-            + escHtml(i18n.backToShipments || 'Povratak na pošiljke') + '</a>';
-
-        var html = '<div class="dex-bulk-summary" id="dex-bulk-final-summary">'
-            + '<div class="' + headerClass + '">' + headerText + '</div>'
-            + '<div class="dex-bulk-summary__body">'
-            + '<div class="dex-bulk-summary__stats">'
-            + '<span class="dex-bulk-summary__stat dex-bulk-summary__stat--sent">✓ ' + sentCount + ' ' + escHtml(i18n.sent || 'poslato') + '</span>'
-            + (failCount > 0
-                ? '<span class="dex-bulk-summary__stat dex-bulk-summary__stat--error">✗ ' + failCount + ' ' + escHtml(i18n.partialFailed || 'nije uspelo') + '</span>'
-                : '')
-            + '</div>'
-            + trackingBlock
-            + '<div class="dex-bulk-summary__actions">' + printBtn + ' ' + backBtn + '</div>'
-            + '</div>'
-            + '</div>';
-
-        $('#dex-bulk-final-summary-wrap').html(html);
-
-        $(document).off('click.dexCopy').on('click.dexCopy', '#dex-copy-tracking', function () {
-            var $btn  = $(this);
-            var codes = trackingCodes.join('\n');
-            var label = i18n.copyTracking || 'Kopiraj kodove';
-            var done  = i18n.copied || 'Kopirano!';
-
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(codes).then(function () {
-                    $btn.text(done);
-                    setTimeout(function () { $btn.text(label); }, 2000);
-                });
-            } else {
-                $('.dex-bulk-tracking-codes').trigger('select');
-                document.execCommand('copy');
-                $btn.text(done);
-                setTimeout(function () { $btn.text(label); }, 2000);
-            }
-        });
-    }
-
-    // ── Utils ──────────────────────────────────────────────────────────────────
-    function escHtml(str) {
-        return String(str)
-            .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-    }
-
-    function escAttr(str) { return escHtml(str); }
-
-    // ── Init ───────────────────────────────────────────────────────────────────
-    setStep(1);
+	'use strict';
+
+	var d    = window.dexShipments || {};
+	var i18n = d.i18n || {};
+
+	/* ─── Global config state ─────────────────────────────────────── */
+	var cfg = {
+		senderLocationId : 0,
+		deliveryType     : 2,
+		paymentType      : 2,
+		returnDoc        : 0,
+		selfDropOff      : false,
+		defaultContent   : '',
+		defaultNote      : '',
+		defaultWeightKg  : 0,
+		defaultDimX      : 0,
+		defaultDimY      : 0,
+		defaultDimZ      : 0,
+	};
+
+	/* Results map: orderId → { shipmentId, trackingCode, labelUrl, status } */
+	var results = {};
+
+	/* ─── Init from DOM ───────────────────────────────────────────── */
+	$(function () {
+		cfg.senderLocationId = parseInt($('#dex-cfg-location').val(), 10) || 0;
+		cfg.deliveryType     = parseInt($('#dex-cfg-delivery').val(), 10) || 2;
+		cfg.paymentType      = parseInt($('#dex-cfg-payment').val(), 10) || 2;
+		cfg.returnDoc        = parseInt($('#dex-cfg-returndoc').val(), 10) || 0;
+		cfg.selfDropOff      = $('#dex-cfg-selfdrop').is(':checked');
+		updateActionBar();
+	});
+
+	/* ─── Profile card click ──────────────────────────────────────── */
+	$(document).on('click', '.dex-profile-btn', function () {
+		$('.dex-profile-btn').removeClass('dex-profile-btn--active');
+		$(this).addClass('dex-profile-btn--active');
+
+		var wG      = parseFloat($(this).data('weight-g')) || 0;
+		var dimX    = $(this).data('dim-x');
+		var dimY    = $(this).data('dim-y');
+		var dimZ    = $(this).data('dim-z');
+		var content = String($(this).data('content') || '');
+
+		if (wG > 0) {
+			cfg.defaultWeightKg = wG / 1000;
+			$('#dex-cfg-weight').val(cfg.defaultWeightKg.toFixed(2));
+		}
+		if (dimX !== '' && dimX !== undefined) {
+			cfg.defaultDimX = parseFloat(dimX) || 0;
+			$('#dex-cfg-dim-x').val(dimX);
+		}
+		if (dimY !== '' && dimY !== undefined) {
+			cfg.defaultDimY = parseFloat(dimY) || 0;
+			$('#dex-cfg-dim-y').val(dimY);
+		}
+		if (dimZ !== '' && dimZ !== undefined) {
+			cfg.defaultDimZ = parseFloat(dimZ) || 0;
+			$('#dex-cfg-dim-z').val(dimZ);
+		}
+		if (content !== '') {
+			cfg.defaultContent = content;
+			$('#dex-cfg-content').val(content);
+		}
+
+		applyDefaultsToAllRows();
+	});
+
+	/* ─── Config field live-sync ──────────────────────────────────── */
+	$(document).on('change input', '#dex-cfg-weight',    function () { cfg.defaultWeightKg = parseFloat($(this).val()) || 0; applyDefaultsToAllRows(); });
+	$(document).on('change input', '#dex-cfg-dim-x',     function () { cfg.defaultDimX = parseFloat($(this).val()) || 0; applyDefaultsToAllRows(); });
+	$(document).on('change input', '#dex-cfg-dim-y',     function () { cfg.defaultDimY = parseFloat($(this).val()) || 0; applyDefaultsToAllRows(); });
+	$(document).on('change input', '#dex-cfg-dim-z',     function () { cfg.defaultDimZ = parseFloat($(this).val()) || 0; applyDefaultsToAllRows(); });
+	$(document).on('change input', '#dex-cfg-content',   function () { cfg.defaultContent = $(this).val(); applyDefaultsToAllRows(); });
+	$(document).on('change input', '#dex-cfg-note',      function () { cfg.defaultNote = $(this).val(); applyDefaultsToAllRows(); });
+	$(document).on('change',       '#dex-cfg-location',  function () { cfg.senderLocationId = parseInt($(this).val(), 10) || 0; });
+	$(document).on('change',       '#dex-cfg-delivery',  function () { cfg.deliveryType = parseInt($(this).val(), 10) || 2; });
+	$(document).on('change',       '#dex-cfg-payment',   function () { cfg.paymentType  = parseInt($(this).val(), 10) || 2; });
+	$(document).on('change',       '#dex-cfg-returndoc', function () { cfg.returnDoc    = parseInt($(this).val(), 10) || 0; });
+	$(document).on('change',       '#dex-cfg-selfdrop',  function () { cfg.selfDropOff  = this.checked; });
+
+	/* ─── Apply global defaults to row fields ─────────────────────── */
+	function applyDefaultsToAllRows() {
+		$('.dex-order-row').each(function () {
+			applyDefaultsToRow($(this));
+		});
+	}
+
+	function applyDefaultsToRow($row) {
+		var $w  = $row.find('.dex-row-weight');
+		var $dx = $row.find('.dex-row-dim-x');
+		var $dy = $row.find('.dex-row-dim-y');
+		var $dz = $row.find('.dex-row-dim-z');
+		var $c  = $row.find('.dex-row-content');
+		var $n  = $row.find('.dex-row-note');
+
+		if (!$w.data('dirty')  && cfg.defaultWeightKg > 0) { $w.val(cfg.defaultWeightKg.toFixed(2)); }
+		if (!$dx.data('dirty') && cfg.defaultDimX > 0)      { $dx.val(cfg.defaultDimX); }
+		if (!$dy.data('dirty') && cfg.defaultDimY > 0)      { $dy.val(cfg.defaultDimY); }
+		if (!$dz.data('dirty') && cfg.defaultDimZ > 0)      { $dz.val(cfg.defaultDimZ); }
+		if (!$c.data('dirty')  && cfg.defaultContent !== '') { $c.val(cfg.defaultContent); }
+		if (!$n.data('dirty'))                               { $n.val(cfg.defaultNote); }
+	}
+
+	/* ─── Mark row fields dirty on manual edit ────────────────────── */
+	$(document).on('input', '.dex-row-weight, .dex-row-dim-x, .dex-row-dim-y, .dex-row-dim-z, .dex-row-content', function () {
+		$(this).data('dirty', true);
+	});
+
+	/* ─── Reset row to global defaults ───────────────────────────── */
+	$(document).on('click', '.dex-row-reset', function () {
+		var $row = $(this).closest('.dex-order-row');
+		$row.find('.dex-row-weight, .dex-row-dim-x, .dex-row-dim-y, .dex-row-dim-z, .dex-row-content, .dex-row-note')
+			.each(function () { $(this).data('dirty', false); });
+		applyDefaultsToRow($row);
+	});
+
+	/* ─── Filter tabs ─────────────────────────────────────────────── */
+	$(document).on('click', '.dex-filter-tab', function () {
+		$('.dex-filter-tab').removeClass('dex-filter-tab--active');
+		$(this).addClass('dex-filter-tab--active');
+		var filter = $(this).data('filter');
+
+		$('.dex-order-row').each(function () {
+			var $row = $(this);
+			var show = true;
+			if (filter === 'cod'  && $row.data('cod')  !== 1) { show = false; }
+			if (filter === 'shop' && $row.data('shop') !== 1) { show = false; }
+
+			if (!show) {
+				$row.addClass('dex-order-row--hidden');
+				$row.find('.dex-order-cb').prop('checked', false);
+			} else {
+				$row.removeClass('dex-order-row--hidden');
+			}
+		});
+
+		syncSelectAll();
+		updateActionBar();
+	});
+
+	/* ─── Select-all ──────────────────────────────────────────────── */
+	$(document).on('change', '#dex-select-all', function () {
+		$('.dex-order-row:not(.dex-order-row--hidden) .dex-order-cb').prop('checked', this.checked);
+		updateActionBar();
+	});
+
+	$(document).on('change', '.dex-order-cb', function () {
+		syncSelectAll();
+		updateActionBar();
+	});
+
+	function syncSelectAll() {
+		var $visible = $('.dex-order-row:not(.dex-order-row--hidden) .dex-order-cb');
+		var total    = $visible.length;
+		var checked  = $visible.filter(':checked').length;
+		var $all     = $('#dex-select-all');
+		$all.prop('indeterminate', checked > 0 && checked < total);
+		$all.prop('checked', total > 0 && checked === total);
+	}
+
+	function updateActionBar() {
+		var count = $('.dex-order-cb:checked').length;
+		var $btn  = $('#dex-create-btn');
+
+		$btn.prop('disabled', count === 0);
+
+		if (count > 0) {
+			$btn.text('Kreiraj pošiljke (' + count + ')');
+			$('#dex-action-info').text(count + ' ' + (count === 1 ? 'narudžbina izabrana' : 'narudžbine izabrane'));
+		} else {
+			$btn.text('Kreiraj pošiljke');
+			$('#dex-action-info').text('Izaberite narudžbine za kreiranje pošiljki');
+		}
+	}
+
+	/* ─── Validation ──────────────────────────────────────────────── */
+	function validateConfig() {
+		var errors = [];
+
+		if (!cfg.senderLocationId) {
+			errors.push(i18n.locationReq || 'Izaberite lokaciju pošiljaoca.');
+		}
+		if (!$('#dex-cfg-content').val().trim()) {
+			errors.push(i18n.contentReq || 'Unesite sadržaj paketa.');
+		}
+
+		var weightErr = false;
+		$('.dex-order-cb:checked').each(function () {
+			var $row   = $(this).closest('.dex-order-row');
+			var weight = parseFloat($row.find('.dex-row-weight').val()) || 0;
+			if (weight <= 0) { weightErr = true; }
+		});
+		if (weightErr) {
+			errors.push(i18n.weightReq || 'Masa mora biti veća od 0 za sve izabrane narudžbine.');
+		}
+
+		if ($('.dex-order-cb:checked').length === 0) {
+			errors.push(i18n.noSelection || 'Izaberite bar jednu narudžbinu.');
+		}
+
+		var $errEl = $('#dex-config-errors');
+		if (errors.length) {
+			$errEl.html(
+				'<ul>' + errors.map(function (e) { return '<li>' + esc(e) + '</li>'; }).join('') + '</ul>'
+			);
+			$errEl.removeAttr('hidden');
+			return false;
+		}
+		$errEl.attr('hidden', '').empty();
+		return true;
+	}
+
+	/* ─── Create button ───────────────────────────────────────────── */
+	$(document).on('click', '#dex-create-btn', function () {
+		if (!validateConfig()) {
+			var errTop = ($('#dex-config-errors').offset() || {}).top || 0;
+			$('html,body').animate({ scrollTop: errTop - 60 }, 250);
+			return;
+		}
+
+		var toCreate = [];
+		$('.dex-order-cb:checked').each(function () {
+			var $row    = $(this).closest('.dex-order-row');
+			var orderId = String($(this).val());
+			var info    = (d.orders || []).find(function (o) { return String(o.id) === orderId; }) || {};
+
+			toCreate.push({
+				orderId  : orderId,
+				number   : info.number   || orderId,
+				customer : info.customer || '',
+				weightKg : parseFloat($row.find('.dex-row-weight').val()) || cfg.defaultWeightKg,
+				dimX     : parseFloat($row.find('.dex-row-dim-x').val()) || cfg.defaultDimX || null,
+				dimY     : parseFloat($row.find('.dex-row-dim-y').val()) || cfg.defaultDimY || null,
+				dimZ     : parseFloat($row.find('.dex-row-dim-z').val()) || cfg.defaultDimZ || null,
+				content  : $row.find('.dex-row-content').val().trim() || cfg.defaultContent,
+				note     : $row.find('.dex-row-note').val().trim()    || cfg.defaultNote,
+			});
+		});
+
+		startCreation(toCreate);
+	});
+
+	/* ─── Creation loop ───────────────────────────────────────────── */
+	function startCreation(orders) {
+		results = {};
+
+		$('#dex-orders-card, #dex-action-bar').hide();
+
+		var $sec = $('#dex-results-section');
+		$sec.removeAttr('hidden').show();
+		$('#dex-results-footer').attr('hidden', '');
+		$('#dex-results-summary').attr('hidden', '');
+		$('#dex-results-progress').show();
+		$('#dex-results-title').text('Kreiranje ' + orders.length + ' pošiljki…');
+		$('#dex-progress-fill').css('width', '0%');
+		$('#dex-progress-text').text('0 / ' + orders.length);
+
+		var $tbody = $('#dex-results-tbody').empty();
+		orders.forEach(function (o) {
+			$tbody.append(buildResultRow(o));
+		});
+
+		var secTop = ($sec.offset() || {}).top || 0;
+		$('html,body').animate({ scrollTop: secTop - 30 }, 250);
+		saveNext(orders, 0, 0);
+	}
+
+	function buildResultRow(o) {
+		return '<tr id="dex-rrow-' + o.orderId + '">' +
+			'<td>#' + esc(o.number) + '</td>' +
+			'<td>' + esc(o.customer) + '</td>' +
+			'<td class="dex-rrow-track" id="dex-rtrack-' + o.orderId + '">—</td>' +
+			'<td><span class="dex-badge dex-badge--muted dex-rrow-status" id="dex-rstatus-' + o.orderId + '">' +
+				esc(i18n.saving || 'Kreiranje…') + '</span></td>' +
+			'<td id="dex-raction-' + o.orderId + '"></td>' +
+			'</tr>';
+	}
+
+	function saveNext(orders, idx, doneCount) {
+		if (idx >= orders.length) {
+			onAllSaved(orders, doneCount);
+			return;
+		}
+
+		var o = orders[idx];
+		setStatus(o.orderId, 'info', i18n.saving || 'Kreiranje…');
+
+		$.ajax({
+			url    : d.ajaxUrl,
+			method : 'POST',
+			data   : {
+				action             : 'dexpress_bulk_save_shipment',
+				nonce              : d.nonce,
+				order_id           : o.orderId,
+				sender_location_id : cfg.senderLocationId,
+				delivery_type      : cfg.deliveryType,
+				payment_type       : cfg.paymentType,
+				return_doc         : cfg.returnDoc,
+				self_drop_off      : cfg.selfDropOff ? '1' : '',
+				content            : o.content,
+				note               : o.note,
+				weight_kg          : o.weightKg,
+				dim_x              : o.dimX !== null ? o.dimX : '',
+				dim_y              : o.dimY !== null ? o.dimY : '',
+				dim_z              : o.dimZ !== null ? o.dimZ : '',
+			},
+			success : function (resp) {
+				if (resp.success) {
+					var rd = resp.data;
+					results[o.orderId] = {
+						shipmentId   : rd.shipment_id,
+						trackingCode : rd.tracking_code,
+						labelUrl     : rd.label_url,
+						status       : 'saved',
+					};
+					setStatus(o.orderId, 'success', i18n.saved || 'Kreirano');
+					$('#dex-rtrack-' + o.orderId).text(rd.tracking_code);
+					$('#dex-raction-' + o.orderId).html(
+						'<a href="' + rd.label_url + '" target="_blank" class="dex-btn dex-btn--xs dex-btn--outline">' +
+						esc(i18n.print || 'Štampaj') + '</a>'
+					);
+					doneCount++;
+				} else {
+					var msg = (resp.data && resp.data.message) ? resp.data.message : 'Greška';
+					results[o.orderId] = { status: 'error', error: msg };
+					setStatus(o.orderId, 'error', i18n.error || 'Greška');
+					$('#dex-rrow-' + o.orderId).addClass('dex-rrow--error');
+					$('#dex-raction-' + o.orderId).html('<span class="dex-rrow-errmsg">' + esc(msg) + '</span>');
+				}
+			},
+			error   : function () {
+				results[o.orderId] = { status: 'error', error: 'Mrežna greška' };
+				setStatus(o.orderId, 'error', i18n.error || 'Greška');
+				$('#dex-rrow-' + o.orderId).addClass('dex-rrow--error');
+			},
+			complete: function () {
+				var done = idx + 1;
+				$('#dex-progress-fill').css('width', Math.round(done / orders.length * 100) + '%');
+				$('#dex-progress-text').text(done + ' / ' + orders.length);
+				saveNext(orders, idx + 1, doneCount);
+			},
+		});
+	}
+
+	function onAllSaved(orders, doneCount) {
+		var total  = orders.length;
+		var failed = total - doneCount;
+
+		$('#dex-results-progress').hide();
+		$('#dex-results-title').text(
+			failed === 0
+				? (i18n.allDone || 'Sve pošiljke su kreirane.')
+				: (doneCount + '/' + total + ' ' + (i18n.createdCount || 'kreirano') +
+				   (failed > 0 ? ' — ' + failed + ' grešaka' : ''))
+		);
+
+		var savedIds = Object.values(results)
+			.filter(function (r) { return r.status === 'saved'; })
+			.map(function (r) { return r.shipmentId; });
+
+		if (savedIds.length > 0) {
+			var printUrl = d.labelBaseUrl + '?page=dexpress-label&shipment_ids=' +
+				savedIds.join(',') + '&nonce=' + encodeURIComponent(d.bulkPrintNonce);
+			$('#dex-print-all-btn')
+				.data('print-url', printUrl)
+				.text((i18n.printAll || 'Štampaj sve etikete') + ' (' + savedIds.length + ')');
+		} else {
+			$('#dex-print-all-btn').prop('disabled', true);
+		}
+
+		$('#dex-send-all-btn')
+			.text((i18n.sendAll || 'Pošalji D-Expressu') + ' (' + savedIds.length + ')')
+			.prop('disabled', savedIds.length === 0);
+
+		$('#dex-results-footer').removeAttr('hidden');
+	}
+
+	/* ─── Print all ───────────────────────────────────────────────── */
+	$(document).on('click', '#dex-print-all-btn', function () {
+		var url = $(this).data('print-url');
+		if (url) { window.open(url, '_blank'); }
+	});
+
+	/* ─── Send all ────────────────────────────────────────────────── */
+	$(document).on('click', '#dex-send-all-btn', function () {
+		if (!window.confirm(i18n.confirmSend || 'Pošaljite pošiljke D-Expressu? Ova akcija je nepovratna.')) { return; }
+
+		$('#dex-results-footer').attr('hidden', '');
+		$('#dex-results-progress').show();
+
+		var toSend = Object.keys(results)
+			.filter(function (id) { return results[id].status === 'saved'; })
+			.map(function (id) { return { orderId: id, shipmentId: results[id].shipmentId }; });
+
+		toSend.forEach(function (item) {
+			setStatus(item.orderId, 'info', i18n.sending || 'Slanje…');
+			$('#dex-raction-' + item.orderId).empty();
+		});
+
+		$('#dex-progress-fill').css('width', '0%');
+		$('#dex-progress-text').text('0 / ' + toSend.length);
+		$('#dex-results-title').text('Slanje ' + toSend.length + ' pošiljki D-Expressu…');
+
+		sendNext(toSend, 0, 0);
+	});
+
+	/* ─── Send loop ───────────────────────────────────────────────── */
+	function sendNext(items, idx, doneCount) {
+		if (idx >= items.length) {
+			onAllSent(items, doneCount);
+			return;
+		}
+
+		var item = items[idx];
+
+		$.ajax({
+			url    : d.ajaxUrl,
+			method : 'POST',
+			data   : {
+				action      : 'dexpress_bulk_send_shipment',
+				nonce       : d.sendNonce,
+				shipment_id : item.shipmentId,
+			},
+			success : function (resp) {
+				if (resp.success) {
+					results[item.orderId].status = 'sent';
+					setStatus(item.orderId, 'success', i18n.sent || 'Poslato');
+					doneCount++;
+				} else {
+					var msg = (resp.data && resp.data.message) ? resp.data.message : 'Greška';
+					results[item.orderId].status = 'send_error';
+					setStatus(item.orderId, 'error', i18n.error || 'Greška');
+					$('#dex-rrow-' + item.orderId).addClass('dex-rrow--error');
+					$('#dex-raction-' + item.orderId).html('<span class="dex-rrow-errmsg">' + esc(msg) + '</span>');
+				}
+			},
+			error   : function () {
+				results[item.orderId].status = 'send_error';
+				setStatus(item.orderId, 'error', i18n.error || 'Greška');
+			},
+			complete: function () {
+				var done = idx + 1;
+				$('#dex-progress-fill').css('width', Math.round(done / items.length * 100) + '%');
+				$('#dex-progress-text').text(done + ' / ' + items.length);
+				sendNext(items, idx + 1, doneCount);
+			},
+		});
+	}
+
+	function onAllSent(items, doneCount) {
+		var total  = items.length;
+		var failed = total - doneCount;
+
+		$('#dex-results-progress').hide();
+		$('#dex-results-title').text(
+			failed === 0
+				? (i18n.allSent || 'Sve pošiljke su poslate D-Expressu.')
+				: (doneCount + ' od ' + total + ' pošiljki poslato' +
+				   (failed > 0 ? ' — ' + failed + ' grešaka' : ''))
+		);
+
+		var $stats = $('#dex-summary-stats').empty();
+		$stats.append(
+			'<span class="dex-stat dex-stat--success">' + doneCount + ' ' + esc(i18n.sentCount || 'poslato') + '</span>'
+		);
+		if (failed > 0) {
+			$stats.append(
+				'<span class="dex-stat dex-stat--error">' + failed + ' ' + esc(i18n.errorCount || 'greška') + '</span>'
+			);
+		}
+
+		var codes = Object.values(results)
+			.filter(function (r) { return r.status === 'sent' && r.trackingCode; })
+			.map(function (r) { return r.trackingCode; });
+
+		if (codes.length > 0) {
+			$('#dex-tracking-textarea').val(codes.join('\n'));
+			$('#dex-summary-tracking').removeAttr('hidden');
+		}
+
+		$('#dex-results-summary').removeAttr('hidden');
+	}
+
+	/* ─── Copy tracking codes ──────────────────────────────────────── */
+	$(document).on('click', '#dex-copy-btn', function () {
+		var text = $('#dex-tracking-textarea').val();
+		var $btn = $(this);
+		if (navigator.clipboard) {
+			navigator.clipboard.writeText(text).then(function () {
+				$btn.text(i18n.copied || 'Kopirano!');
+				setTimeout(function () { $btn.text(i18n.copyTracking || 'Kopiraj kodove'); }, 2000);
+			});
+		} else {
+			$('#dex-tracking-textarea').select();
+			document.execCommand('copy');
+		}
+	});
+
+	/* ─── Helpers ─────────────────────────────────────────────────── */
+	function setStatus(orderId, type, text) {
+		var cls = {
+			info   : 'dex-badge dex-badge--info dex-rrow-status',
+			success: 'dex-badge dex-badge--success dex-rrow-status',
+			error  : 'dex-badge dex-badge--error dex-rrow-status',
+			muted  : 'dex-badge dex-badge--muted dex-rrow-status',
+		};
+		$('#dex-rstatus-' + orderId)
+			.attr('class', cls[type] || cls.muted)
+			.text(text);
+	}
+
+	function esc(str) {
+		return String(str)
+			.replace(/&/g, '&amp;')
+			.replace(/</g, '&lt;')
+			.replace(/>/g, '&gt;')
+			.replace(/"/g, '&quot;');
+	}
 
 })(jQuery);

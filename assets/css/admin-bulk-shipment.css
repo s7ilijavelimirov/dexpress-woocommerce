@@ -1,485 +1,614 @@
 /* =============================================================================
-   D Express WooCommerce — Bulk Shipment Wizard (4-step)
-   Handle: dexpress-bulk-shipment · Page: dexpress_page_dexpress-bulk-shipment
+   D Express WooCommerce — Pošiljke page (bulk shipment creation)
+   Handle: dex-shipments · Page: dexpress-shipments
    ============================================================================= */
 
-
-/* ── Page wrap ───────────────────────────────────────────────── */
-
-.dex-bulk-wrap {
-  max-width: 100%;
+/* ─── Page wrapper ─────────────────────────────────────────────── */
+.dex-shipments-wrap {
+	max-width: 1200px;
+}
+.dex-shipments-wrap .dex-card {
+	margin-bottom: var(--dex-space-5);
 }
 
-
-/* ── Stepper (4 steps, centered) ─────────────────────────────── */
-
-.dex-bulk-stepper {
-  display: flex;
-  align-items: center;
-  max-width: 640px;
-  margin: var(--dex-space-4) auto var(--dex-space-6);
+/* ─── Config card ───────────────────────────────────────────────── */
+.dex-shipments-config {
+	padding: var(--dex-space-6);
+}
+.dex-shipments-config__header {
+	margin-bottom: var(--dex-space-5);
+}
+.dex-shipments-config__title {
+	font-size: var(--dex-text-lg);
+	font-weight: 600;
+	color: var(--dex-neutral-900);
+	margin: 0 0 var(--dex-space-1);
+}
+.dex-shipments-config__subtitle {
+	font-size: var(--dex-text-sm);
+	color: var(--dex-neutral-500);
+	margin: 0;
 }
 
-.dex-bulk-step {
-  display: flex;
-  align-items: center;
-  gap: var(--dex-space-2);
-  opacity: 0.45;
-  transition: opacity var(--dex-transition);
+/* ─── Profile buttons ───────────────────────────────────────────── */
+.dex-shipments-config__profiles {
+	margin-bottom: var(--dex-space-5);
+}
+.dex-config-profiles-label {
+	display: block;
+	font-size: var(--dex-text-xs);
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: .04em;
+	color: var(--dex-neutral-500);
+	margin-bottom: var(--dex-space-3);
+}
+.dex-config-profiles-grid {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--dex-space-3);
+}
+.dex-profile-btn {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 2px;
+	padding: var(--dex-space-3) var(--dex-space-4);
+	background: var(--dex-neutral-50);
+	border: 2px solid var(--dex-neutral-200);
+	border-radius: var(--dex-radius);
+	cursor: pointer;
+	transition: border-color var(--dex-transition), background var(--dex-transition);
+	min-width: 120px;
+}
+.dex-profile-btn:hover {
+	border-color: var(--dex-color-red);
+	background: #fff5f5;
+}
+.dex-profile-btn--active {
+	border-color: var(--dex-color-red);
+	background: #fff5f5;
+}
+.dex-profile-btn__name {
+	font-size: var(--dex-text-sm);
+	font-weight: 600;
+	color: var(--dex-neutral-800);
+}
+.dex-profile-btn__meta {
+	font-size: var(--dex-text-xs);
+	color: var(--dex-neutral-500);
 }
 
-.dex-bulk-step--active { opacity: 1; }
-.dex-bulk-step--done   { opacity: 0.75; }
-
-.dex-bulk-step__num {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: var(--dex-gray-200);
-  color: var(--dex-gray-700);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: var(--dex-text-sm);
-  font-weight: 700;
-  flex-shrink: 0;
-  transition: background var(--dex-transition), color var(--dex-transition);
+/* ─── Divider ───────────────────────────────────────────────────── */
+.dex-config-divider {
+	height: 1px;
+	background: var(--dex-neutral-100);
+	margin: 0 0 var(--dex-space-5);
 }
 
-.dex-bulk-step--active .dex-bulk-step__num {
-  background: var(--dex-red);
-  color: var(--dex-white);
+/* ─── Config form grid ──────────────────────────────────────────── */
+.dex-config-form {}
+.dex-config-grid {
+	display: grid;
+	grid-template-columns: repeat(4, 1fr);
+	gap: var(--dex-space-4) var(--dex-space-5);
+	align-items: start;
+}
+.dex-field--span2 { grid-column: span 2; }
+.dex-field--checkbox-row {
+	display: flex;
+	flex-direction: column;
+	gap: var(--dex-space-1);
+}
+.dex-checkbox-label {
+	display: flex;
+	align-items: center;
+	gap: var(--dex-space-2);
+	font-size: var(--dex-text-sm);
+	font-weight: 500;
+	color: var(--dex-neutral-800);
+	cursor: pointer;
+	margin-top: 22px; /* align with other field inputs */
+}
+.dex-checkbox-label input[type="checkbox"] {
+	width: 16px;
+	height: 16px;
+	flex-shrink: 0;
+}
+.dex-field__hint {
+	font-size: var(--dex-text-xs);
+	color: var(--dex-neutral-400);
+}
+.dex-field__req {
+	color: var(--dex-color-red);
+	margin-left: 2px;
 }
 
-.dex-bulk-step--done .dex-bulk-step__num {
-  background: var(--dex-green);
-  color: var(--dex-white);
+/* ─── Input / select base ───────────────────────────────────────── */
+.dex-select,
+.dex-input {
+	width: 100%;
+	padding: 7px 10px;
+	font-size: var(--dex-text-sm);
+	border: 1px solid var(--dex-neutral-300);
+	border-radius: var(--dex-radius);
+	background: #fff;
+	color: var(--dex-neutral-800);
+	transition: border-color var(--dex-transition);
+	box-sizing: border-box;
+}
+.dex-select:focus,
+.dex-input:focus {
+	outline: none;
+	border-color: var(--dex-color-red);
+	box-shadow: 0 0 0 2px rgba(227,30,37,.1);
+}
+.dex-input--number {
+	width: 90px;
+}
+.dex-input--dim {
+	width: 60px;
+	text-align: center;
+	padding-left: 6px;
+	padding-right: 6px;
 }
 
-.dex-bulk-step__label {
-  font-size: var(--dex-text-sm);
-  font-weight: 600;
-  color: var(--dex-gray-700);
-  white-space: nowrap;
+/* ─── Dims row ──────────────────────────────────────────────────── */
+.dex-dims-row {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+}
+.dex-dims-sep {
+	font-size: var(--dex-text-sm);
+	color: var(--dex-neutral-400);
+	flex-shrink: 0;
 }
 
-.dex-bulk-step-line {
-  flex: 1;
-  height: 2px;
-  background: var(--dex-gray-200);
-  margin: 0 var(--dex-space-3);
+/* ─── Config errors ─────────────────────────────────────────────── */
+.dex-config-errors {
+	margin-top: var(--dex-space-4);
+	padding: var(--dex-space-3) var(--dex-space-4);
+	background: #fef2f2;
+	border: 1px solid #fca5a5;
+	border-radius: var(--dex-radius);
+	font-size: var(--dex-text-sm);
+	color: #b91c1c;
+}
+.dex-config-errors ul {
+	margin: 0;
+	padding: 0 0 0 var(--dex-space-4);
+}
+.dex-config-errors li {
+	margin: 0 0 2px;
 }
 
-
-/* ── Step panels ─────────────────────────────────────────────── */
-
-.dex-bulk-panel {
-  margin-bottom: var(--dex-space-6);
+/* ─── Orders card ───────────────────────────────────────────────── */
+.dex-shipments-orders {
+	padding: 0;
+	overflow: hidden;
 }
 
-
-/* ── Profile cards row (Step 1) ──────────────────────────────── */
-
-.dex-bulk-profiles-row {
-  background: var(--dex-white);
-  border: var(--dex-border);
-  border-radius: var(--dex-radius-lg);
-  padding: var(--dex-space-4);
-  margin-bottom: var(--dex-space-4);
+/* ─── Orders header ─────────────────────────────────────────────── */
+.dex-orders-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--dex-space-4);
+	padding: var(--dex-space-4) var(--dex-space-6);
+	border-bottom: 1px solid var(--dex-neutral-100);
+}
+.dex-select-all-label {
+	display: flex;
+	align-items: center;
+	gap: var(--dex-space-2);
+	font-size: var(--dex-text-sm);
+	font-weight: 600;
+	color: var(--dex-neutral-700);
+	cursor: pointer;
+	user-select: none;
+}
+.dex-select-all-label input[type="checkbox"] {
+	width: 16px;
+	height: 16px;
+	flex-shrink: 0;
 }
 
-.dex-bulk-profiles-row h3 {
-  font-size: var(--dex-text-base);
-  margin: 0 0 var(--dex-space-3);
-  color: var(--dex-gray-700);
+/* ─── Filter tabs ───────────────────────────────────────────────── */
+.dex-filter-tabs {
+	display: flex;
+	gap: var(--dex-space-2);
+}
+.dex-filter-tab {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--dex-space-1);
+	padding: 5px var(--dex-space-3);
+	font-size: var(--dex-text-xs);
+	font-weight: 600;
+	border: 1.5px solid var(--dex-neutral-200);
+	border-radius: 999px;
+	background: var(--dex-neutral-50);
+	color: var(--dex-neutral-600);
+	cursor: pointer;
+	transition: all var(--dex-transition);
+}
+.dex-filter-tab:hover {
+	border-color: var(--dex-neutral-400);
+	color: var(--dex-neutral-800);
+}
+.dex-filter-tab--active {
+	background: var(--dex-color-red);
+	border-color: var(--dex-color-red);
+	color: #fff;
+}
+.dex-filter-tab--active:hover {
+	background: var(--dex-color-red-hover);
+	border-color: var(--dex-color-red-hover);
+	color: #fff;
+}
+.dex-filter-tab__count {
+	font-weight: 700;
 }
 
-.dex-bulk-profile-cards {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--dex-space-3);
+/* ─── Order row ─────────────────────────────────────────────────── */
+.dex-order-row {
+	display: flex;
+	align-items: flex-start;
+	gap: 0;
+	border-bottom: 1px solid var(--dex-neutral-100);
+	transition: background var(--dex-transition);
+}
+.dex-order-row:last-child { border-bottom: none; }
+.dex-order-row:hover { background: var(--dex-neutral-50); }
+.dex-order-row--hidden { display: none; }
+
+/* Amber left border for Paket Shop */
+.dex-order-row--shop {
+	border-left: 3px solid #D97706;
 }
 
-.dex-profile-card {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  padding: var(--dex-space-3) var(--dex-space-4);
-  background: var(--dex-gray-50);
-  border: var(--dex-border);
-  border-radius: var(--dex-radius-lg);
-  cursor: pointer;
-  text-align: left;
-  transition: border-color var(--dex-transition), background var(--dex-transition);
-  min-width: 140px;
+/* ─── Row checkbox cell ──────────────────────────────────────────── */
+.dex-order-row__check {
+	flex-shrink: 0;
+	width: 52px;
+	padding: var(--dex-space-5) var(--dex-space-4);
+	display: flex;
+	align-items: flex-start;
+	padding-top: 22px;
+}
+.dex-order-row__check input[type="checkbox"] {
+	width: 16px;
+	height: 16px;
 }
 
-.dex-profile-card:hover,
-.dex-profile-card--active {
-  border-color: var(--dex-red);
-  background: var(--dex-red-light);
+/* ─── Row body ───────────────────────────────────────────────────── */
+.dex-order-row__body {
+	flex: 1;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: var(--dex-space-3);
+	padding: var(--dex-space-4) var(--dex-space-5) var(--dex-space-4) 0;
 }
 
-.dex-profile-card strong {
-  font-size: var(--dex-text-sm);
-  color: var(--dex-gray-900);
+/* ─── Row info ───────────────────────────────────────────────────── */
+.dex-order-row__info {}
+.dex-order-row__head {
+	display: flex;
+	align-items: center;
+	gap: var(--dex-space-3);
+	flex-wrap: wrap;
+	margin-bottom: var(--dex-space-2);
+}
+.dex-order-row__number {
+	font-size: var(--dex-text-sm);
+	font-weight: 700;
+	color: var(--dex-color-red);
+	text-decoration: none;
+}
+.dex-order-row__number:hover { text-decoration: underline; }
+.dex-order-row__customer {
+	font-size: var(--dex-text-sm);
+	font-weight: 600;
+	color: var(--dex-neutral-800);
+}
+.dex-order-row__badges {
+	display: flex;
+	gap: var(--dex-space-2);
+	flex-wrap: wrap;
+}
+.dex-order-row__meta {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: var(--dex-space-2) var(--dex-space-4);
+	font-size: var(--dex-text-xs);
+	color: var(--dex-neutral-500);
+}
+.dex-order-meta-item--total {
+	font-weight: 600;
+	color: var(--dex-neutral-700);
+}
+.dex-order-meta-item--items {
+	max-width: 500px;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 
-.dex-profile-card span {
-  font-size: var(--dex-text-xs);
-  color: var(--dex-text-muted);
+/* ─── Per-row editable fields ────────────────────────────────────── */
+.dex-order-row__fields {
+	display: flex;
+	align-items: flex-end;
+	gap: var(--dex-space-3);
+	flex-wrap: wrap;
+}
+.dex-row-fg {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+.dex-row-fg__label {
+	font-size: 11px;
+	font-weight: 600;
+	color: var(--dex-neutral-400);
+	text-transform: uppercase;
+	letter-spacing: .04em;
+	white-space: nowrap;
+}
+.dex-row-fg--dims .dex-dims-row { flex-wrap: nowrap; }
+.dex-row-fg--content .dex-input { width: 200px; }
+.dex-row-fg--note    .dex-input { width: 160px; }
+.dex-row-fg--reset {
+	align-self: flex-end;
+}
+.dex-row-reset {
+	height: 34px;
+	width: 34px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border: 1px solid var(--dex-neutral-200);
+	border-radius: var(--dex-radius);
+	background: var(--dex-neutral-50);
+	color: var(--dex-neutral-500);
+	cursor: pointer;
+	font-size: 16px;
+	transition: all var(--dex-transition);
+}
+.dex-row-reset:hover {
+	border-color: var(--dex-neutral-400);
+	color: var(--dex-neutral-700);
+	background: var(--dex-neutral-100);
 }
 
-
-/* ── Defaults card (Step 1) ──────────────────────────────────── */
-
-.dex-bulk-defaults-card {
-  background: var(--dex-white);
-  border: var(--dex-border);
-  border-radius: var(--dex-radius-lg);
-  padding: var(--dex-space-4) var(--dex-space-6);
-  margin-bottom: var(--dex-space-4);
+/* ─── Action bar ─────────────────────────────────────────────────── */
+.dex-action-bar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--dex-space-4);
+	padding: var(--dex-space-4) var(--dex-space-6);
+	background: #fff;
+	border: 1px solid var(--dex-neutral-200);
+	border-radius: var(--dex-radius);
+	margin-bottom: var(--dex-space-5);
+}
+.dex-action-bar__info {
+	font-size: var(--dex-text-sm);
+	color: var(--dex-neutral-500);
 }
 
-.dex-bulk-defaults-card h3 {
-  font-size: var(--dex-text-base);
-  margin: 0 0 var(--dex-space-3);
-  color: var(--dex-gray-700);
+/* ─── Empty state ────────────────────────────────────────────────── */
+.dex-shipments-empty {
+	padding: var(--dex-space-10) var(--dex-space-6);
+}
+.dex-shipments-empty__body {
+	text-align: center;
+	max-width: 360px;
+	margin: 0 auto;
+}
+.dex-shipments-empty__icon {
+	margin-bottom: var(--dex-space-4);
+	opacity: .5;
+}
+.dex-shipments-empty h3 {
+	font-size: var(--dex-text-lg);
+	color: var(--dex-neutral-700);
+	margin: 0 0 var(--dex-space-2);
+}
+.dex-shipments-empty p {
+	font-size: var(--dex-text-sm);
+	color: var(--dex-neutral-500);
+	margin: 0;
 }
 
-
-/* ── Step 2 header row ───────────────────────────────────────── */
-
-.dex-bulk-step2-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--dex-space-3);
+/* ─── Results card ───────────────────────────────────────────────── */
+.dex-shipments-results {
+	padding: var(--dex-space-6);
+}
+.dex-results-header {
+	margin-bottom: var(--dex-space-5);
+}
+.dex-results-header__title {
+	font-size: var(--dex-text-xl);
+	font-weight: 700;
+	color: var(--dex-neutral-900);
+	margin: 0;
 }
 
-.dex-bulk-step2-header h3 {
-  margin: 0;
+/* ─── Progress bar ───────────────────────────────────────────────── */
+.dex-results-progress {
+	display: flex;
+	align-items: center;
+	gap: var(--dex-space-4);
+	margin-bottom: var(--dex-space-5);
+}
+.dex-progress-bar {
+	flex: 1;
+	height: 8px;
+	background: var(--dex-neutral-100);
+	border-radius: 999px;
+	overflow: hidden;
+}
+.dex-progress-bar__fill {
+	height: 100%;
+	background: var(--dex-color-red);
+	border-radius: 999px;
+	transition: width .3s ease;
+}
+.dex-progress-text {
+	font-size: var(--dex-text-sm);
+	font-weight: 600;
+	color: var(--dex-neutral-600);
+	white-space: nowrap;
+	min-width: 50px;
 }
 
-
-/* ── Orders table (Step 2) ───────────────────────────────────── */
-
-.dex-bulk-orders-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: var(--dex-text-sm);
-  background: var(--dex-white);
-  border: var(--dex-border);
-  border-radius: var(--dex-radius-lg);
-  overflow: hidden;
+/* ─── Results table ──────────────────────────────────────────────── */
+.dex-results-table-wrap {
+	overflow-x: auto;
+	margin-bottom: var(--dex-space-5);
+}
+.dex-results-table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: var(--dex-text-sm);
+}
+.dex-results-table th,
+.dex-results-table td {
+	padding: var(--dex-space-3) var(--dex-space-4);
+	text-align: left;
+	border-bottom: 1px solid var(--dex-neutral-100);
+}
+.dex-results-table th {
+	background: var(--dex-neutral-50);
+	font-weight: 600;
+	font-size: var(--dex-text-xs);
+	color: var(--dex-neutral-500);
+	text-transform: uppercase;
+	letter-spacing: .04em;
+}
+.dex-results-table tr:last-child td { border-bottom: none; }
+.dex-rrow--error td { background: #fef2f2; }
+.dex-rrow-track {
+	font-family: ui-monospace, monospace;
+	font-size: var(--dex-text-xs);
+	color: var(--dex-neutral-700);
+}
+.dex-rrow-errmsg {
+	font-size: var(--dex-text-xs);
+	color: #b91c1c;
 }
 
-.dex-bulk-orders-table th {
-  background: var(--dex-gray-50);
-  padding: var(--dex-space-2) var(--dex-space-3);
-  font-size: var(--dex-text-xs);
-  font-weight: 700;
-  color: var(--dex-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  border-bottom: var(--dex-border);
-  white-space: nowrap;
-  text-align: left;
+/* ─── Results footer (print + send buttons) ──────────────────────── */
+.dex-results-footer {
+	border-top: 1px solid var(--dex-neutral-100);
+	padding-top: var(--dex-space-5);
+	margin-top: var(--dex-space-2);
+}
+.dex-results-footer__actions {
+	display: flex;
+	gap: var(--dex-space-3);
+	flex-wrap: wrap;
 }
 
-.dex-bulk-orders-table td {
-  padding: var(--dex-space-2) var(--dex-space-3);
-  border-bottom: var(--dex-border);
-  vertical-align: top;
+/* ─── Summary section (after send) ──────────────────────────────── */
+.dex-results-summary {
+	border-top: 1px solid var(--dex-neutral-100);
+	padding-top: var(--dex-space-5);
+	margin-top: var(--dex-space-4);
+}
+.dex-summary-stats {
+	display: flex;
+	gap: var(--dex-space-3);
+	flex-wrap: wrap;
+	margin-bottom: var(--dex-space-5);
+}
+.dex-stat {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--dex-space-2);
+	padding: var(--dex-space-2) var(--dex-space-4);
+	border-radius: var(--dex-radius);
+	font-size: var(--dex-text-sm);
+	font-weight: 600;
+}
+.dex-stat--success {
+	background: #f0fdf4;
+	color: #15803d;
+}
+.dex-stat--error {
+	background: #fef2f2;
+	color: #b91c1c;
+}
+.dex-summary-tracking {
+	margin-bottom: var(--dex-space-4);
+}
+.dex-tracking-codes {
+	display: block;
+	width: 100%;
+	max-width: 400px;
+	margin: var(--dex-space-2) 0;
+	padding: var(--dex-space-3);
+	font-family: ui-monospace, monospace;
+	font-size: var(--dex-text-sm);
+	border: 1px solid var(--dex-neutral-200);
+	border-radius: var(--dex-radius);
+	background: var(--dex-neutral-50);
+	resize: vertical;
+}
+.dex-summary-back {
+	margin-top: var(--dex-space-4);
 }
 
-.dex-bulk-orders-table tr:last-child td {
-  border-bottom: 0;
+/* ─── Button additions ───────────────────────────────────────────── */
+.dex-btn--xs {
+	padding: 3px 10px;
+	font-size: var(--dex-text-xs);
+}
+.dex-btn--outline {
+	background: transparent;
+	border: 1.5px solid var(--dex-neutral-300);
+	color: var(--dex-neutral-700);
+}
+.dex-btn--outline:hover,
+.dex-btn--outline:focus {
+	border-color: var(--dex-neutral-500);
+	background: var(--dex-neutral-50);
+	color: var(--dex-neutral-900);
+}
+.dex-btn--outline:disabled {
+	opacity: .45;
+	cursor: default;
 }
 
-.dex-bulk-orders-table input[type="number"],
-.dex-bulk-orders-table input[type="text"] {
-  box-sizing: border-box;
+/* ─── Responsive ─────────────────────────────────────────────────── */
+@media (max-width: 1100px) {
+	.dex-config-grid { grid-template-columns: repeat(3, 1fr); }
+	.dex-field--span2 { grid-column: span 2; }
 }
+@media (max-width: 782px) {
+	.dex-config-grid { grid-template-columns: 1fr 1fr; }
+	.dex-field--span2 { grid-column: span 2; }
 
-/* Fixed column widths */
-.dex-bulk-orders-table .dex-col-order  { width: 200px; max-width: 200px; }
-.dex-bulk-orders-table .dex-col-weight { width: 110px; }
-.dex-bulk-orders-table .dex-col-dims   { white-space: nowrap; width: 200px; }
+	.dex-orders-header { flex-direction: column; align-items: flex-start; }
+	.dex-filter-tabs   { flex-wrap: wrap; }
 
-/* Higher specificity to override generic input rules */
-.dex-bulk-orders-table .dex-col-weight input[type="number"] { width: 80px; }
-.dex-bulk-orders-table input[type="number"].dex-dim-input   { width: 50px; min-width: 50px; }
-.dex-bulk-orders-table input[type="text"].dex-text-medium   { width: 100%; }
+	.dex-order-row__body { padding-right: var(--dex-space-4); }
+	.dex-order-row__fields { gap: var(--dex-space-2); }
+	.dex-row-fg--content .dex-input,
+	.dex-row-fg--note .dex-input { width: 130px; }
 
-/* Dims flex cell */
-.dex-bulk-dims-cell {
-  display: flex;
-  align-items: center;
-  gap: var(--dex-space-1);
-  flex-wrap: nowrap;
+	.dex-action-bar { flex-direction: column; align-items: stretch; }
+	.dex-action-bar .dex-btn { width: 100%; justify-content: center; }
 }
+@media (max-width: 520px) {
+	.dex-config-grid { grid-template-columns: 1fr; }
+	.dex-field--span2 { grid-column: span 1; }
 
-.dex-bulk-dims-cell > span {
-  color: var(--dex-gray-300);
-  font-size: var(--dex-text-xs);
-  flex-shrink: 0;
-  user-select: none;
-}
-
-.dex-bulk-dims-wrap {
-  display: flex;
-  align-items: center;
-  gap: var(--dex-space-1);
-}
-
-/* Address below order number */
-.dex-bulk-addr {
-  font-size: var(--dex-text-xs);
-  color: var(--dex-text-muted);
-  margin-top: 2px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 160px;
-}
-
-.dex-bulk-orders-table td.dex-col-order .dex-bulk-addr {
-  max-width: 180px;
-}
-
-/* COD / Paketomat badges */
-.dex-bulk-badge-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 3px;
-  margin-top: var(--dex-space-1);
-}
-
-.dex-bulk-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 1px var(--dex-space-1);
-  border-radius: 99px;
-  font-size: var(--dex-text-xs);
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-.dex-bulk-badge--cod  { background: var(--dex-amber-light); color: var(--dex-amber); }
-.dex-bulk-badge--shop { background: var(--dex-blue-light);  color: var(--dex-blue); }
-
-/* Product list inside Step 2 order cell */
-.dex-bulk-prod-list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  font-size: var(--dex-text-xs);
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.dex-bulk-qty {
-  font-weight: 600;
-  color: var(--dex-text-muted);
-  margin-right: 2px;
-}
-
-.dex-bulk-wg    { color: var(--dex-gray-300); font-size: var(--dex-text-xs); }
-.dex-bulk-more  { color: var(--dex-gray-300); font-style: italic; }
-.dex-bulk-empty { color: var(--dex-gray-300); }
-
-/* Calculated mass hint below weight input */
-.dex-bulk-calc-hint {
-  font-size: var(--dex-text-xs);
-  color: var(--dex-gray-300);
-  margin-top: 3px;
-}
-
-/* Customer + total in order cell */
-.dex-bulk-order-meta {
-  display: flex;
-  align-items: baseline;
-  gap: var(--dex-space-1);
-  margin-top: 2px;
-}
-
-.dex-bulk-customer {
-  font-size: var(--dex-text-xs);
-  color: var(--dex-gray-500);
-}
-
-.dex-bulk-total {
-  font-size: var(--dex-text-xs);
-  font-weight: 600;
-  color: var(--dex-gray-700);
-}
-
-
-/* ── Results table (Step 3) ──────────────────────────────────── */
-
-.dex-bulk-results-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: var(--dex-text-sm);
-  background: var(--dex-white);
-  border: var(--dex-border);
-  border-radius: var(--dex-radius-lg);
-  overflow: hidden;
-  margin-bottom: var(--dex-space-4);
-}
-
-.dex-bulk-results-table th {
-  background: var(--dex-gray-50);
-  padding: var(--dex-space-2) var(--dex-space-3);
-  font-size: var(--dex-text-xs);
-  font-weight: 700;
-  color: var(--dex-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  border-bottom: var(--dex-border);
-  text-align: left;
-}
-
-.dex-bulk-results-table td {
-  padding: var(--dex-space-2) var(--dex-space-3);
-  border-bottom: var(--dex-border);
-  vertical-align: middle;
-}
-
-.dex-bulk-results-table tr:last-child td {
-  border-bottom: 0;
-}
-
-/* Error rows — double selector beats hover state */
-.dex-bulk-results-table .dex-row-has-error td,
-.dex-bulk-results-table .dex-row-has-error:hover td {
-  background: var(--dex-red-light);
-  border-color: var(--dex-red);
-}
-
-
-/* ── Progress bar (Step 3 send phase) ────────────────────────── */
-
-.dex-bulk-progress-bar {
-  height: 8px;
-  background: var(--dex-gray-200);
-  border-radius: 99px;
-  overflow: hidden;
-  margin-bottom: var(--dex-space-3);
-}
-
-.dex-bulk-progress-fill {
-  height: 100%;
-  background: var(--dex-red);
-  border-radius: 99px;
-  transition: width var(--dex-transition-slow);
-}
-
-
-/* ── Row status badges ───────────────────────────────────────── */
-
-.dex-row-status {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--dex-space-1);
-  padding: 2px var(--dex-space-2);
-  border-radius: 99px;
-  font-size: var(--dex-text-xs);
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.dex-row-status--pending  { background: var(--dex-gray-100);     color: var(--dex-gray-500); }
-.dex-row-status--saving   { background: var(--dex-blue-light);   color: var(--dex-blue); }
-.dex-row-status--saved    { background: var(--dex-green-light);  color: var(--dex-green); }
-.dex-row-status--sending  { background: var(--dex-blue-light);   color: var(--dex-blue); }
-.dex-row-status--sent     { background: var(--dex-green-light);  color: var(--dex-green); }
-.dex-row-status--error    { background: var(--dex-red-light);    color: var(--dex-red); }
-
-
-/* ── Step footer actions ─────────────────────────────────────── */
-
-.dex-bulk-step-footer {
-  display: flex;
-  align-items: center;
-  gap: var(--dex-space-3);
-  padding-top: var(--dex-space-4);
-  margin-top: var(--dex-space-4);
-  border-top: var(--dex-border);
-  flex-wrap: wrap;
-}
-
-
-/* ── Final summary card (Step 4) ─────────────────────────────── */
-
-.dex-bulk-summary {
-  margin-top: var(--dex-space-4);
-  background: var(--dex-white);
-  border: var(--dex-border);
-  border-radius: var(--dex-radius-lg);
-  overflow: hidden;
-}
-
-.dex-bulk-summary__header {
-  padding: var(--dex-space-3) var(--dex-space-4);
-  font-size: var(--dex-text-base);
-  font-weight: 700;
-  color: var(--dex-white);
-}
-
-.dex-bulk-summary__header--success { background: var(--dex-green); }
-.dex-bulk-summary__header--partial { background: var(--dex-amber); }
-
-.dex-bulk-summary__body {
-  padding: var(--dex-space-4);
-  display: flex;
-  flex-direction: column;
-  gap: var(--dex-space-3);
-}
-
-.dex-bulk-summary__stats {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--dex-space-3);
-}
-
-.dex-bulk-summary__stat {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--dex-space-1);
-  padding: var(--dex-space-1) var(--dex-space-3);
-  border-radius: 99px;
-  font-size: var(--dex-text-sm);
-  font-weight: 600;
-}
-
-.dex-bulk-summary__stat--sent  { background: var(--dex-green-light); color: var(--dex-green); }
-.dex-bulk-summary__stat--error { background: var(--dex-red-light);   color: var(--dex-red); }
-
-.dex-bulk-summary__section {
-  display: flex;
-  flex-direction: column;
-  gap: var(--dex-space-1);
-  align-items: flex-start;
-}
-
-/* Tracking codes textarea */
-.dex-bulk-tracking-codes {
-  width: 100%;
-  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
-  font-size: var(--dex-text-sm);
-  padding: var(--dex-space-2);
-  border: var(--dex-border);
-  border-radius: var(--dex-radius);
-  background: var(--dex-gray-50);
-  resize: vertical;
-  box-sizing: border-box;
-}
-
-.dex-bulk-summary__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--dex-space-2);
+	.dex-shipments-config { padding: var(--dex-space-4); }
+	.dex-order-row__check { padding-top: var(--dex-space-4); }
+	.dex-order-row__fields { flex-direction: column; align-items: flex-start; }
 }

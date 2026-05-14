@@ -38,8 +38,6 @@ use S7codedesign\DExpress\Infrastructure\Persistence\WpdbPaymentRepository;
 use S7codedesign\DExpress\Infrastructure\Persistence\WpdbShipmentRepository;
 use S7codedesign\DExpress\Presentation\Admin\Ajax\BulkShipmentController;
 use S7codedesign\DExpress\Presentation\Admin\Ajax\PackageProfileController;
-use S7codedesign\DExpress\Presentation\Admin\Hooks\OrdersBulkAction;
-use S7codedesign\DExpress\Presentation\Admin\Pages\BulkShipmentPage;
 use S7codedesign\DExpress\Presentation\Admin\Pages\PackageProfilesPage;
 use S7codedesign\DExpress\Infrastructure\Persistence\Sync\StatusCodeRepository;
 use S7codedesign\DExpress\Presentation\Admin\Hooks\OrdersListDeliveryStatusColumn;
@@ -97,24 +95,9 @@ final class AdminServiceProvider implements ServiceProvider
         );
 
         $container->singleton(
-            OrdersBulkAction::class,
-            static fn (Container $c) => new OrdersBulkAction(
-                $c->get(WpdbShipmentRepository::class),
-            ),
-        );
-
-        $container->singleton(
             PackageProfilesPage::class,
             static fn (Container $c) => new PackageProfilesPage(
                 $c->get(WpdbPackageProfileRepository::class),
-            ),
-        );
-
-        $container->singleton(
-            BulkShipmentPage::class,
-            static fn (Container $c) => new BulkShipmentPage(
-                $c->get(WpdbPackageProfileRepository::class),
-                $c->get(WpdbSenderLocationRepository::class),
             ),
         );
 
@@ -139,7 +122,11 @@ final class AdminServiceProvider implements ServiceProvider
             ShipmentsPage::class,
             static function (Container $c): ShipmentsPage {
                 global $wpdb;
-                return new ShipmentsPage($wpdb, $c->get(WpdbPackageProfileRepository::class));
+                return new ShipmentsPage(
+                    $wpdb,
+                    $c->get(WpdbPackageProfileRepository::class),
+                    $c->get(WpdbSenderLocationRepository::class),
+                );
             },
         );
 
@@ -179,7 +166,6 @@ final class AdminServiceProvider implements ServiceProvider
                 $c->get(PaymentsPage::class),
                 $c->get(OnboardingPage::class),
                 $c->get(PackageProfilesPage::class),
-                $c->get(BulkShipmentPage::class),
             ),
         );
 
