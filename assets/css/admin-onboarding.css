@@ -1,190 +1,320 @@
 /* =============================================================================
-   D Express WooCommerce — Onboarding Wizard
-   Handle: dexpress-onboarding · Page: dexpress_page_dexpress-onboarding
+   D Express WooCommerce — Onboarding wizard (layout & onboarding-only chrome)
+   Shared components & tokens: admin.css
    ============================================================================= */
 
-
-/* ── Page layout ─────────────────────────────────────────────── */
-
+/* Centered column — start higher, less top air */
 .dex-ob-wrap {
-  max-width: 760px;
-  margin: var(--dex-space-8) auto;
+  max-width: 1000px;
+  margin: var(--dex-space-3) auto var(--dex-space-6);
 }
 
-
-/* ── Header ──────────────────────────────────────────────────── */
-
-.dex-ob-header {
-  text-align: center;
-  margin-bottom: var(--dex-space-6);
+/* Wizard shell card */
+.dex-ob-surface.dex-card {
+  border-radius: var(--dex-radius-xl);
+  box-shadow: var(--dex-shadow-lg);
 }
 
-.dex-ob-logo {
-  width: 48px;
-  height: 48px;
-  margin-bottom: var(--dex-space-3);
+/* Atribut [hidden]: bilo koji display iz admin.css (npr. .dex-card, .dex-notice) ne sme da ostavi element vidljivim */
+.dex-ob-wrap [hidden] {
+  display: none !important;
 }
 
-.dex-ob-header h1 {
-  font-size: var(--dex-text-xl);
-  font-weight: 700;
-  color: var(--dex-text);
-  margin: 0 0 var(--dex-space-2);
-  letter-spacing: -0.01em;
+/* Paneli — viša specifičnost od generičkog .dex-ob-panel[hidden] kada je panel direktno pod .dex-card */
+.dex-ob-panel[hidden],
+.dex-ob-surface.dex-card > .dex-ob-panel.dex-card__body[hidden] {
+  display: none !important;
 }
 
-.dex-ob-subtitle {
-  color: var(--dex-text-muted);
-  font-size: var(--dex-text-base);
-  margin: 0;
-}
-
-
-/* ── Progress bar (4px — thinner variant) ────────────────────── */
-
-.dex-ob-progress-track {
-  height: 4px;
-  background: var(--dex-gray-200);
-  border-radius: 999px;
+/* Jedinstveni vrh wizarda — naslov + badge + stepper (bez progress bara) */
+.dex-ob-top {
   margin-bottom: var(--dex-space-4);
-  overflow: hidden;
-}
-
-.dex-ob-progress-fill {
-  height: 100%;
-  background: var(--dex-red);
-  border-radius: 999px;
-  width: 0%;
-  transition: width var(--dex-transition-slow);
-}
-
-
-/* ── Step dots nav ───────────────────────────────────────────── */
-
-.dex-ob-steps-nav {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: var(--dex-space-4);
-  gap: var(--dex-space-1);
-}
-
-.dex-ob-step-dot {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--dex-space-1);
-  text-align: center;
-}
-
-.dex-ob-step-num {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  font-size: var(--dex-text-sm);
-  font-weight: 700;
-  background: var(--dex-gray-200);
-  color: var(--dex-text-muted);
-  transition: background var(--dex-transition), color var(--dex-transition);
-  line-height: 1;
-  font-family: var(--dex-font);
-}
-
-.dex-ob-step-label {
-  font-size: var(--dex-text-xs);
-  color: var(--dex-text-muted);
-  transition: color var(--dex-transition);
-  white-space: nowrap;
-}
-
-/* Active step */
-.dex-ob-step-dot.is-active .dex-ob-step-num {
-  background: var(--dex-red);
-  color: var(--dex-white);
-}
-
-.dex-ob-step-dot.is-active .dex-ob-step-label {
-  color: var(--dex-red);
-  font-weight: 600;
-}
-
-/* Completed step */
-.dex-ob-step-dot.is-done .dex-ob-step-num {
-  background: var(--dex-green);
-  color: var(--dex-white);
-}
-
-.dex-ob-step-dot.is-done .dex-ob-step-label {
-  color: var(--dex-green);
-}
-
-
-/* ── Main card ───────────────────────────────────────────────── */
-
-.dex-ob-card {
   background: var(--dex-white);
   border: var(--dex-border);
   border-radius: var(--dex-radius-xl);
-  box-shadow: var(--dex-shadow-lg);
+  box-shadow: var(--dex-shadow-sm);
   overflow: hidden;
 }
 
+.dex-ob-top__head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--dex-space-4) var(--dex-space-5);
+  padding: var(--dex-space-4) var(--dex-space-5);
+  background: linear-gradient(
+    125deg,
+    color-mix(in srgb, var(--dex-red) 8%, var(--dex-white)) 0%,
+    var(--dex-white) 42%,
+    color-mix(in srgb, var(--dex-gray-100) 55%, var(--dex-white)) 100%
+  );
+  border-bottom: 1px solid var(--dex-gray-200);
+}
 
-/* ── Step panels ─────────────────────────────────────────────── */
+.dex-ob-top__brand {
+  flex-shrink: 0;
+}
 
-.dex-ob-panel {
-  padding: var(--dex-space-6);
+.dex-ob-top__logo {
   display: block;
-}
-
-.dex-ob-panel[hidden] {
-  display: none;
-}
-
-.dex-ob-panel-icon {
   width: 48px;
   height: 48px;
+  filter: drop-shadow(0 2px 8px rgb(0 0 0 / 0.08));
+}
+
+.dex-ob-top__intro {
+  min-width: 0;
+}
+
+.dex-ob-top__kicker {
+  margin: 0 0 4px;
+  font-size: var(--dex-text-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dex-red);
+  line-height: 1.2;
+}
+
+.dex-ob-top__title {
+  margin: 0 0 var(--dex-space-2);
+  font-size: var(--dex-text-xl);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: var(--dex-text);
+}
+
+.dex-ob-top__lead {
+  margin: 0;
+  font-size: var(--dex-text-sm);
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--dex-gray-700);
+}
+
+.dex-ob-top__lead--muted {
+  margin-top: var(--dex-space-1);
+  font-size: var(--dex-text-xs);
+  font-weight: 400;
+  color: var(--dex-text-muted);
+}
+
+.dex-ob-top__badge {
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.03em;
+  color: var(--dex-gray-800);
+  background: color-mix(in srgb, var(--dex-white) 88%, var(--dex-gray-100));
+  border: 1px solid var(--dex-gray-200);
+  border-radius: 999px;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.04);
+}
+
+.dex-ob-top__rail {
+  padding: var(--dex-space-3) var(--dex-space-4) var(--dex-space-4);
+  background: var(--dex-gray-50);
+}
+
+.dex-ob-top .dex-ob-steps-nav.dex-stepper {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0;
+  width: 100%;
+  margin: 0;
+  flex-wrap: nowrap;
+}
+
+.dex-ob-top .dex-stepper__step {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--dex-space-2);
+  padding: 0 var(--dex-space-1);
+  opacity: 0.4;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.dex-ob-top .dex-stepper__step--active {
+  opacity: 1;
+  transform: translateY(-1px);
+}
+
+.dex-ob-top .dex-stepper__step--done {
+  opacity: 1;
+}
+
+.dex-ob-top .dex-stepper__num {
+  width: 34px;
+  height: 34px;
+  font-size: 12px;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.06);
+}
+
+.dex-ob-top .dex-stepper__step--active .dex-stepper__num {
+  box-shadow:
+    0 0 0 2px var(--dex-white),
+    0 0 0 4px color-mix(in srgb, var(--dex-red) 35%, transparent),
+    0 2px 6px rgb(0 0 0 / 0.08);
+}
+
+.dex-ob-top .dex-stepper__label {
+  display: block;
+  max-width: 88px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-align: center;
+  line-height: 1.25;
+  color: var(--dex-text-muted);
+  white-space: normal;
+}
+
+.dex-ob-top .dex-stepper__step--active .dex-stepper__label,
+.dex-ob-top .dex-stepper__step--done .dex-stepper__label {
+  color: var(--dex-gray-700);
+}
+
+.dex-ob-top .dex-stepper__line {
+  flex: 1 1 12px;
+  align-self: center;
+  min-width: 8px;
+  height: 3px;
+  margin: 0;
+  border-radius: 99px;
+  background: var(--dex-gray-200);
+}
+
+.dex-ob-top .dex-stepper__step--done + .dex-stepper__line {
+  background: linear-gradient(90deg, var(--dex-green) 0%, color-mix(in srgb, var(--dex-green) 55%, var(--dex-gray-200)) 100%);
+}
+
+/* Wizard panel: bez paddinga na card body; flex samo kad je aktivan korak */
+.dex-ob-surface.dex-card > .dex-ob-panel.dex-card__body {
+  padding: 0;
+  min-height: 0;
+}
+
+.dex-ob-surface.dex-card > .dex-ob-panel.dex-card__body:not([hidden]) {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Zaglavlje koraka — isti ritam kao dex-card__footer (padding + bg + ivica) */
+.dex-ob-panel.dex-card__body > .dex-ob-panel-head {
+  padding: var(--dex-space-3) var(--dex-space-4);
+  background: var(--dex-gray-50);
+  border-bottom: var(--dex-border);
+  margin-bottom: 0;
+  gap: var(--dex-space-3);
+}
+
+.dex-ob-panel.dex-card__body > .dex-ob-panel__body {
+  padding: var(--dex-space-4);
+  flex: 1 1 auto;
+}
+
+.dex-ob-panel.dex-card__body > .dex-card__footer.dex-ob-nav {
+  margin-top: 0;
+}
+
+/* Ugnježdene kartice (korak 2) */
+.dex-ob-panel__body > .dex-ob-subcard + .dex-ob-subcard {
+  margin-top: var(--dex-space-4);
+}
+
+.dex-ob-subcard .dex-card__body .dex-settings-section__lead {
+  margin-top: 0;
+}
+
+/* Horizontal panel header (ikonica uvek crvena kao koraci 1–2) */
+.dex-ob-panel-head {
+  display: flex;
+  align-items: flex-start;
+}
+
+.dex-ob-panel-head__icon {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
   border-radius: var(--dex-radius-lg);
-  background: var(--dex-red-light);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: var(--dex-space-3);
+  border: var(--dex-border);
+  box-shadow: var(--dex-shadow-xs);
+  background: var(--dex-red-light);
   color: var(--dex-red);
+  border-color: color-mix(in srgb, var(--dex-red) 18%, transparent);
 }
 
-.dex-ob-panel-icon .dashicons {
-  font-size: 24px;
-  width: 24px;
-  height: 24px;
+.dex-ob-panel-head__icon .dashicons {
+  font-size: 22px;
+  width: 22px;
+  height: 22px;
+  line-height: 1;
 }
 
-.dex-ob-panel-icon--success {
-  background: var(--dex-green-light);
-  color: var(--dex-green);
+.dex-ob-panel-head__text {
+  min-width: 0;
+  flex: 1;
 }
 
-.dex-ob-panel h2 {
-  font-size: var(--dex-text-lg);
+.dex-ob-panel-head__title {
+  margin: 0 0 var(--dex-space-2);
+  font-size: var(--dex-text-xl);
   font-weight: 700;
-  margin: 0 0 var(--dex-space-3);
+  letter-spacing: -0.02em;
   color: var(--dex-text);
-  letter-spacing: -0.01em;
+  line-height: 1.25;
 }
 
-.dex-ob-panel > p {
+.dex-ob-panel-head__desc {
+  margin: 0;
+  font-size: var(--dex-text-sm);
+  line-height: 1.55;
   color: var(--dex-gray-700);
-  margin: 0 0 var(--dex-space-4);
-  font-size: var(--dex-text-base);
-  line-height: 1.6;
 }
 
+.dex-ob-panel-head__desc + .dex-ob-panel-head__desc {
+  margin-top: var(--dex-space-2);
+}
 
-/* ── Feature list (check-circle style) ──────────────────────── */
+.dex-ob-panel-head__desc--muted {
+  color: var(--dex-text-muted);
+  font-size: var(--dex-text-xs);
+}
 
+/* Settings-style two-column rows inside wizard (inherits .dex-settings-wrap .form-table from admin.css) */
+.dex-ob-wrap .dex-ob-form-table {
+  max-width: 100%;
+}
+
+.dex-ob-form-table__action-hint {
+  margin-top: var(--dex-space-2);
+  max-width: 48ch;
+}
+
+.dex-ob-form-table__actions td {
+  padding-top: var(--dex-space-4);
+}
+
+.dex-ob-section-intro {
+  margin-bottom: var(--dex-space-4) !important;
+}
+
+.dex-ob-panel__body .dex-ob-feature-list {
+  margin-bottom: 0;
+}
+
+/* Intro / completion link list */
 .dex-ob-feature-list {
   list-style: none;
   padding: 0;
@@ -206,331 +336,567 @@
 .dex-ob-feature-list .dashicons {
   color: var(--dex-green);
   flex-shrink: 0;
-  margin-top: 1px;
-}
-
-.dex-ob-feature-list svg {
-  width: 16px;
-  height: 16px;
-  color: var(--dex-green);
-  flex-shrink: 0;
   margin-top: 2px;
 }
 
-
-/* ── Form table inside panels ────────────────────────────────── */
-
-.dex-ob-form-table {
-  margin-bottom: var(--dex-space-4);
+.dex-ob-feature-list a {
+  text-decoration: none;
 }
 
-.dex-ob-form-table th {
-  width: 180px;
-  padding: var(--dex-space-2) var(--dex-space-3) var(--dex-space-2) 0;
-  font-size: var(--dex-text-sm);
-  font-weight: 600;
-  color: var(--dex-gray-700);
-  vertical-align: middle;
+.dex-ob-feature-list a:hover,
+.dex-ob-feature-list a:focus {
+  text-decoration: underline;
 }
 
-.dex-ob-form-table td {
-  padding: var(--dex-space-2) 0;
-  vertical-align: middle;
+/* Inline tool rows (sync, save location, apply) */
+.dex-ob-footer-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--dex-space-3);
+  flex-wrap: wrap;
+  margin-bottom: var(--dex-space-3);
 }
 
-.dex-req {
+.dex-ob-footer-actions .spinner {
+  float: none;
+  margin: 0;
+}
+
+/* Block-style inline results */
+.dex-ob-block-result.dex-inline-result {
+  display: block;
+  margin-left: 0;
+  margin-bottom: var(--dex-space-3);
+  min-height: 1.25em;
+}
+
+.dex-ob-zone-result.is-success {
+  line-height: 1.65;
+}
+
+/* Field validation messages (plain text, JS-filled) */
+.dex-ob-field-msg:empty {
+  display: none;
+}
+
+.dex-ob-field-msg:not(:empty) {
+  display: block;
+  font-size: var(--dex-text-xs);
   color: var(--dex-red);
+  margin: var(--dex-space-1) 0 0;
 }
 
-
-/* ── Autocomplete (onboarding sender location) ───────────────── */
-
+/* Autocomplete anchor + spinner offset */
 .dex-ob-autocomplete-wrap {
   position: relative;
-  display: inline-block;
+  display: block;
+  width: 100%;
 }
 
 .dex-ob-autocomplete-wrap .spinner {
   position: absolute;
-  right: -24px;
+  right: calc(-1 * var(--dex-space-6));
   top: 50%;
   transform: translateY(-50%);
   float: none;
   margin: 0;
 }
 
-.dex-ob-suggestions {
-  position: absolute;
-  top: calc(100% + 2px);
-  left: 0;
-  min-width: 260px;
-  max-width: 400px;
-  max-height: 240px;
-  overflow-y: auto;
-  background: var(--dex-white);
+/* Shipping method stack */
+.dex-ob-method-stack {
   border: var(--dex-border);
   border-radius: var(--dex-radius);
-  box-shadow: var(--dex-shadow);
-  z-index: 9999;
+  padding: 0 var(--dex-space-4);
+  margin-bottom: var(--dex-space-4);
+  background: var(--dex-white);
 }
 
-.dex-ob-suggestion-item {
-  padding: var(--dex-space-2) var(--dex-space-3);
-  font-size: var(--dex-text-sm);
-  cursor: pointer;
-  color: var(--dex-gray-700);
-  border-bottom: 1px solid var(--dex-gray-100);
-  transition: background var(--dex-transition), color var(--dex-transition);
+.dex-ob-method-stack .dex-field__label {
+  margin: var(--dex-space-3) 0 var(--dex-space-2);
 }
 
-.dex-ob-suggestion-item:last-child {
-  border-bottom: none;
+.dex-ob-method-stack .dex-check-row {
+  padding-left: 0;
+  padding-right: 0;
 }
 
-.dex-ob-suggestion-item:hover,
-.dex-ob-suggestion-item:focus {
-  background: var(--dex-red-light);
-  color: var(--dex-red);
-  outline: none;
-}
-
-.dex-ob-suggestion-empty {
-  padding: var(--dex-space-2) var(--dex-space-3);
-  font-size: var(--dex-text-sm);
-  color: var(--dex-text-muted);
-  cursor: default;
-  font-style: italic;
-}
-
-
-/* ── Action row (button + inline result) ─────────────────────── */
-
-.dex-ob-action-row {
-  display: flex;
-  align-items: center;
-  gap: var(--dex-space-3);
-  margin-bottom: var(--dex-space-3);
-  flex-wrap: wrap;
-}
-
-.dex-ob-action-row .dashicons {
-  vertical-align: middle;
-  font-size: var(--dex-text-base);
-  width: var(--dex-text-base);
-  height: var(--dex-text-base);
-  margin-right: var(--dex-space-1);
-}
-
-.dex-ob-inline-result {
-  font-size: var(--dex-text-sm);
-  font-weight: 600;
-}
-
-.dex-ob-inline-result.is-success { color: var(--dex-green); }
-.dex-ob-inline-result.is-error   { color: var(--dex-red); }
-
-/* Block result message */
-.dex-ob-result-block {
-  margin-bottom: var(--dex-space-3);
-  font-size: var(--dex-text-sm);
-  font-weight: 600;
-  min-height: 18px;
-}
-
-.dex-ob-result-block.is-success { color: var(--dex-green); }
-.dex-ob-result-block.is-error   { color: var(--dex-red); }
-
-/* Field-level error */
-.dex-ob-field-error {
-  color: var(--dex-red);
-  font-size: var(--dex-text-xs);
-  margin: var(--dex-space-1) 0 0;
-  min-height: 16px;
-}
-
-
-/* ── Navigation bar (bottom of each panel) ───────────────────── */
-
+/* Bottom navigation */
 .dex-ob-nav {
-  display: flex;
-  align-items: center;
-  gap: var(--dex-space-2);
-  padding-top: var(--dex-space-4);
-  border-top: var(--dex-border);
-  margin-top: var(--dex-space-4);
-  flex-wrap: wrap;
+  margin-top: 0;
+}
+
+.dex-ob-nav .dex-ob-skip {
+  margin-left: auto;
+}
+
+.dex-ob-panel.dex-card__body > .dex-inline-result.dex-ob-block-result {
+  padding: 0 var(--dex-space-4) var(--dex-space-4);
+}
+
+#dex-ob-panel-1 .dex-ob-nav {
+  justify-content: space-between;
 }
 
 .dex-ob-nav--center {
   justify-content: center;
 }
 
-/* Push "Next" to right after skip */
-.dex-ob-nav .dex-ob-skip {
-  margin-left: auto;
+.dex-ob-nav--center .dex-ob-back {
+  margin-right: var(--dex-space-2);
 }
 
-/* First panel layout adjustment */
-#dex-ob-panel-1 .dex-ob-nav {
-  justify-content: space-between;
-}
-
-/* Skip-all: use parent context for specificity to beat .button (0,2,0) > (0,1,0) */
-.dex-ob-nav .dex-ob-skip-all {
-  color: var(--dex-gray-500);
-  border-color: var(--dex-gray-300);
-}
-
-/* Zone result rich HTML */
-#dex-ob-zone-result.is-success {
-  line-height: 1.7;
-}
-
-
-/* ── Method selection list (Step 5) ──────────────────────────── */
-
-.dex-ob-method-list {
+.dex-ob-panel .dex-notice {
   margin-bottom: var(--dex-space-4);
+  border-radius: var(--dex-radius);
+}
+
+/* Korak 6 — poseban ekran završetka (bez klasičnog panel head / card footer) */
+.dex-ob-panel.dex-card__body.dex-ob-panel--finish-step {
+  flex: 1 1 auto;
+  min-height: 260px;
+}
+
+.dex-ob-finish-screen {
   display: flex;
   flex-direction: column;
-  gap: var(--dex-space-2);
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
-.dex-ob-methods-legend {
+.dex-ob-finish-screen__inner {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  max-width: 560px;
+  width: 100%;
+  margin: 0 auto;
+  padding: var(--dex-space-5) var(--dex-space-4) var(--dex-space-4);
+  text-align: center;
+}
+
+.dex-ob-finish-screen__inner > .dex-notice {
+  margin-bottom: var(--dex-space-4);
+  text-align: left;
+}
+
+.dex-ob-finish-hero {
+  margin-bottom: var(--dex-space-5);
+}
+
+.dex-ob-finish-hero__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  margin: 0 auto var(--dex-space-3);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--dex-red) 10%, var(--dex-white));
+  border: 2px solid color-mix(in srgb, var(--dex-red) 35%, var(--dex-gray-200));
+}
+
+.dex-ob-finish-hero__badge .dashicons {
+  width: 32px;
+  height: 32px;
+  font-size: 32px;
+  color: var(--dex-red);
+}
+
+.dex-ob-finish-hero__title {
+  margin: 0 0 var(--dex-space-3);
+  font-size: clamp(1.35rem, 2.5vw, 1.75rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: var(--dex-text);
+}
+
+.dex-ob-finish-hero__lead {
+  max-width: 34em;
+  margin: 0 auto;
+  font-size: var(--dex-text-sm);
+  line-height: 1.55;
+  color: var(--dex-gray-700);
+}
+
+.dex-ob-finish {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dex-space-4);
+  margin-top: 0;
+}
+
+.dex-ob-finish__pending {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--dex-space-4);
+}
+
+.dex-ob-finish__cta .dex-btn {
+  min-width: min(100%, 280px);
+}
+
+.dex-ob-finish-back {
+  margin-top: var(--dex-space-1);
+}
+
+.dex-ob-finish__outcome {
+  text-align: center;
+}
+
+.dex-ob-finish-saving {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--dex-space-2);
+  margin: 0 calc(-1 * var(--dex-space-4)) var(--dex-space-4);
+  padding: var(--dex-space-3) var(--dex-space-4);
+  color: var(--dex-gray-700);
   font-size: var(--dex-text-sm);
   font-weight: 600;
-  color: var(--dex-gray-700);
-  margin: 0 0 var(--dex-space-1);
 }
 
-.dex-ob-method-row {
-  padding: var(--dex-space-3) var(--dex-space-4);
-  border: var(--dex-border);
-  border-radius: var(--dex-radius);
-  background: var(--dex-white);
-  transition: border-color var(--dex-transition), background var(--dex-transition);
-}
-
-.dex-ob-method-row:hover {
-  border-color: var(--dex-red);
-  background: var(--dex-red-light);
-}
-
-.dex-ob-method-row:has(input[type="checkbox"]:checked) {
-  border-color: var(--dex-red);
-  background: var(--dex-red-light);
-}
-
-.dex-ob-method-label {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--dex-space-3);
-  cursor: pointer;
-  user-select: none;
-}
-
-/* Custom checkbox */
-.dex-ob-method-label input[type="checkbox"] {
-  -webkit-appearance: none;
-  appearance: none;
-  flex-shrink: 0;
-  width: 18px;
-  height: 18px;
-  margin-top: 2px;
-  border: 2px solid var(--dex-gray-300);
-  border-radius: var(--dex-radius-sm);
-  background: var(--dex-white);
-  cursor: pointer;
-  position: relative;
-  transition: border-color var(--dex-transition), background var(--dex-transition);
-}
-
-.dex-ob-method-label input[type="checkbox"]:hover {
-  border-color: var(--dex-red);
-}
-
-.dex-ob-method-label input[type="checkbox"]:checked {
+.dex-ob-finish-saving__pulse {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
   background: var(--dex-red);
-  border-color: var(--dex-red);
+  animation: dex-ob-finish-pulse 1s ease-in-out infinite;
 }
 
-.dex-ob-method-label input[type="checkbox"]:checked::after {
-  content: '';
-  position: absolute;
-  left: 3px;
-  top: 0;
-  width: 5px;
-  height: 9px;
-  border: 2px solid var(--dex-white);
-  border-top: none;
-  border-left: none;
-  transform: rotate(45deg);
+@keyframes dex-ob-finish-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.92);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
-.dex-ob-method-label input[type="checkbox"]:focus-visible {
+.dex-ob-finish-saved {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--dex-space-3);
+  width: calc(100% + 2 * var(--dex-space-4));
+  margin-left: calc(-1 * var(--dex-space-4));
+  margin-right: calc(-1 * var(--dex-space-4));
+  margin-bottom: var(--dex-space-5);
+  padding: var(--dex-space-4) var(--dex-space-4);
+  background: linear-gradient(
+    95deg,
+    color-mix(in srgb, var(--dex-green) 14%, var(--dex-white)) 0%,
+    color-mix(in srgb, var(--dex-green) 22%, var(--dex-white)) 100%
+  );
+  border-top: 1px solid color-mix(in srgb, var(--dex-green) 40%, var(--dex-gray-200));
+  border-bottom: 1px solid color-mix(in srgb, var(--dex-green) 40%, var(--dex-gray-200));
+  color: color-mix(in srgb, var(--dex-green) 92%, var(--dex-gray-800));
+  font-weight: 700;
+  font-size: var(--dex-text-base);
+  opacity: 0;
+  transform: translateY(-8px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.dex-ob-finish-saved.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.dex-ob-finish-saved .dashicons {
+  width: 28px;
+  height: 28px;
+  font-size: 28px;
+}
+
+.dex-ob-finish__result {
+  max-width: 480px;
+  margin: 0 auto var(--dex-space-3);
+  text-align: center;
+}
+
+.dex-ob-finish-links {
+  margin-top: 0;
+  text-align: center;
+}
+
+.dex-ob-finish-links:not([hidden]) .dex-ob-finish-links__grid {
+  animation: dex-ob-finish-links-in 0.45s ease both;
+}
+
+@keyframes dex-ob-finish-links-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dex-ob-finish-links__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(158px, 1fr));
+  gap: var(--dex-space-3);
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.dex-ob-finish-link-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--dex-space-2);
+  min-height: 128px;
+  padding: var(--dex-space-4) var(--dex-space-3);
+  background: var(--dex-white);
+  border: var(--dex-border);
+  border-radius: var(--dex-radius-lg);
+  text-decoration: none;
+  color: var(--dex-text);
+  box-shadow: var(--dex-shadow-xs);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
+}
+
+.dex-ob-finish-link-card:hover {
+  border-color: color-mix(in srgb, var(--dex-red) 45%, var(--dex-gray-200));
+  box-shadow: var(--dex-shadow-sm);
+  transform: translateY(-2px);
+}
+
+.dex-ob-finish-link-card:focus-visible {
   outline: 2px solid var(--dex-red);
   outline-offset: 2px;
 }
 
-.dex-ob-method-label-text {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+.dex-ob-finish-link-card--primary {
+  border-color: color-mix(in srgb, var(--dex-red) 35%, var(--dex-gray-200));
+  background: linear-gradient(
+    160deg,
+    color-mix(in srgb, var(--dex-red) 6%, var(--dex-white)),
+    var(--dex-white)
+  );
 }
 
-.dex-ob-method-label-text strong {
-  font-size: var(--dex-text-sm);
-  font-weight: 600;
-  color: var(--dex-gray-900);
-  transition: color var(--dex-transition);
-}
-
-.dex-ob-method-row:has(input[type="checkbox"]:checked) .dex-ob-method-label-text strong {
+.dex-ob-finish-link-card .dashicons {
+  width: 28px;
+  height: 28px;
+  font-size: 28px;
   color: var(--dex-red);
 }
 
-.dex-ob-method-label-text .description {
+.dex-ob-finish-link-card__title {
+  font-size: var(--dex-text-sm);
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.dex-ob-finish-link-card__desc {
   font-size: var(--dex-text-xs);
+  line-height: 1.35;
   color: var(--dex-text-muted);
+}
+
+@media (max-width: 600px) {
+  .dex-ob-finish-links__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* ── Sync activity feed — compact timeline (JS appends .dex-ob-sync-log__item) ── */
+.dex-ob-sync-feed {
+  position: relative;
+  border: var(--dex-border);
+  border-radius: var(--dex-radius-lg);
+  background: var(--dex-white);
+  padding: var(--dex-space-2) var(--dex-space-3);
+  margin-bottom: var(--dex-space-3);
+  max-height: 200px;
+  overflow-y: auto;
+  box-shadow: inset 0 1px 0 rgb(0 0 0 / 0.03);
+}
+
+.dex-ob-sync-feed::before {
+  content: "";
+  position: absolute;
+  top: var(--dex-space-3);
+  bottom: var(--dex-space-3);
+  left: calc(var(--dex-space-3) + 10px);
+  width: 2px;
+  background: var(--dex-gray-200);
+  border-radius: 1px;
+  pointer-events: none;
+}
+
+.dex-ob-sync-log {
   margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dex-ob-sync-log__item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  align-items: start;
+  gap: var(--dex-space-2) var(--dex-space-3);
+  padding: var(--dex-space-2) 0 var(--dex-space-2) var(--dex-space-1);
+  margin: 0;
+  border-radius: var(--dex-radius);
+}
+
+.dex-ob-sync-log__item:last-child {
+  padding-bottom: 0;
+}
+
+.dex-ob-sync-log__item--ok {
+  color: var(--dex-text);
+}
+
+.dex-ob-sync-log__item--err {
+  color: var(--dex-text);
+}
+
+.dex-ob-sync-log__badge {
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+  margin-top: 1px;
+  border: 2px solid var(--dex-white);
+  box-shadow: 0 0 0 1px var(--dex-gray-200);
+}
+
+.dex-ob-sync-log__item--ok .dex-ob-sync-log__badge {
+  background: var(--dex-green-light);
+  color: var(--dex-green);
+}
+
+.dex-ob-sync-log__item--err .dex-ob-sync-log__badge {
+  background: var(--dex-red-light);
+  color: var(--dex-red);
+}
+
+.dex-ob-sync-log__main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 1px 0 var(--dex-space-1);
+  border-bottom: 1px solid var(--dex-gray-100);
+}
+
+.dex-ob-sync-log__item:last-child .dex-ob-sync-log__main {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.dex-ob-sync-log__title {
+  font-size: var(--dex-text-xs);
+  font-weight: 700;
+  color: var(--dex-text);
+  line-height: 1.35;
+  letter-spacing: 0.01em;
+}
+
+.dex-ob-sync-log__meta {
+  font-size: 10px;
+  color: var(--dex-text-muted);
   line-height: 1.4;
 }
 
+@media (max-width: 782px) {
+  .dex-ob-wrap .dex-ob-form-table tbody,
+  .dex-ob-wrap .dex-ob-form-table tr,
+  .dex-ob-wrap .dex-ob-form-table th,
+  .dex-ob-wrap .dex-ob-form-table td {
+    display: block;
+    width: 100%;
+  }
 
-/* ── Responsive ──────────────────────────────────────────────── */
+  .dex-ob-wrap .dex-ob-form-table th {
+    padding-bottom: var(--dex-space-1);
+  }
+
+  .dex-ob-wrap .dex-ob-form-table .regular-text,
+  .dex-ob-wrap .dex-ob-form-table .small-text {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+}
 
 @media (max-width: 640px) {
   .dex-ob-wrap {
     margin: var(--dex-space-4) var(--dex-space-2);
   }
 
-  .dex-ob-panel {
-    padding: var(--dex-space-4);
+  .dex-ob-top__head {
+    grid-template-columns: 1fr;
+    padding: var(--dex-space-3);
+    gap: var(--dex-space-3);
   }
 
-  .dex-ob-step-label {
+  .dex-ob-top__brand {
+    justify-self: start;
+  }
+
+  .dex-ob-top__logo {
+    width: 40px;
+    height: 40px;
+  }
+
+  .dex-ob-top__title {
+    font-size: var(--dex-text-lg);
+  }
+
+  .dex-ob-top__badge {
+    justify-self: start;
+  }
+
+  .dex-ob-top__rail {
+    padding: var(--dex-space-3);
+  }
+
+  .dex-ob-top .dex-ob-steps-nav.dex-stepper {
+    flex-wrap: wrap;
+    justify-content: center;
+    row-gap: var(--dex-space-3);
+  }
+
+  .dex-ob-top .dex-stepper__line {
     display: none;
   }
 
-  .dex-ob-form-table th {
-    width: auto;
+  .dex-ob-top .dex-stepper__label {
+    display: none;
   }
 
-  .dex-ob-form-table,
-  .dex-ob-form-table tbody,
-  .dex-ob-form-table tr,
-  .dex-ob-form-table th,
-  .dex-ob-form-table td {
-    display: block;
-    width: 100%;
+  .dex-ob-top .dex-stepper__step {
+    flex: 0 0 auto;
+    opacity: 1;
+    transform: none;
   }
 
-  .dex-ob-form-table th {
-    padding-bottom: var(--dex-space-1);
-  }
-
-  .dex-ob-form-table .regular-text {
-    width: 100%;
-    box-sizing: border-box;
+  .dex-ob-top .dex-stepper__step:not(.dex-stepper__step--active):not(.dex-stepper__step--done) {
+    opacity: 0.35;
   }
 }

@@ -25,7 +25,7 @@ final class RecipientAddressCheckService
 
     public function isEnabled(): bool
     {
-        return $this->options->getBool('validate_address.enabled', false);
+        return $this->options->getBool('validate_address.enabled', true);
     }
 
     /**

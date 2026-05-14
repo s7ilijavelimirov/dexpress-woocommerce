@@ -99,8 +99,8 @@ final class CreateShipmentService
         }
 
         $prefix     = $this->options->getString('shipment.prefix');
-        $rangeStart = (int) $this->options->get('shipment.range_start', 1);
-        $rangeEnd   = (int) $this->options->get('shipment.range_end', 9999999999);
+        $rangeStart = (int) $this->options->get('shipment.range_start', 0);
+        $rangeEnd   = (int) $this->options->get('shipment.range_end', 0);
         if ($prefix === '' || $rangeStart <= 0 || $rangeEnd <= 0 || $rangeEnd < $rangeStart) {
             throw new \RuntimeException('Opseg kodova pošiljaka nije konfigurisan. Proverite podešavanja.');
         }

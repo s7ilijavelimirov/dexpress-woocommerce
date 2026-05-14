@@ -163,7 +163,6 @@
   font-family: var(--dex-font);
   font-size: var(--dex-text-base);
   border-color: var(--dex-border-color);
-  border-radius: var(--dex-radius);
   transition: border-color var(--dex-transition), box-shadow var(--dex-transition);
 }
 
@@ -441,7 +440,7 @@
   font-size: var(--dex-text-sm);
   font-weight: 600;
   line-height: 1;
-  border-radius: var(--dex-radius);
+  border-radius: var(--dex-radius-sm);
   cursor: pointer;
   white-space: nowrap;
   text-decoration: none;
@@ -938,7 +937,7 @@ body.dex-modal-open {
   width: 100%;
   height: 36px;
   border: var(--dex-border);
-  border-radius: var(--dex-radius);
+  border-radius: var(--dex-radius-sm);
   font-family: var(--dex-font);
   font-size: var(--dex-text-base);
   color: var(--dex-text);
@@ -1299,6 +1298,11 @@ body.dex-modal-open {
   border-left: 3px solid transparent;
 }
 
+/* display:flex iznad nadjačava podrazumevano skrivanje atributa [hidden] u UA stilu */
+.dex-notice[hidden] {
+  display: none !important;
+}
+
 .dex-notice__icon {
   width: 16px;
   height: 16px;
@@ -1552,63 +1556,154 @@ body.dex-modal-open {
 
 
 /* =============================================================================
-   4.19 ENVIRONMENT TOGGLE
+   4.19 ENVIRONMENT — pill toggle (TEST = neutral „slate“, LIVE = zeleno)
    ============================================================================= */
+
+.dex-env-card__intro {
+  max-width: 26rem;
+  margin-bottom: var(--dex-space-3);
+  font-size: var(--dex-text-xs);
+  line-height: 1.45;
+  color: var(--dex-text-muted);
+}
 
 .dex-env-toggle {
   display: inline-flex;
-  border-radius: var(--dex-radius-sm);
-  overflow: hidden;
-  border: var(--dex-border);
+  align-items: stretch;
+  gap: 3px;
+  width: fit-content;
+  max-width: 100%;
+  padding: 4px;
+  background: var(--dex-gray-200);
+  border-radius: 9999px;
+  border: 1px solid var(--dex-gray-200);
+  box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.06);
 }
 
 .dex-env-option {
-  padding: 7px var(--dex-space-5);
-  font-family: var(--dex-font);
-  font-size: var(--dex-text-sm);
-  font-weight: 500;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 5.75rem;
+  padding: 9px 20px;
+  font: inherit;
+  text-align: center;
   cursor: pointer;
   border: none;
-  background: var(--dex-gray-50);
-  color: var(--dex-text-muted);
-  transition: background var(--dex-transition), color var(--dex-transition);
+  border-radius: 9999px;
+  background: transparent;
+  color: var(--dex-gray-600);
+  transition:
+    background 0.18s ease,
+    color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.dex-env-option:hover:not(.is-active) {
+  color: var(--dex-gray-800);
+  background: rgb(255 255 255 / 0.45);
 }
 
 .dex-env-option:focus {
-  outline: 2px solid var(--dex-blue);
-  outline-offset: -2px;
+  outline: none;
 }
 
+.dex-env-option:focus-visible {
+  outline: 2px solid var(--dex-gray-500);
+  outline-offset: 2px;
+}
+
+.dex-env-option__inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.dex-env-option__label {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  line-height: 1.2;
+}
+
+/* TEST: prigušen „slate“ — nije plavo, deluje kao bezbedan / probni režim */
 .dex-env-option[data-value="test"].is-active {
-  background: var(--dex-amber-light);
-  color: var(--dex-amber);
-  border-right: var(--dex-border);
+  background: color-mix(in srgb, var(--dex-gray-700) 72%, #64748b 28%);
+  color: var(--dex-white);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.1);
 }
 
 .dex-env-option[data-value="production"].is-active {
-  background: var(--dex-red-light);
-  color: var(--dex-red);
+  background: var(--dex-green);
+  color: var(--dex-white);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.1);
 }
 
 .dex-env-status {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--dex-space-2);
   margin-top: var(--dex-space-3);
   padding: var(--dex-space-2) var(--dex-space-3);
+  width: fit-content;
+  max-width: min(100%, 28rem);
+  font-size: var(--dex-text-xs);
+  line-height: 1.45;
+  border-radius: 9999px;
+  border: 1px solid var(--dex-gray-200);
+  background: var(--dex-gray-50);
+  color: var(--dex-gray-700);
+}
 
-  font-size: var(--dex-text-sm);
-  border-left: 3px solid transparent;
-  max-width: 480px;
+.dex-env-status__icon {
+  flex-shrink: 0;
+  line-height: 1.45;
+  font-weight: 500;
+}
+
+.dex-env-status__text {
+  flex: 1;
+  min-width: 0;
 }
 
 .dex-env-status.is-test {
-  background: var(--dex-amber-light);
-  border-color: var(--dex-amber);
-  color: var(--dex-amber);
+  border-color: color-mix(in srgb, #64748b 22%, var(--dex-gray-200));
+  background: color-mix(in srgb, var(--dex-gray-100) 88%, #e8eaef 12%);
+}
+
+.dex-env-status.is-test .dex-env-status__icon {
+  color: #5c6470;
 }
 
 .dex-env-status.is-production {
-  background: var(--dex-red-light);
-  border-color: var(--dex-red);
-  color: var(--dex-red);
+  border-color: color-mix(in srgb, var(--dex-green) 32%, var(--dex-gray-200));
+  background: var(--dex-green-light);
+}
+
+.dex-env-status.is-production .dex-env-status__icon {
+  color: var(--dex-green);
+}
+
+@media (max-width: 480px) {
+  .dex-env-toggle {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .dex-env-option {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .dex-env-status {
+    width: 100%;
+    max-width: 100%;
+    border-radius: var(--dex-radius-lg);
+  }
 }
 
 
@@ -1938,12 +2033,17 @@ body.dex-modal-open {
 
 /* Compact inputs for code / number fields */
 .dex-input--code {
-  width: 80px;
+  width: 3.25rem;
   text-transform: uppercase;
   font-family: ui-monospace, "SFMono-Regular", Consolas, "Courier New", monospace;
   letter-spacing: 0.08em;
   font-weight: 700;
   text-align: center;
+}
+
+.dex-settings-wrap .form-table input.regular-text.dex-input--code {
+  width: 3.25rem !important;
+  max-width: 3.25rem;
 }
 
 .dex-input--number {

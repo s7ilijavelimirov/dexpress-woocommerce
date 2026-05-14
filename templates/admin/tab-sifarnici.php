@@ -160,7 +160,7 @@ $hasCredentials = $options->getString('api.username') !== '';
                             <?php esc_html_e('Obriši sve tabele i podešavanja pri deinstalaciji plugina', 'dexpress-woocommerce'); ?>
                         </label>
                         <p class="description">
-                            <?php esc_html_e('Kada je uključeno, brisanje plugina sa Plugins ekrana trajno briše SVE tabele i podešavanja. Ova akcija se ne može poništiti.', 'dexpress-woocommerce'); ?>
+                            <?php esc_html_e('Kada je uključeno, brisanje plugina sa Plugins ekrana trajno briše sve tabele i podešavanja ovog plugina, kao i D Express meta polja na porudžbinama (ključevi koji počinju sa „_dexpress“). Ostala WooCommerce polja porudžbine (adresa, kupac, plaćanje itd.) ostaju netaknuta. Ova akcija se ne može poništiti.', 'dexpress-woocommerce'); ?>
                         </p>
                     </td>
                 </tr>

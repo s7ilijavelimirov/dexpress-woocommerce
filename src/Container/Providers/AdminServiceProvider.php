@@ -165,6 +165,7 @@ final class AdminServiceProvider implements ServiceProvider
             static fn (Container $c): OnboardingPage => new OnboardingPage(
                 $c->get(OptionsRepository::class),
                 $c->get(Logger::class),
+                $c->get(ShipmentCodeAllocator::class),
             ),
         );
 

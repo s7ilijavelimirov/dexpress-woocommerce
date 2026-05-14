@@ -175,11 +175,19 @@ final class SettingsPage
      */
     private function shipmentCodeRangeStatusForTemplate(): array
     {
-        $prefix     = strtoupper(trim($this->options->getString('shipment.prefix', '')));
-        $rangeStart = max(1, (int) $this->options->get('shipment.range_start', 1));
-        $rangeEnd   = max(1, (int) $this->options->get('shipment.range_end', 99));
+        $prefix = ShipmentCodeAllocator::normalizeShipmentPrefix($this->options->getString('shipment.prefix', ''));
+        $rsRaw  = $this->options->get('shipment.range_start');
+        $reRaw  = $this->options->get('shipment.range_end');
+        $rangeStart = ($rsRaw !== null && $rsRaw !== '') ? (int) $rsRaw : 0;
+        $rangeEnd   = ($reRaw !== null && $reRaw !== '') ? (int) $reRaw : 0;
 
-        if ($prefix === '' || !preg_match('/^[A-Z]{2}$/', $prefix) || $rangeEnd < $rangeStart) {
+        if (
+            $prefix === ''
+            || !preg_match('/^[A-Z]{2}$/', $prefix)
+            || $rangeStart < 1
+            || $rangeEnd < 1
+            || $rangeEnd < $rangeStart
+        ) {
             return ['valid' => false];
         }
 

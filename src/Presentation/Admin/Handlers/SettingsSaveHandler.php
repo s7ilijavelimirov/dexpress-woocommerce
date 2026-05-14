@@ -66,9 +66,17 @@ final class SettingsSaveHandler
         $rawPassword = $_POST['api_password'] ?? '';
         $clientId    = sanitize_text_field($_POST['api_client_id'] ?? '');
         $environment = sanitize_key($_POST['api_environment'] ?? 'test');
-        $prefix      = sanitize_text_field($_POST['shipment_prefix'] ?? '');
-        $rangeStart  = (int) ($_POST['shipment_range_start'] ?? 1);
-        $rangeEnd    = (int) ($_POST['shipment_range_end'] ?? 99);
+        $prefixNorm   = ShipmentCodeAllocator::normalizeShipmentPrefix(sanitize_text_field($_POST['shipment_prefix'] ?? ''));
+        $prefixError  = ShipmentCodeAllocator::shipmentPrefixValidationError($prefixNorm);
+        if ($prefixError !== null) {
+            return $prefixError;
+        }
+        $rangeStart  = (int) ($_POST['shipment_range_start'] ?? 0);
+        $rangeEnd    = (int) ($_POST['shipment_range_end'] ?? 0);
+
+        if ($rangeStart < 1 || $rangeEnd < 1) {
+            return 'Numerički opseg mora imati pozitivne vrednosti za „Od“ i „Do“.';
+        }
 
         $defaultDl   = (int) ($_POST['default_delivery_type'] ?? 2);
         $defaultPay  = (int) ($_POST['default_payment_type'] ?? 2);
@@ -95,7 +103,7 @@ final class SettingsSaveHandler
         $this->options->set('api.username', $username);
         $this->options->set('api.client_id', $clientId);
         $this->options->set('api.environment', $environment);
-        $this->options->set('shipment.prefix', strtoupper($prefix));
+        $this->options->set('shipment.prefix', $prefixNorm);
         $this->options->set('shipment.range_start', $rangeStart);
         $this->options->set('shipment.range_end', $rangeEnd);
         $this->options->set('shipment.default_delivery_type', (string) $defaultDl);

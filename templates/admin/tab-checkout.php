@@ -7,7 +7,7 @@
 
 defined('ABSPATH') || exit;
 
-$enabled = $options->getBool('validate_address.enabled', false);
+$enabled = $options->getBool('validate_address.enabled', true);
 ?>
 
 <div class="dex-notice dex-notice--info dex-tab-intro">

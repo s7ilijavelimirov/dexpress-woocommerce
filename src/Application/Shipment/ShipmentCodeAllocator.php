@@ -20,6 +20,26 @@ final class ShipmentCodeAllocator
 
     public const USAGE_WARNING_TRANSIENT = 'dexpress_code_allocation_warning';
 
+    /**
+     * Dvoslovni prefiks koda pošiljke — uklanja sve što nije slovo, velika slova, maks. 2 znaka.
+     */
+    public static function normalizeShipmentPrefix(string $raw): string
+    {
+        return strtoupper(substr(preg_replace('/[^A-Za-z]/', '', $raw), 0, 2));
+    }
+
+    /**
+     * @return string|null Poruka greške (lokalizovana) ako prefiks nije tačno dva latinična slova
+     */
+    public static function shipmentPrefixValidationError(string $normalized): ?string
+    {
+        if (strlen($normalized) !== 2 || !ctype_alpha($normalized)) {
+            return __('Prefiks pošiljke mora biti tačno 2 latinična slova (npr. TT).', 'dexpress-woocommerce');
+        }
+
+        return null;
+    }
+
     public function __construct(
         private readonly ShipmentRepository $shipments,
         private readonly OptionsRepository $options,
@@ -128,16 +148,28 @@ final class ShipmentCodeAllocator
 
     private function normalizedPrefix(): string
     {
-        return strtoupper(trim($this->options->getString('shipment.prefix', '')));
+        return self::normalizeShipmentPrefix($this->options->getString('shipment.prefix', ''));
     }
 
     private function rangeStart(): int
     {
-        return max(1, (int) $this->options->get('shipment.range_start', 1));
+        $v = $this->options->get('shipment.range_start');
+        if ($v === null || $v === '') {
+            return 0;
+        }
+        $i = (int) $v;
+
+        return $i > 0 ? $i : 0;
     }
 
     private function rangeEnd(): int
     {
-        return max(1, (int) $this->options->get('shipment.range_end', 9999999999));
+        $v = $this->options->get('shipment.range_end');
+        if ($v === null || $v === '') {
+            return 0;
+        }
+        $i = (int) $v;
+
+        return $i > 0 ? $i : 0;
     }
 }

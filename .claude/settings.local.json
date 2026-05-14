@@ -11,7 +11,8 @@
       "Bash(Remove-Item \"C:\\\\Users\\\\S7DEVPQ6GF\\\\Local Sites\\\\d-express\\\\app\\\\public\\\\wp-content\\\\plugins\\\\dexpress-woocommerce\\\\assets\\\\css\\\\admin-design-system.css\" -Force)",
       "Bash(Write-Host \"Deleted both files.\")",
       "PowerShell(Remove-Item *)",
-      "Bash(dir /s /b \"C:\\\\Users\\\\S7DEVPQ6GF\\\\Local Sites\\\\d-express\\\\app\\\\public\\\\wp-content\\\\plugins\\\\dexpress-woocommerce\")"
+      "Bash(dir /s /b \"C:\\\\Users\\\\S7DEVPQ6GF\\\\Local Sites\\\\d-express\\\\app\\\\public\\\\wp-content\\\\plugins\\\\dexpress-woocommerce\")",
+      "Bash(Remove-Item *)"
     ]
   }
 }

@@ -16,14 +16,65 @@ require_once __DIR__ . '/vendor/autoload.php';
 
 global $wpdb;
 
+$dexpress_cron_hooks = [
+    'dexpress_cron_daily',
+    'dexpress_cron_monthly',
+    'dexpress_cron_quarterly',
+    'dexpress_cron_semi_annual',
+];
+
+foreach ($dexpress_cron_hooks as $hook) {
+    $timestamp = wp_next_scheduled($hook);
+    if ($timestamp) {
+        wp_unschedule_event($timestamp, $hook);
+    }
+    wp_clear_scheduled_hook($hook);
+}
+
+wp_clear_scheduled_hook('dexpress/simulate_shipments');
+wp_clear_scheduled_hook('dexpress/simulated_webhook');
+
+if (function_exists('as_unschedule_all_actions')) {
+    as_unschedule_all_actions('dexpress/simulation/inject');
+}
+
 // Drop all plugin tables and dexpress_db_version.
 (new \S7codedesign\DExpress\Infrastructure\Persistence\DatabaseInstaller($wpdb))->uninstall();
 
-// Remove all remaining plugin options so that a fresh reinstall starts from a clean state.
-delete_option('dexpress_settings');
-delete_option('dexpress_onboarding_complete');
-delete_option('dexpress_myaccount_endpoint_rewrite_mark');
-delete_transient('_dexpress_activation_redirect');
+// Options and transients owned by this plugin.
+$option_like_patterns = array_merge(
+    [$wpdb->esc_like('dexpress_') . '%'],
+    [
+        $wpdb->esc_like('_transient_dexpress') . '%',
+        $wpdb->esc_like('_transient__dexpress') . '%',
+        $wpdb->esc_like('_transient_timeout_dexpress') . '%',
+        $wpdb->esc_like('_transient_timeout__dexpress') . '%',
+        $wpdb->esc_like('_site_transient_dexpress') . '%',
+        $wpdb->esc_like('_site_transient__dexpress') . '%',
+        $wpdb->esc_like('_site_transient_timeout_dexpress') . '%',
+        $wpdb->esc_like('_site_transient_timeout__dexpress') . '%',
+    ],
+);
 
-// Remove per-user onboarding notice dismissal so the notice re-appears after reinstall.
-$wpdb->delete($wpdb->usermeta, ['meta_key' => '_dexpress_onboarding_notice_dismissed']);
+foreach ($option_like_patterns as $like) {
+    // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+    $wpdb->query($wpdb->prepare("DELETE FROM {$wpdb->options} WHERE option_name LIKE %s", $like));
+}
+
+// WooCommerce order meta: samo ključevi koje ovaj plugin čuva pod prefiksom _dexpress_
+// (ne diramo ostala polja porudžbine — billing/shipping adresa ostaje u WooCommerce-u).
+$dexpress_meta_like = $wpdb->esc_like('_dexpress') . '%';
+// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+$wpdb->query($wpdb->prepare("DELETE FROM {$wpdb->postmeta} WHERE meta_key LIKE %s", $dexpress_meta_like));
+
+$orders_meta_table = $wpdb->prefix . 'wc_orders_meta';
+// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+if ($wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $orders_meta_table)) === $orders_meta_table) {
+    // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+    $wpdb->query($wpdb->prepare("DELETE FROM `{$orders_meta_table}` WHERE meta_key LIKE %s", $dexpress_meta_like));
+}
+
+// Per-user plugin flags (npr. onboarding notice).
+$dexpress_user_meta_like = $wpdb->esc_like('_dexpress') . '%';
+// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+$wpdb->query($wpdb->prepare("DELETE FROM {$wpdb->usermeta} WHERE meta_key LIKE %s", $dexpress_user_meta_like));
