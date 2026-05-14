@@ -1,0 +1,99 @@
+/* =============================================================================
+   D Express WooCommerce — Diagnostics
+   Handle: dex-diagnostics · Page: dexpress_page_dexpress-diagnostics
+   Koristi komponente iz admin.css (.dex-page-header, .dex-stat-card, .dex-card,
+   .dex-notice, .dex-table, .dex-btn). Ispod samo raspored i specifični detalji.
+   ============================================================================= */
+
+.dex-diagnostics__notice {
+  margin-bottom: var(--dex-space-5);
+}
+
+.dex-diagnostics__api-actions {
+  margin-top: var(--dex-space-3);
+}
+
+.dex-diagnostics__log-lead {
+  margin-top: 0;
+}
+
+/* KPI red */
+.dex-diagnostics__kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--dex-space-3);
+  margin-bottom: var(--dex-space-5);
+}
+
+/* Šifarnici | API */
+.dex-diagnostics__split {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(240px, 1fr);
+  gap: var(--dex-space-5);
+  align-items: start;
+  margin-bottom: var(--dex-space-5);
+}
+
+.dex-diagnostics .dex-card__body > .description {
+  margin: 0 0 var(--dex-space-3);
+}
+
+.dex-diagnostics .dex-card__header .dex-card__title {
+  flex: 1;
+  min-width: 0;
+}
+
+.dex-diagnostics .dex-card__header .dex-btn {
+  flex-shrink: 0;
+}
+
+/* Log polje */
+.dex-diagnostics__log {
+  display: block;
+  width: 100%;
+  min-height: 280px;
+  box-sizing: border-box;
+  margin: 0;
+  padding: var(--dex-space-3);
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-size: var(--dex-text-xs);
+  line-height: 1.45;
+  color: var(--dex-gray-900);
+  background: var(--dex-gray-50);
+  border: var(--dex-border);
+  border-radius: var(--dex-radius-sm);
+  resize: vertical;
+}
+
+.dex-diagnostics__log-meta {
+  margin: var(--dex-space-3) 0 0;
+  font-size: var(--dex-text-xs);
+  color: var(--dex-text-muted);
+  line-height: 1.5;
+}
+
+.dex-diagnostics__log-meta code {
+  font-size: inherit;
+  word-break: break-all;
+}
+
+/* Red šifarnika — status */
+.dex-diagnostics .dex-table tbody tr.dex-diagnostics__row--synced td:first-child {
+  border-left: 3px solid var(--dex-green);
+}
+
+.dex-diagnostics .dex-table tbody tr.dex-diagnostics__row--pending td:first-child {
+  border-left: 3px solid var(--dex-amber);
+}
+
+@media (max-width: 960px) {
+  .dex-diagnostics__split {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .dex-diagnostics__kpi-grid {
+    grid-template-columns: 1fr;
+  }
+}

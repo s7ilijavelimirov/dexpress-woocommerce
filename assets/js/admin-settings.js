@@ -22,7 +22,7 @@
     // Show / hide password toggle
     // -----------------------------------------------------------------------
 
-    $(document).on('click', '.dexpress-toggle-password', function () {
+    $(document).on('click', '.dex-toggle-password', function () {
         var targetId  = $(this).data('target');
         var $input    = $('#' + targetId);
         var $icon     = $(this).find('.dashicons');
@@ -40,7 +40,7 @@
     // Copy to clipboard
     // -----------------------------------------------------------------------
 
-    $(document).on('click', '.dexpress-copy-btn', function () {
+    $(document).on('click', '.dex-copy-btn', function () {
         var targetId = $(this).data('target');
         var text     = $('#' + targetId).text().trim();
         var $btn     = $(this);
@@ -58,9 +58,9 @@
     // Test connection
     // -----------------------------------------------------------------------
 
-    $('#dexpress-test-connection').on('click', function () {
+    $('#dex-test-connection').on('click', function () {
         var $btn    = $(this);
-        var $result = $('#dexpress-test-connection-result');
+        var $result = $('#dex-test-connection-result');
 
         clearResult($result);
         $btn.prop('disabled', true).text(admin.strings.testing);
@@ -106,10 +106,10 @@
             spinOff();
             $box.empty();
             if (!items.length) {
-                $box.append('<div class="dexpress-suggestion-item dexpress-suggestion-empty">Nema rezultata</div>');
+                $box.append('<div class="dex-dropdown__item dex-dropdown__empty">Nema rezultata</div>');
             } else {
                 $.each(items, function (i, item) {
-                    $('<div class="dexpress-suggestion-item" role="option" tabindex="-1">')
+                    $('<div class="dex-dropdown__item" role="option" tabindex="-1">')
                         .text(item.name)
                         .data('item', item)
                         .appendTo($box);
@@ -129,21 +129,21 @@
             }, 280);
         });
 
-        $(document).on('click', '#' + opts.suggestionsId + ' .dexpress-suggestion-item', function () {
+        $(document).on('click', '#' + opts.suggestionsId + ' .dex-dropdown__item', function () {
             var item = $(this).data('item');
             if (item) { opts.onSelect(item); close(); }
         });
 
         // Keyboard: arrow down into list from input.
         $(document).on('keydown', '#' + opts.inputId, function (e) {
-            var $items = $box.find('.dexpress-suggestion-item[tabindex]');
+            var $items = $box.find('.dex-dropdown__item[tabindex]');
             if (!$items.length) { return; }
             if (e.key === 'ArrowDown') { e.preventDefault(); $items.first().trigger('focus'); }
             else if (e.key === 'Escape') { close(); }
         });
 
         // Keyboard: navigate within list.
-        $(document).on('keydown', '#' + opts.suggestionsId + ' .dexpress-suggestion-item', function (e) {
+        $(document).on('keydown', '#' + opts.suggestionsId + ' .dex-dropdown__item', function (e) {
             var $item = $(this);
             if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
@@ -151,10 +151,10 @@
                 if (item) { opts.onSelect(item); close(); }
             } else if (e.key === 'ArrowDown') {
                 e.preventDefault();
-                $item.next('.dexpress-suggestion-item').trigger('focus');
+                $item.next('.dex-dropdown__item').trigger('focus');
             } else if (e.key === 'ArrowUp') {
                 e.preventDefault();
-                var $prev = $item.prev('.dexpress-suggestion-item');
+                var $prev = $item.prev('.dex-dropdown__item');
                 if ($prev.length) { $prev.trigger('focus'); }
                 else { $input.trigger('focus'); }
             } else if (e.key === 'Escape') {
@@ -176,10 +176,10 @@
     // -----------------------------------------------------------------------
 
     var townAC = buildAutocomplete({
-        inputId:       'dexpress-loc-town-name',
-        suggestionsId: 'dexpress-town-suggestions',
-        wrapperClass:  'dexpress-town-autocomplete',
-        spinnerId:     'dexpress-town-spinner',
+        inputId:       'dex-loc-town-name',
+        suggestionsId: 'dex-town-suggestions',
+        wrapperClass:  'dex-town-autocomplete',
+        spinnerId:     'dex-town-spinner',
         searchFn: function (q, cb) {
             $.get(admin.ajaxUrl, {
                 action: 'dexpress_admin_search_towns',
@@ -190,20 +190,20 @@
             .fail(function ()  { cb([]); });
         },
         onSelect: function (town) {
-            $('#dexpress-loc-town-id').val(town.id);
-            $('#dexpress-loc-town-name').val(town.name);
+            $('#dex-loc-town-id').val(town.id);
+            $('#dex-loc-town-name').val(town.name);
             // Clear street when town changes.
-            $('#dexpress-loc-street-name').val('');
-            $('#dexpress-loc-street-id').val('');
+            $('#dex-loc-street-name').val('');
+            $('#dex-loc-street-id').val('');
             streetAC.close();
         },
     });
 
     // Clear town-id + street when user edits the town text directly.
-    $(document).on('input', '#dexpress-loc-town-name', function () {
-        $('#dexpress-loc-town-id').val('');
-        $('#dexpress-loc-street-name').val('');
-        $('#dexpress-loc-street-id').val('');
+    $(document).on('input', '#dex-loc-town-name', function () {
+        $('#dex-loc-town-id').val('');
+        $('#dex-loc-street-name').val('');
+        $('#dex-loc-street-id').val('');
     });
 
     // -----------------------------------------------------------------------
@@ -211,12 +211,12 @@
     // -----------------------------------------------------------------------
 
     var streetAC = buildAutocomplete({
-        inputId:       'dexpress-loc-street-name',
-        suggestionsId: 'dexpress-street-suggestions',
-        wrapperClass:  'dexpress-street-autocomplete',
-        spinnerId:     'dexpress-street-spinner',
+        inputId:       'dex-loc-street-name',
+        suggestionsId: 'dex-street-suggestions',
+        wrapperClass:  'dex-street-autocomplete',
+        spinnerId:     'dex-street-spinner',
         searchFn: function (q, cb) {
-            var townId = $('#dexpress-loc-town-id').val();
+            var townId = $('#dex-loc-town-id').val();
             if (!townId) { cb([]); return; }
 
             $.get(admin.ajaxUrl, {
@@ -229,8 +229,8 @@
             .fail(function ()  { cb([]); });
         },
         onSelect: function (street) {
-            $('#dexpress-loc-street-id').val(street.id);
-            $('#dexpress-loc-street-name').val(street.name);
+            $('#dex-loc-street-id').val(street.id);
+            $('#dex-loc-street-name').val(street.name);
         },
     });
 
@@ -248,9 +248,9 @@
         return raw;
     }
 
-    $(document).on('blur', '#dexpress-loc-contact-phone', function () {
+    $(document).on('blur', '#dex-loc-contact-phone', function () {
         var raw  = $(this).val().trim();
-        var $err = $('#dexpress-phone-error');
+        var $err = $('#dex-phone-error');
 
         if (raw === '') {
             $err.text('').removeClass('is-visible');
@@ -274,40 +274,42 @@
     function openModal(title, data) {
         data = data || {};
 
-        $('#dexpress-modal-title').text(title);
-        $('#dexpress-location-id').val(data.id || '');
-        $('#dexpress-loc-name').val(data.name || '');
-        $('#dexpress-loc-street-id').val(data.streetId || '');
-        $('#dexpress-loc-street-name').val(data.streetName || '');
-        $('#dexpress-loc-number').val(data.streetNumber || '');
-        $('#dexpress-loc-addr-desc').val(data.addressDesc || '');
-        $('#dexpress-loc-contact-name').val(data.contactName || '');
-        $('#dexpress-loc-contact-phone').val(data.contactPhone || '');
-        $('#dexpress-loc-bank-account').val(data.bankAccount || '');
-        $('#dexpress-phone-error').text('').removeClass('is-visible');
+        $('#dex-modal-title').text(title);
+        $('#dex-location-id').val(data.id || '');
+        $('#dex-loc-name').val(data.name || '');
+        $('#dex-loc-street-id').val(data.streetId || '');
+        $('#dex-loc-street-name').val(data.streetName || '');
+        $('#dex-loc-number').val(data.streetNumber || '');
+        $('#dex-loc-addr-desc').val(data.addressDesc || '');
+        $('#dex-loc-contact-name').val(data.contactName || '');
+        $('#dex-loc-contact-phone').val(data.contactPhone || '');
+        $('#dex-loc-bank-account').val(data.bankAccount || '');
+        $('#dex-phone-error').text('').removeClass('is-visible');
 
-        $('#dexpress-loc-town-id').val(data.townId || '');
-        $('#dexpress-loc-town-name').val(data.townName || '');
+        $('#dex-loc-town-id').val(data.townId || '');
+        $('#dex-loc-town-name').val(data.townName || '');
 
         townAC.close();
         streetAC.close();
-        clearResult($('#dexpress-location-result'));
+        clearResult($('#dex-location-result'));
 
-        $('#dexpress-modal-overlay, #dexpress-location-modal').show();
-        $('#dexpress-loc-name').trigger('focus');
+        $('#dex-location-modal').addClass('is-open');
+        $('body').addClass('dex-modal-open');
+        $('#dex-loc-name').trigger('focus');
     }
 
     function closeModal() {
-        $('#dexpress-modal-overlay, #dexpress-location-modal').hide();
+        $('#dex-location-modal').removeClass('is-open');
+        $('body').removeClass('dex-modal-open');
         townAC.close();
         streetAC.close();
     }
 
-    $('#dexpress-add-location').on('click', function () {
+    $('#dex-add-location').on('click', function () {
         openModal('Dodaj lokaciju');
     });
 
-    $(document).on('click', '.dexpress-edit-location', function () {
+    $(document).on('click', '.dex-edit-location', function () {
         var $btn = $(this);
         openModal('Izmeni lokaciju', {
             id:           $btn.data('id'),
@@ -324,63 +326,65 @@
         });
     });
 
-    $('#dexpress-cancel-location, #dexpress-modal-overlay').on('click', closeModal);
+    $('#dex-cancel-location').on('click', closeModal);
+
+    $('#dex-location-modal').on('click', '.dex-modal__backdrop', closeModal);
 
     $(document).on('keydown', function (e) {
         if (e.key === 'Escape') { closeModal(); }
     });
 
     // Save location.
-    $('#dexpress-save-location').on('click', function () {
+    $('#dex-save-location').on('click', function () {
         var $btn        = $(this);
-        var $result     = $('#dexpress-location-result');
-        var townId      = $('#dexpress-loc-town-id').val();
-        var streetId    = $('#dexpress-loc-street-id').val();
-        var street      = $('#dexpress-loc-street-name').val().trim();
-        var name        = $('#dexpress-loc-name').val().trim();
-        var contactName = $('#dexpress-loc-contact-name').val().trim();
+        var $result     = $('#dex-location-result');
+        var townId      = $('#dex-loc-town-id').val();
+        var streetId    = $('#dex-loc-street-id').val();
+        var street      = $('#dex-loc-street-name').val().trim();
+        var name        = $('#dex-loc-name').val().trim();
+        var contactName = $('#dex-loc-contact-name').val().trim();
 
         if (!name) {
             setResult($result, 'Naziv lokacije je obavezan.', false);
-            $('#dexpress-loc-name').trigger('focus');
+            $('#dex-loc-name').trigger('focus');
             return;
         }
 
         if (!townId) {
             setResult($result, 'Izaberite grad iz liste.', false);
-            $('#dexpress-loc-town-name').trigger('focus');
+            $('#dex-loc-town-name').trigger('focus');
             return;
         }
 
         if (!streetId || !street) {
             setResult($result, 'Izaberite ulicu iz liste.', false);
-            $('#dexpress-loc-street-name').trigger('focus');
+            $('#dex-loc-street-name').trigger('focus');
             return;
         }
 
-        var number = $('#dexpress-loc-number').val().trim();
+        var number = $('#dex-loc-number').val().trim();
         if (!number) {
             setResult($result, 'Kućni broj je obavezan.', false);
-            $('#dexpress-loc-number').trigger('focus');
+            $('#dex-loc-number').trigger('focus');
             return;
         }
 
         if (!contactName) {
             setResult($result, 'Kontakt osoba je obavezna.', false);
-            $('#dexpress-loc-contact-name').trigger('focus');
+            $('#dex-loc-contact-name').trigger('focus');
             return;
         }
 
-        var phone    = $('#dexpress-loc-contact-phone').val().trim();
+        var phone    = $('#dex-loc-contact-phone').val().trim();
         if (!phone) {
             setResult($result, 'Telefon je obavezan.', false);
-            $('#dexpress-loc-contact-phone').trigger('focus');
+            $('#dex-loc-contact-phone').trigger('focus');
             return;
         }
         var phoneVal = normalizePhone(phone);
         if (!PHONE_RE.test(phoneVal)) {
             setResult($result, 'Telefon nije u ispravnom formatu. Primer: 381641234567', false);
-            $('#dexpress-loc-contact-phone').trigger('focus');
+            $('#dex-loc-contact-phone').trigger('focus');
             return;
         }
 
@@ -390,16 +394,16 @@
         $.post(admin.ajaxUrl, {
             action:        'dexpress_save_sender_location',
             nonce:         admin.nonces.saveSenderLocation,
-            id:            $('#dexpress-location-id').val(),
+            id:            $('#dex-location-id').val(),
             name:          name,
             street_id:     streetId,
             street_name:   street,
             street_number: number,
             town_id:       townId,
-            address_desc:  $('#dexpress-loc-addr-desc').val(),
+            address_desc:  $('#dex-loc-addr-desc').val(),
             contact_name:  contactName,
             contact_phone: phoneVal,
-            bank_account:  $('#dexpress-loc-bank-account').val().trim(),
+            bank_account:  $('#dex-loc-bank-account').val().trim(),
         })
         .done(function (response) {
             if (response.success) {
@@ -416,7 +420,7 @@
     });
 
     // Delete location.
-    $(document).on('click', '.dexpress-delete-location', function () {
+    $(document).on('click', '.dex-delete-location', function () {
         if (!window.confirm(admin.strings.confirmDelete)) {
             return;
         }
@@ -432,7 +436,7 @@
         .done(function (response) {
             if (response.success) {
                 $row.remove();
-                if ($('#dexpress-locations-list tr').length === 0) {
+                if ($('#dex-locations-list tr').length === 0) {
                     window.location.reload();
                 }
             } else {
@@ -442,7 +446,7 @@
     });
 
     // Set default location.
-    $(document).on('click', '.dexpress-set-default', function () {
+    $(document).on('click', '.dex-set-default', function () {
         var id = $(this).data('id');
 
         $.post(admin.ajaxUrl, {
@@ -464,23 +468,23 @@
     // -----------------------------------------------------------------------
 
     function setRowSyncStatus(type, state) {
-        var $cell = $('tr[data-sync-type="' + type + '"] .dexpress-sync-status');
+        var $cell = $('tr[data-sync-type="' + type + '"] .dex-sync-status');
         if (!$cell.length) {
             return;
         }
         if (state === 'loading') {
             $cell.html('<span class="spinner is-active"></span>');
         } else if (state === 'success') {
-            $cell.html('<span class="dashicons dashicons-yes-alt dexpress-sync-ok" aria-hidden="true"></span>');
+            $cell.html('<span class="dashicons dashicons-yes-alt dex-sync-ok" aria-hidden="true"></span>');
         } else if (state === 'error') {
-            $cell.html('<span class="dashicons dashicons-dismiss dexpress-sync-err" aria-hidden="true"></span>');
+            $cell.html('<span class="dashicons dashicons-dismiss dex-sync-err" aria-hidden="true"></span>');
         } else {
             $cell.empty();
         }
     }
 
     function clearAllRowSyncStatuses() {
-        $('.dexpress-sync-table .dexpress-sync-status').empty();
+        $('.dex-sync-table .dex-sync-status').empty();
     }
 
     function updateLastSyncCell($btn) {
@@ -531,14 +535,14 @@
             });
     }
 
-    $(document).on('click', '.dexpress-manual-sync', function () {
+    $(document).on('click', '.dex-manual-sync', function () {
         var $btn    = $(this);
         var type    = $btn.data('type');
-        var $result = $btn.closest('td').find('.dexpress-sync-result');
+        var $result = $btn.closest('td').find('.dex-sync-result');
         runSync(type, $btn, $result, false);
     });
 
-    $('#dexpress-sync-all').on('click', function () {
+    $('#dex-sync-all').on('click', function () {
         if (!window.confirm(admin.strings.confirmSync)) {
             return;
         }
@@ -549,8 +553,8 @@
         }
 
         var $mainBtn    = $(this);
-        var $mainResult = $('#dexpress-sync-all-result');
-        var $allRowBtns = $('.dexpress-sync-table .dexpress-manual-sync');
+        var $mainResult = $('#dex-sync-all-result');
+        var $allRowBtns = $('.dex-sync-table .dex-manual-sync');
 
         if (!$mainBtn.data('orig-label')) {
             $mainBtn.data('orig-label', $mainBtn.text());
@@ -588,7 +592,7 @@
                 .done(function (response) {
                     if (response.success) {
                         setRowSyncStatus(type, 'success');
-                        var $rowBtn = $('.dexpress-manual-sync[data-type="' + type + '"]');
+                        var $rowBtn = $('.dex-manual-sync[data-type="' + type + '"]');
                         if ($rowBtn.length) {
                             updateLastSyncCell($rowBtn);
                         }
@@ -611,15 +615,15 @@
     // Simulation tab — show timing only when simulation on; Brza/Realna UI
     // -----------------------------------------------------------------------
 
-    var $simSection = $('#dexpress-section-simulation');
+    var $simSection = $('#dex-section-simulation');
     if ($simSection.length) {
-        var $simEnabled = $('#dexpress-simulation-enabled');
-        var $simWrap    = $('#dexpress-sim-timing-wrap');
-        var $quickCb    = $('#dexpress-sim-quick-checkbox');
-        var $btnBrza    = $('#dexpress-sim-mode-brza');
-        var $btnRealna  = $('#dexpress-sim-mode-realna');
-        var $panelBrza  = $('#dexpress-sim-timing-brza');
-        var $panelReal  = $('#dexpress-sim-timing-realna');
+        var $simEnabled = $('#dex-simulation-enabled');
+        var $simWrap    = $('#dex-sim-timing-wrap');
+        var $quickCb    = $('#dex-sim-quick-checkbox');
+        var $btnBrza    = $('#dex-sim-mode-brza');
+        var $btnRealna  = $('#dex-sim-mode-realna');
+        var $panelBrza  = $('#dex-sim-timing-brza');
+        var $panelReal  = $('#dex-sim-timing-realna');
 
         function simSyncToggleUi() {
             var quick = $quickCb.prop('checked');
@@ -657,5 +661,92 @@
         simSyncToggleUi();
         simSetWrapVisible($simEnabled.prop('checked'));
     }
+
+    // -----------------------------------------------------------------------
+    // Password saved-state toggle (Promeni / Otkaži)
+    // -----------------------------------------------------------------------
+
+    $(document).on('click', '#dex-pw-change', function () {
+        $('#dex-pw-saved-indicator').addClass('dex-hidden');
+        $('#dex-pw-input-wrap').removeClass('dex-hidden');
+        $('#dex-pw-hint').removeClass('dex-hidden');
+        $('#api_password').trigger('focus');
+    });
+
+    $(document).on('click', '#dex-pw-cancel', function () {
+        // Clear the input and reset the visibility toggle state.
+        $('#api_password').val('').attr('type', 'password');
+        var $tog = $('.dex-toggle-password[data-target="api_password"]');
+        $tog.find('.dashicons').removeClass('dashicons-hidden').addClass('dashicons-visibility');
+        $tog.attr('aria-pressed', 'false');
+        $tog.find('.screen-reader-text').text('Prikaži lozinku');
+
+        $('#dex-pw-input-wrap').addClass('dex-hidden');
+        $('#dex-pw-hint').addClass('dex-hidden');
+        $('#dex-pw-saved-indicator').removeClass('dex-hidden');
+    });
+
+    // -----------------------------------------------------------------------
+    // Unsaved-changes guard
+    // -----------------------------------------------------------------------
+
+    var dexDirty  = false;
+    var dexNavUrl = null;
+
+    function dexMarkDirty()  { dexDirty = true; }
+    function dexClearDirty() { dexDirty = false; }
+
+    // Standard form inputs inside the settings wrap.
+    $(document).on(
+        'input change',
+        '.dex-settings-wrap form input, .dex-settings-wrap form textarea, .dex-settings-wrap form select',
+        dexMarkDirty
+    );
+
+    // JS-toggled controls that modify hidden inputs without triggering change events.
+    $(document).on(
+        'click',
+        '.dex-settings-wrap form .dex-env-option, .dex-settings-wrap form .dex-sim-toggle__btn',
+        dexMarkDirty
+    );
+
+    // Clear dirty flag when the form is submitted (saved successfully).
+    $(document).on('submit', '.dex-settings-wrap form', dexClearDirty);
+
+    // Intercept tab navigation when there are unsaved changes.
+    $(document).on('click', '.dex-tabs__item', function (e) {
+        if (!dexDirty) { return; }
+        e.preventDefault();
+        dexNavUrl = $(this).attr('href');
+        $('#dex-unsaved-modal').addClass('is-open');
+        $('body').addClass('dex-modal-open');
+        $('#dex-unsaved-confirm').trigger('focus');
+    });
+
+    // Confirm: leave the tab without saving.
+    $('#dex-unsaved-confirm').on('click', function () {
+        dexClearDirty();
+        dexCloseUnsavedModal();
+        if (dexNavUrl) {
+            window.location.href = dexNavUrl;
+        }
+    });
+
+    function dexCloseUnsavedModal() {
+        $('#dex-unsaved-modal').removeClass('is-open');
+        $('body').removeClass('dex-modal-open');
+        dexNavUrl = null;
+    }
+
+    $('#dex-unsaved-cancel').on('click', dexCloseUnsavedModal);
+    $('#dex-unsaved-modal').on('click', '.dex-modal__backdrop', dexCloseUnsavedModal);
+
+    // Escape closes the unsaved modal (the existing keydown handler covers the
+    // location modal; this one only fires when the unsaved modal is open).
+    $(document).on('keydown', function (e) {
+        if (e.key === 'Escape' && $('#dex-unsaved-modal').hasClass('is-open')) {
+            dexCloseUnsavedModal();
+        }
+    });
 
 }(jQuery));

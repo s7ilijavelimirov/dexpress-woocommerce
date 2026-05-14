@@ -17,7 +17,6 @@
     var $form      = $('#dex-pp-form');
     var $tableWrap = $('#dex-pp-table-wrap');
     var $msg       = $('#dex-pp-msg');
-    var $addBtn    = $('#dex-pp-add-btn');
     var $cancelBtn = $('#dex-pp-cancel-btn');
     var $saveBtn   = $('#dex-pp-save-btn');
 
@@ -141,8 +140,9 @@
         );
     }
 
-    // ── Event: otvori modal za novi profil ─────────────────────────────────────
-    $addBtn.on('click', function () {
+    // ── Event: otvori modal za novi profil (.dex-pp-open-form u gridu / praznom stanju) ──
+    $(document).on('click', '.dex-pp-open-form', function (e) {
+        e.preventDefault();
         resetForm();
         openForm();
     });

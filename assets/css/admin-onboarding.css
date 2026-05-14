@@ -1,586 +1,536 @@
-/* D-Express onboarding wizard */
+/* =============================================================================
+   D Express WooCommerce — Onboarding Wizard
+   Handle: dexpress-onboarding · Page: dexpress_page_dexpress-onboarding
+   ============================================================================= */
 
-/* -------------------------------------------------------------------------
-   Page layout
-   ------------------------------------------------------------------------- */
 
-.dex-ob-page {
-    /* Remove default .wrap padding-top so we can control spacing */
-}
+/* ── Page layout ─────────────────────────────────────────────── */
 
 .dex-ob-wrap {
-    max-width: 760px;
-    margin: var(--dex-space-8) auto;
+  max-width: 760px;
+  margin: var(--dex-space-8) auto;
 }
 
-/* -------------------------------------------------------------------------
-   Header
-   ------------------------------------------------------------------------- */
+
+/* ── Header ──────────────────────────────────────────────────── */
 
 .dex-ob-header {
-    text-align: center;
-    margin-bottom: var(--dex-space-6);
+  text-align: center;
+  margin-bottom: var(--dex-space-6);
 }
 
 .dex-ob-logo {
-    width: 48px;
-    height: 48px;
-    margin-bottom: var(--dex-space-3);
+  width: 48px;
+  height: 48px;
+  margin-bottom: var(--dex-space-3);
 }
 
 .dex-ob-header h1 {
-    font-size: var(--dex-text-xl);
-    font-weight: 700;
-    color: var(--dex-gray-900);
-    margin: 0 0 var(--dex-space-2);
+  font-size: var(--dex-text-xl);
+  font-weight: 700;
+  color: var(--dex-text);
+  margin: 0 0 var(--dex-space-2);
+  letter-spacing: -0.01em;
 }
 
 .dex-ob-subtitle {
-    color: var(--dex-gray-500);
-    font-size: var(--dex-text-base);
-    margin: 0;
+  color: var(--dex-text-muted);
+  font-size: var(--dex-text-base);
+  margin: 0;
 }
 
-/* -------------------------------------------------------------------------
-   Progress bar
-   ------------------------------------------------------------------------- */
+
+/* ── Progress bar (4px — thinner variant) ────────────────────── */
 
 .dex-ob-progress-track {
-    height: 4px;
-    background: var(--dex-gray-200);
-    border-radius: 999px;
-    margin-bottom: var(--dex-space-4);
-    overflow: hidden;
+  height: 4px;
+  background: var(--dex-gray-200);
+  border-radius: 999px;
+  margin-bottom: var(--dex-space-4);
+  overflow: hidden;
 }
 
 .dex-ob-progress-fill {
-    height: 100%;
-    background: var(--dex-primary);
-    border-radius: 999px;
-    width: 0%;
-    transition: width 300ms ease;
+  height: 100%;
+  background: var(--dex-red);
+  border-radius: 999px;
+  width: 0%;
+  transition: width var(--dex-transition-slow);
 }
 
-/* -------------------------------------------------------------------------
-   Step dots / labels nav
-   ------------------------------------------------------------------------- */
+
+/* ── Step dots nav ───────────────────────────────────────────── */
 
 .dex-ob-steps-nav {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: var(--dex-space-4);
-    gap: var(--dex-space-1);
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: var(--dex-space-4);
+  gap: var(--dex-space-1);
 }
 
 .dex-ob-step-dot {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--dex-space-1);
-    text-align: center;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--dex-space-1);
+  text-align: center;
 }
 
 .dex-ob-step-num {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    font-size: var(--dex-text-sm);
-    font-weight: 700;
-    background: var(--dex-gray-200);
-    color: var(--dex-gray-500);
-    transition: background var(--dex-transition), color var(--dex-transition);
-    line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-size: var(--dex-text-sm);
+  font-weight: 700;
+  background: var(--dex-gray-200);
+  color: var(--dex-text-muted);
+  transition: background var(--dex-transition), color var(--dex-transition);
+  line-height: 1;
+  font-family: var(--dex-font);
 }
 
 .dex-ob-step-label {
-    font-size: var(--dex-text-xs);
-    color: var(--dex-gray-500);
-    transition: color var(--dex-transition);
-    white-space: nowrap;
+  font-size: var(--dex-text-xs);
+  color: var(--dex-text-muted);
+  transition: color var(--dex-transition);
+  white-space: nowrap;
 }
 
 /* Active step */
 .dex-ob-step-dot.is-active .dex-ob-step-num {
-    background: var(--dex-primary);
-    color: #fff;
+  background: var(--dex-red);
+  color: var(--dex-white);
 }
 
 .dex-ob-step-dot.is-active .dex-ob-step-label {
-    color: var(--dex-primary);
-    font-weight: 600;
+  color: var(--dex-red);
+  font-weight: 600;
 }
 
 /* Completed step */
 .dex-ob-step-dot.is-done .dex-ob-step-num {
-    background: var(--dex-success);
-    color: #fff;
+  background: var(--dex-green);
+  color: var(--dex-white);
 }
 
 .dex-ob-step-dot.is-done .dex-ob-step-label {
-    color: var(--dex-success);
+  color: var(--dex-green);
 }
 
-/* -------------------------------------------------------------------------
-   Main card
-   ------------------------------------------------------------------------- */
+
+/* ── Main card ───────────────────────────────────────────────── */
 
 .dex-ob-card {
-    background: #fff;
-    border: var(--dex-border);
-    border-radius: var(--dex-radius-lg);
-    box-shadow: var(--dex-shadow);
-    overflow: hidden;
+  background: var(--dex-white);
+  border: var(--dex-border);
+  border-radius: var(--dex-radius-xl);
+  box-shadow: var(--dex-shadow-lg);
+  overflow: hidden;
 }
 
-/* -------------------------------------------------------------------------
-   Step panels
-   ------------------------------------------------------------------------- */
+
+/* ── Step panels ─────────────────────────────────────────────── */
 
 .dex-ob-panel {
-    padding: var(--dex-space-6);
-    display: block;
+  padding: var(--dex-space-6);
+  display: block;
 }
 
 .dex-ob-panel[hidden] {
-    display: none;
+  display: none;
 }
 
 .dex-ob-panel-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: var(--dex-radius-lg);
-    background: var(--dex-primary-light);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: var(--dex-space-3);
+  width: 48px;
+  height: 48px;
+  border-radius: var(--dex-radius-lg);
+  background: var(--dex-red-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: var(--dex-space-3);
+  color: var(--dex-red);
 }
 
 .dex-ob-panel-icon .dashicons {
-    font-size: 24px;
-    width: 24px;
-    height: 24px;
-    color: var(--dex-primary);
+  font-size: 24px;
+  width: 24px;
+  height: 24px;
 }
 
 .dex-ob-panel-icon--success {
-    background: var(--dex-success-light);
-}
-
-.dex-ob-panel-icon--success .dashicons {
-    color: var(--dex-success);
+  background: var(--dex-green-light);
+  color: var(--dex-green);
 }
 
 .dex-ob-panel h2 {
-    font-size: var(--dex-text-lg);
-    font-weight: 700;
-    margin: 0 0 var(--dex-space-3);
-    color: var(--dex-gray-900);
+  font-size: var(--dex-text-lg);
+  font-weight: 700;
+  margin: 0 0 var(--dex-space-3);
+  color: var(--dex-text);
+  letter-spacing: -0.01em;
 }
 
 .dex-ob-panel > p {
-    color: var(--dex-gray-700);
-    margin: 0 0 var(--dex-space-4);
-    font-size: var(--dex-text-base);
-    line-height: 1.6;
+  color: var(--dex-gray-700);
+  margin: 0 0 var(--dex-space-4);
+  font-size: var(--dex-text-base);
+  line-height: 1.6;
 }
 
-/* -------------------------------------------------------------------------
-   Feature list
-   ------------------------------------------------------------------------- */
+
+/* ── Feature list (check-circle style) ──────────────────────── */
 
 .dex-ob-feature-list {
-    list-style: none;
-    padding: 0;
-    margin: 0 0 var(--dex-space-4);
-    display: flex;
-    flex-direction: column;
-    gap: var(--dex-space-2);
+  list-style: none;
+  padding: 0;
+  margin: 0 0 var(--dex-space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--dex-space-2);
 }
 
 .dex-ob-feature-list li {
-    display: flex;
-    align-items: flex-start;
-    gap: var(--dex-space-2);
-    font-size: var(--dex-text-base);
-    color: var(--dex-gray-700);
-    line-height: 1.5;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--dex-space-2);
+  font-size: var(--dex-text-base);
+  color: var(--dex-gray-700);
+  line-height: 1.5;
 }
 
 .dex-ob-feature-list .dashicons {
-    color: var(--dex-success);
-    flex-shrink: 0;
-    margin-top: 1px;
+  color: var(--dex-green);
+  flex-shrink: 0;
+  margin-top: 1px;
 }
 
-/* -------------------------------------------------------------------------
-   Form table inside panels
-   ------------------------------------------------------------------------- */
+.dex-ob-feature-list svg {
+  width: 16px;
+  height: 16px;
+  color: var(--dex-green);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+
+/* ── Form table inside panels ────────────────────────────────── */
 
 .dex-ob-form-table {
-    margin-bottom: var(--dex-space-4);
+  margin-bottom: var(--dex-space-4);
 }
 
 .dex-ob-form-table th {
-    width: 180px;
-    padding: var(--dex-space-2) var(--dex-space-3) var(--dex-space-2) 0;
-    font-size: var(--dex-text-sm);
-    font-weight: 600;
-    color: var(--dex-gray-700);
-    vertical-align: middle;
+  width: 180px;
+  padding: var(--dex-space-2) var(--dex-space-3) var(--dex-space-2) 0;
+  font-size: var(--dex-text-sm);
+  font-weight: 600;
+  color: var(--dex-gray-700);
+  vertical-align: middle;
 }
 
 .dex-ob-form-table td {
-    padding: var(--dex-space-2) 0;
-    vertical-align: middle;
+  padding: var(--dex-space-2) 0;
+  vertical-align: middle;
 }
 
 .dex-req {
-    color: var(--dex-error);
+  color: var(--dex-red);
 }
 
-/* -------------------------------------------------------------------------
-   Autocomplete
-   ------------------------------------------------------------------------- */
+
+/* ── Autocomplete (onboarding sender location) ───────────────── */
 
 .dex-ob-autocomplete-wrap {
-    position: relative;
-    display: inline-block;
+  position: relative;
+  display: inline-block;
 }
 
 .dex-ob-autocomplete-wrap .spinner {
-    position: absolute;
-    right: -24px;
-    top: 50%;
-    transform: translateY(-50%);
-    float: none;
-    margin: 0;
+  position: absolute;
+  right: -24px;
+  top: 50%;
+  transform: translateY(-50%);
+  float: none;
+  margin: 0;
 }
 
 .dex-ob-suggestions {
-    position: absolute;
-    top: calc(100% + 2px);
-    left: 0;
-    min-width: 260px;
-    max-width: 400px;
-    max-height: 240px;
-    overflow-y: auto;
-    background: #fff;
-    border: var(--dex-border);
-    border-radius: var(--dex-radius);
-    box-shadow: var(--dex-shadow);
-    z-index: 9999;
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  min-width: 260px;
+  max-width: 400px;
+  max-height: 240px;
+  overflow-y: auto;
+  background: var(--dex-white);
+  border: var(--dex-border);
+  border-radius: var(--dex-radius);
+  box-shadow: var(--dex-shadow);
+  z-index: 9999;
 }
 
 .dex-ob-suggestion-item {
-    padding: var(--dex-space-2) var(--dex-space-3);
-    font-size: var(--dex-text-sm);
-    cursor: pointer;
-    color: var(--dex-gray-700);
-    border-bottom: 1px solid var(--dex-gray-100);
+  padding: var(--dex-space-2) var(--dex-space-3);
+  font-size: var(--dex-text-sm);
+  cursor: pointer;
+  color: var(--dex-gray-700);
+  border-bottom: 1px solid var(--dex-gray-100);
+  transition: background var(--dex-transition), color var(--dex-transition);
 }
 
 .dex-ob-suggestion-item:last-child {
-    border-bottom: none;
+  border-bottom: none;
 }
 
 .dex-ob-suggestion-item:hover,
 .dex-ob-suggestion-item:focus {
-    background: var(--dex-primary-light);
-    color: var(--dex-primary);
-    outline: none;
+  background: var(--dex-red-light);
+  color: var(--dex-red);
+  outline: none;
 }
 
 .dex-ob-suggestion-empty {
-    color: var(--dex-gray-500);
-    cursor: default;
-    font-style: italic;
+  padding: var(--dex-space-2) var(--dex-space-3);
+  font-size: var(--dex-text-sm);
+  color: var(--dex-text-muted);
+  cursor: default;
+  font-style: italic;
 }
 
-/* -------------------------------------------------------------------------
-   Password wrap + eye toggle (shared pattern with admin.css)
-   ------------------------------------------------------------------------- */
 
-.dexpress-password-wrap {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--dex-space-2);
-}
-
-.dexpress-pw-toggle.button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0 6px;
-    min-width: 30px;
-    height: 30px;
-    line-height: 1;
-}
-
-.dexpress-pw-toggle .dashicons {
-    font-size: 18px;
-    width: 18px;
-    height: 18px;
-    color: var(--dex-gray-500);
-    transition: color var(--dex-transition);
-}
-
-.dexpress-pw-toggle:hover .dashicons,
-.dexpress-pw-toggle:focus .dashicons {
-    color: var(--dex-gray-900);
-}
-
-/* -------------------------------------------------------------------------
-   Action row (button + inline result)
-   ------------------------------------------------------------------------- */
+/* ── Action row (button + inline result) ─────────────────────── */
 
 .dex-ob-action-row {
-    display: flex;
-    align-items: center;
-    gap: var(--dex-space-3);
-    margin-bottom: var(--dex-space-3);
-    flex-wrap: wrap;
+  display: flex;
+  align-items: center;
+  gap: var(--dex-space-3);
+  margin-bottom: var(--dex-space-3);
+  flex-wrap: wrap;
 }
 
 .dex-ob-action-row .dashicons {
-    vertical-align: middle;
-    font-size: var(--dex-text-base);
-    width: var(--dex-text-base);
-    height: var(--dex-text-base);
-    margin-right: var(--dex-space-1);
+  vertical-align: middle;
+  font-size: var(--dex-text-base);
+  width: var(--dex-text-base);
+  height: var(--dex-text-base);
+  margin-right: var(--dex-space-1);
 }
 
 .dex-ob-inline-result {
-    font-size: var(--dex-text-sm);
-    font-weight: 600;
+  font-size: var(--dex-text-sm);
+  font-weight: 600;
 }
 
-.dex-ob-inline-result.is-success {
-    color: var(--dex-success);
-}
+.dex-ob-inline-result.is-success { color: var(--dex-green); }
+.dex-ob-inline-result.is-error   { color: var(--dex-red); }
 
-.dex-ob-inline-result.is-error {
-    color: var(--dex-error);
-}
-
-/* Block result message (below action row) */
+/* Block result message */
 .dex-ob-result-block {
-    margin-bottom: var(--dex-space-3);
-    font-size: var(--dex-text-sm);
-    font-weight: 600;
-    min-height: 18px;
+  margin-bottom: var(--dex-space-3);
+  font-size: var(--dex-text-sm);
+  font-weight: 600;
+  min-height: 18px;
 }
 
-.dex-ob-result-block.is-success {
-    color: var(--dex-success);
-}
-
-.dex-ob-result-block.is-error {
-    color: var(--dex-error);
-}
+.dex-ob-result-block.is-success { color: var(--dex-green); }
+.dex-ob-result-block.is-error   { color: var(--dex-red); }
 
 /* Field-level error */
 .dex-ob-field-error {
-    color: var(--dex-error);
-    font-size: var(--dex-text-xs);
-    margin: var(--dex-space-1) 0 0;
-    min-height: 16px;
+  color: var(--dex-red);
+  font-size: var(--dex-text-xs);
+  margin: var(--dex-space-1) 0 0;
+  min-height: 16px;
 }
 
-/* -------------------------------------------------------------------------
-   Navigation bar (bottom of each panel)
-   ------------------------------------------------------------------------- */
+
+/* ── Navigation bar (bottom of each panel) ───────────────────── */
 
 .dex-ob-nav {
-    display: flex;
-    align-items: center;
-    gap: var(--dex-space-2);
-    padding-top: var(--dex-space-4);
-    border-top: var(--dex-border);
-    margin-top: var(--dex-space-4);
-    flex-wrap: wrap;
+  display: flex;
+  align-items: center;
+  gap: var(--dex-space-2);
+  padding-top: var(--dex-space-4);
+  border-top: var(--dex-border);
+  margin-top: var(--dex-space-4);
+  flex-wrap: wrap;
 }
 
 .dex-ob-nav--center {
-    justify-content: center;
+  justify-content: center;
 }
 
-/* Push "Next" to the right */
+/* Push "Next" to right after skip */
 .dex-ob-nav .dex-ob-skip {
-    margin-left: auto;
+  margin-left: auto;
 }
 
-.dex-ob-nav .dex-ob-next {
-    /* sits after skip */
-}
-
-/* First panel has no back button — layout adjustment */
+/* First panel layout adjustment */
 #dex-ob-panel-1 .dex-ob-nav {
-    justify-content: space-between;
+  justify-content: space-between;
 }
 
-.dex-ob-skip-all {
-    color: var(--dex-gray-500) !important;
-    border-color: var(--dex-gray-300) !important;
+/* Skip-all: use parent context for specificity to beat .button (0,2,0) > (0,1,0) */
+.dex-ob-nav .dex-ob-skip-all {
+  color: var(--dex-gray-500);
+  border-color: var(--dex-gray-300);
 }
 
-/* -------------------------------------------------------------------------
-   Responsive
-   ------------------------------------------------------------------------- */
-
-@media (max-width: 640px) {
-    .dex-ob-wrap {
-        margin: var(--dex-space-4) var(--dex-space-2);
-    }
-
-    .dex-ob-panel {
-        padding: var(--dex-space-4);
-    }
-
-    .dex-ob-step-label {
-        display: none;
-    }
-
-    .dex-ob-form-table th {
-        width: auto;
-    }
-
-    .dex-ob-form-table,
-    .dex-ob-form-table tbody,
-    .dex-ob-form-table tr,
-    .dex-ob-form-table th,
-    .dex-ob-form-table td {
-        display: block;
-        width: 100%;
-    }
-
-    .dex-ob-form-table th {
-        padding-bottom: var(--dex-space-1);
-    }
-
-    .dex-ob-form-table .regular-text {
-        width: 100%;
-        box-sizing: border-box;
-    }
+/* Zone result rich HTML */
+#dex-ob-zone-result.is-success {
+  line-height: 1.7;
 }
 
-/* -------------------------------------------------------------------------
-   Method selection list (step 5)
-   ------------------------------------------------------------------------- */
+
+/* ── Method selection list (Step 5) ──────────────────────────── */
 
 .dex-ob-method-list {
-    margin-bottom: var(--dex-space-4);
-    display: flex;
-    flex-direction: column;
-    gap: var(--dex-space-2);
+  margin-bottom: var(--dex-space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--dex-space-2);
 }
 
 .dex-ob-methods-legend {
-    font-size: var(--dex-text-sm);
-    font-weight: 600;
-    color: var(--dex-gray-700);
-    margin: 0 0 var(--dex-space-1);
+  font-size: var(--dex-text-sm);
+  font-weight: 600;
+  color: var(--dex-gray-700);
+  margin: 0 0 var(--dex-space-1);
 }
 
 .dex-ob-method-row {
-    padding: var(--dex-space-3) var(--dex-space-4);
-    border: 1px solid var(--dex-gray-200);
-    border-radius: var(--dex-radius);
-    background: #fff;
-    transition: border-color 0.15s ease, background 0.15s ease;
+  padding: var(--dex-space-3) var(--dex-space-4);
+  border: var(--dex-border);
+  border-radius: var(--dex-radius);
+  background: var(--dex-white);
+  transition: border-color var(--dex-transition), background var(--dex-transition);
 }
 
 .dex-ob-method-row:hover {
-    border-color: var(--dex-primary);
-    background: var(--dex-primary-light);
+  border-color: var(--dex-red);
+  background: var(--dex-red-light);
 }
 
-/* Highlight row when its checkbox is checked (modern browsers) */
 .dex-ob-method-row:has(input[type="checkbox"]:checked) {
-    border-color: var(--dex-primary);
-    background: var(--dex-primary-light);
+  border-color: var(--dex-red);
+  background: var(--dex-red-light);
 }
 
 .dex-ob-method-label {
-    display: flex;
-    align-items: flex-start;
-    gap: var(--dex-space-3);
-    cursor: pointer;
-    user-select: none;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--dex-space-3);
+  cursor: pointer;
+  user-select: none;
 }
 
 /* Custom checkbox */
 .dex-ob-method-label input[type="checkbox"] {
-    -webkit-appearance: none;
-    appearance: none;
-    flex-shrink: 0;
-    width: 18px;
-    height: 18px;
-    margin-top: 2px;
-    border: 2px solid var(--dex-gray-300);
-    border-radius: 4px;
-    background: #fff;
-    cursor: pointer;
-    position: relative;
-    transition: border-color 0.15s ease, background 0.15s ease;
+  -webkit-appearance: none;
+  appearance: none;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  border: 2px solid var(--dex-gray-300);
+  border-radius: var(--dex-radius-sm);
+  background: var(--dex-white);
+  cursor: pointer;
+  position: relative;
+  transition: border-color var(--dex-transition), background var(--dex-transition);
 }
 
 .dex-ob-method-label input[type="checkbox"]:hover {
-    border-color: var(--dex-primary);
+  border-color: var(--dex-red);
 }
 
 .dex-ob-method-label input[type="checkbox"]:checked {
-    background: var(--dex-primary);
-    border-color: var(--dex-primary);
+  background: var(--dex-red);
+  border-color: var(--dex-red);
 }
 
 .dex-ob-method-label input[type="checkbox"]:checked::after {
-    content: '';
-    position: absolute;
-    left: 3px;
-    top: 0px;
-    width: 5px;
-    height: 9px;
-    border: 2px solid #fff;
-    border-top: none;
-    border-left: none;
-    transform: rotate(45deg);
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 0;
+  width: 5px;
+  height: 9px;
+  border: 2px solid var(--dex-white);
+  border-top: none;
+  border-left: none;
+  transform: rotate(45deg);
 }
 
 .dex-ob-method-label input[type="checkbox"]:focus-visible {
-    outline: 2px solid var(--dex-primary);
-    outline-offset: 2px;
+  outline: 2px solid var(--dex-red);
+  outline-offset: 2px;
 }
 
 .dex-ob-method-label-text {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .dex-ob-method-label-text strong {
-    font-size: var(--dex-text-sm);
-    font-weight: 600;
-    color: var(--dex-gray-900);
-    transition: color 0.15s ease;
+  font-size: var(--dex-text-sm);
+  font-weight: 600;
+  color: var(--dex-gray-900);
+  transition: color var(--dex-transition);
 }
 
 .dex-ob-method-row:has(input[type="checkbox"]:checked) .dex-ob-method-label-text strong {
-    color: var(--dex-primary);
+  color: var(--dex-red);
 }
 
 .dex-ob-method-label-text .description {
-    font-size: var(--dex-text-xs);
-    color: var(--dex-gray-500);
-    margin: 0;
-    line-height: 1.4;
+  font-size: var(--dex-text-xs);
+  color: var(--dex-text-muted);
+  margin: 0;
+  line-height: 1.4;
 }
 
-/* Rich HTML in zone summary result */
-#dex-ob-zone-result.is-success {
-    line-height: 1.7;
+
+/* ── Responsive ──────────────────────────────────────────────── */
+
+@media (max-width: 640px) {
+  .dex-ob-wrap {
+    margin: var(--dex-space-4) var(--dex-space-2);
+  }
+
+  .dex-ob-panel {
+    padding: var(--dex-space-4);
+  }
+
+  .dex-ob-step-label {
+    display: none;
+  }
+
+  .dex-ob-form-table th {
+    width: auto;
+  }
+
+  .dex-ob-form-table,
+  .dex-ob-form-table tbody,
+  .dex-ob-form-table tr,
+  .dex-ob-form-table th,
+  .dex-ob-form-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .dex-ob-form-table th {
+    padding-bottom: var(--dex-space-1);
+  }
+
+  .dex-ob-form-table .regular-text {
+    width: 100%;
+    box-sizing: border-box;
+  }
 }

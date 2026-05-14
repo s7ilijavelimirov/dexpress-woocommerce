@@ -73,9 +73,9 @@ final class PackageShopInfoMetabox
 
         $icon = ($locationType === '2' || stripos($locationTypeLabel, 'paketomat') !== false) ? '📦' : '🏬';
 
-        echo '<div class="dexpress-ps-card">';
-        echo '<p class="dexpress-ps-title"><span class="dexpress-ps-icon">' . esc_html($icon) . '</span> ' . esc_html($locationTypeLabel) . '</p>';
-        echo '<dl class="dexpress-ps-list">';
+        echo '<div class="dex-ps-card">';
+        echo '<p class="dex-ps-title"><span class="dex-ps-icon">' . esc_html($icon) . '</span> ' . esc_html($locationTypeLabel) . '</p>';
+        echo '<dl class="dex-ps-list">';
         echo '<dt>' . esc_html__('Naziv lokacije', 'dexpress-woocommerce') . '</dt><dd>' . esc_html($name !== '' ? $name : '—') . '</dd>';
         echo '<dt>' . esc_html__('Adresa', 'dexpress-woocommerce') . '</dt><dd>' . esc_html($address !== '' ? $address : '—') . '</dd>';
         echo '<dt>' . esc_html__('Grad', 'dexpress-woocommerce') . '</dt><dd>' . esc_html($city !== '' ? $city : '—') . '</dd>';

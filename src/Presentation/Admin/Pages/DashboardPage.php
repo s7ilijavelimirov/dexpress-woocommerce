@@ -48,7 +48,7 @@ final class DashboardPage
 
         $shipmentsUrl   = esc_url(admin_url('admin.php?page=dexpress-shipments'));
         $settingsUrl    = esc_url(admin_url('admin.php?page=dexpress-settings'));
-        $diagnosticsUrl = esc_url(admin_url('admin.php?page=dexpress-diagnostics'));
+        $diagnosticsUrl = esc_url(admin_url('admin.php?page=' . DiagnosticsPage::PAGE_SLUG));
         $paymentsUrl    = esc_url(admin_url('admin.php?page=dexpress-payments'));
         $onboardingUrl  = esc_url(admin_url('admin.php?page=' . OnboardingPage::PAGE_SLUG));
 

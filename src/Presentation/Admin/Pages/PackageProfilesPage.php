@@ -23,31 +23,29 @@ final class PackageProfilesPage
         $profiles = $this->profiles->findAll();
 ?>
         <div class="wrap dex-pp-page">
-
-            <div class="dex-pp-header">
-                <div class="dex-pp-header__info">
-                    <h1 class="dex-pp-header__title"><?= esc_html__('Profili paketa', 'dexpress-woocommerce') ?></h1>
-                    <p class="dex-pp-header__sub"><?= esc_html__('Dimenzije i masa kutija za brzo grupno kreiranje pošiljaka', 'dexpress-woocommerce') ?></p>
+            <div class="dex-page-header">
+                <div class="dex-page-header__left">
+                    <div class="dex-page-header__titles">
+                        <h1 class="dex-page-header__title"><?= esc_html__('Profili paketa', 'dexpress-woocommerce') ?></h1>
+                        <p class="dex-page-header__subtitle"><?= esc_html__('Sačuvajte šablone kutija (masa, dimenzije, podrazumevani opis) i primenite ih jednim klikom pri grupnom kreiranju pošiljaka — bez ponavljanja unosa za svaku narudžbinu.', 'dexpress-woocommerce') ?></p>
+                    </div>
                 </div>
-                <button type="button" class="dex-pp-add-trigger" id="dex-pp-add-btn">
-                    <span class="dashicons dashicons-plus-alt2"></span>
-                    <?= esc_html__('Dodaj profil', 'dexpress-woocommerce') ?>
-                </button>
             </div>
             <hr class="wp-header-end" />
-
-            <p class="dex-pp-page-subtitle">
-                <?= esc_html__('Profili paketa čuvaju dimenzije i masu kutija koje koristite za pakovanje. Tokom grupnog kreiranja pošiljaka, profil se primenjuje na sve odabrane narudžbine jednim klikom — bez ručnog unošenja podataka za svaki paket posebno.', 'dexpress-woocommerce') ?>
-            </p>
 
             <!-- Modal za dodavanje / izmenu -->
             <div id="dex-pp-modal" class="dex-pp-modal" role="dialog" aria-modal="true" aria-labelledby="dex-pp-form-title">
                 <div class="dex-pp-modal__backdrop"></div>
                 <div class="dex-pp-modal__dialog">
                     <div class="dex-pp-modal__header">
-                        <h2 id="dex-pp-form-title" class="dex-pp-modal__title">
-                            <?= esc_html__('Novi profil paketa', 'dexpress-woocommerce') ?>
-                        </h2>
+                        <div class="dex-pp-modal__header-main">
+                            <h2 id="dex-pp-form-title" class="dex-pp-modal__title">
+                                <?= esc_html__('Novi profil paketa', 'dexpress-woocommerce') ?>
+                            </h2>
+                            <p class="dex-pp-modal__subtitle">
+                                <?= esc_html__('Samo je naziv obavezan. Ostalo je opciono.', 'dexpress-woocommerce') ?>
+                            </p>
+                        </div>
                         <button type="button" class="dex-pp-modal__close" id="dex-pp-modal-close"
                             aria-label="<?= esc_attr__('Zatvori', 'dexpress-woocommerce') ?>">✕</button>
                     </div>
@@ -55,57 +53,99 @@ final class PackageProfilesPage
                     <div class="dex-pp-modal__body">
                         <form id="dex-pp-form" autocomplete="off">
                             <input type="hidden" id="dex-pp-id" name="id" value="0" />
-                            <div class="dex-pp-form-grid">
-                                <div class="dex-pp-field dex-pp-field--full">
-                                    <label for="dex-pp-name"><?= esc_html__('Naziv profila', 'dexpress-woocommerce') ?> <span class="required">*</span></label>
-                                    <input type="text" id="dex-pp-name" name="name" class="regular-text" required
-                                        placeholder="<?= esc_attr__('npr. Kutija M — Majice', 'dexpress-woocommerce') ?>" />
-                                </div>
-                                <div class="dex-pp-field dex-pp-field--full">
-                                    <label for="dex-pp-desc"><?= esc_html__('Opis (opcionalno)', 'dexpress-woocommerce') ?></label>
-                                    <textarea id="dex-pp-desc" name="description" rows="2" class="large-text"></textarea>
-                                </div>
-                                <div class="dex-pp-field">
-                                    <label for="dex-pp-weight"><?= esc_html__('Masa prazne kutije (kg)', 'dexpress-woocommerce') ?></label>
-                                    <input type="number" id="dex-pp-weight" name="weight_kg" min="0" step="0.01"
-                                        class="small-text" placeholder="0.50" />
-                                    <span class="dex-pp-weight-g" id="dex-pp-weight-g" aria-live="polite"></span>
-                                </div>
-                                <div class="dex-pp-field dex-pp-field--full">
-                                    <label><?= esc_html__('Dimenzije prazne kutije (cm)', 'dexpress-woocommerce') ?></label>
-                                    <div class="dex-pp-dims">
-                                        <div class="dex-pp-dim-group">
-                                            <span class="dex-pp-dim-label"><?= esc_html__('Dužina', 'dexpress-woocommerce') ?></span>
-                                            <input type="number" id="dex-pp-dx" name="dim_x" min="0" step="0.1"
-                                                class="small-text" placeholder="30" />
-                                            <span class="dex-pp-dim-hint"><?= esc_html__('najduža strana', 'dexpress-woocommerce') ?></span>
-                                        </div>
-                                        <span class="dex-pp-dims-sep" aria-hidden="true">×</span>
-                                        <div class="dex-pp-dim-group">
-                                            <span class="dex-pp-dim-label"><?= esc_html__('Širina', 'dexpress-woocommerce') ?></span>
-                                            <input type="number" id="dex-pp-dy" name="dim_y" min="0" step="0.1"
-                                                class="small-text" placeholder="20" />
-                                        </div>
-                                        <span class="dex-pp-dims-sep" aria-hidden="true">×</span>
-                                        <div class="dex-pp-dim-group">
-                                            <span class="dex-pp-dim-label"><?= esc_html__('Visina', 'dexpress-woocommerce') ?></span>
-                                            <input type="number" id="dex-pp-dz" name="dim_z" min="0" step="0.1"
-                                                class="small-text" placeholder="10" />
-                                        </div>
+                            <div class="dex-pp-modal-stack">
+                                <div class="dex-pp-modal-grid">
+                                    <div class="dex-pp-modal-grid__col dex-pp-modal-grid__col--main">
+                                        <section class="dex-pp-modal-section" aria-labelledby="dex-pp-sec-basic">
+                                            <h3 id="dex-pp-sec-basic" class="dex-pp-modal-section__title">
+                                                <?= esc_html__('Osnovni podaci', 'dexpress-woocommerce') ?>
+                                            </h3>
+                                            <div class="dex-pp-modal-section__inner">
+                                                <div class="dex-pp-field">
+                                                    <label for="dex-pp-name"><?= esc_html__('Naziv profila', 'dexpress-woocommerce') ?> <span class="required">*</span></label>
+                                                    <input type="text" id="dex-pp-name" name="name" class="regular-text" required
+                                                        placeholder="<?= esc_attr__('npr. Kutija M — Majice', 'dexpress-woocommerce') ?>" />
+                                                </div>
+                                                <div class="dex-pp-field">
+                                                    <label for="dex-pp-desc"><?= esc_html__('Opis (opcionalno)', 'dexpress-woocommerce') ?></label>
+                                                    <textarea id="dex-pp-desc" name="description" rows="2" class="large-text"
+                                                        placeholder="<?= esc_attr__('npr. Kutija za majice', 'dexpress-woocommerce') ?>"></textarea>
+                                                </div>
+                                            </div>
+                                        </section>
+                                        <section class="dex-pp-modal-section" aria-labelledby="dex-pp-sec-content">
+                                            <h3 id="dex-pp-sec-content" class="dex-pp-modal-section__title">
+                                                <?= esc_html__('Tekst na nalepnici', 'dexpress-woocommerce') ?>
+                                            </h3>
+                                            <div class="dex-pp-modal-section__inner">
+                                                <div class="dex-pp-field">
+                                                    <label for="dex-pp-content"><?= esc_html__('Podrazumevani opis sadržaja', 'dexpress-woocommerce') ?></label>
+                                                    <input type="text" id="dex-pp-content" name="default_content" class="regular-text"
+                                                        maxlength="50"
+                                                        placeholder="<?= esc_attr__('npr. Odeća', 'dexpress-woocommerce') ?>" />
+                                                    <p class="dex-pp-field-hint"><?= esc_html__('Na nalepnici, do 50 znakova.', 'dexpress-woocommerce') ?></p>
+                                                </div>
+                                            </div>
+                                        </section>
+                                    </div>
+                                    <div class="dex-pp-modal-grid__col dex-pp-modal-grid__col--size">
+                                        <section class="dex-pp-modal-section dex-pp-modal-section--panel" aria-labelledby="dex-pp-sec-size">
+                                            <div class="dex-pp-modal-section__inner">
+                                                <h3 id="dex-pp-sec-size" class="dex-pp-modal-section__title dex-pp-modal-section__title--in-panel">
+                                                    <?= esc_html__('Masa i dimenzije (cm)', 'dexpress-woocommerce') ?>
+                                                </h3>
+                                                <div class="dex-pp-panel-body">
+                                                    <div class="dex-pp-field dex-pp-field--weight-row">
+                                                        <label for="dex-pp-weight"><?= esc_html__('Masa prazne kutije (kg)', 'dexpress-woocommerce') ?></label>
+                                                        <div class="dex-pp-weight-row">
+                                                            <input type="number" id="dex-pp-weight" name="weight_kg" min="0" step="0.01"
+                                                                class="small-text" placeholder="0.50" />
+                                                            <span class="dex-pp-weight-g" id="dex-pp-weight-g" aria-live="polite"></span>
+                                                        </div>
+                                                    </div>
+                                                    <div class="dex-pp-field dex-pp-field--dims-compact">
+                                                        <span class="dex-pp-field-label-block"><?= esc_html__('Spoljašnje mere (cm)', 'dexpress-woocommerce') ?></span>
+                                                        <div class="dex-pp-dims dex-pp-dims--grid3" role="group" aria-label="<?= esc_attr__('Dimenzije u centimetrima', 'dexpress-woocommerce') ?>">
+                                                            <div class="dex-pp-dim-cell">
+                                                                <label class="dex-pp-dim-label" for="dex-pp-dx"><?= esc_html__('Dužina', 'dexpress-woocommerce') ?></label>
+                                                                <div class="dex-pp-dim-input-row">
+                                                                    <input type="number" id="dex-pp-dx" name="dim_x" min="0" step="0.1"
+                                                                        class="small-text" placeholder="30"
+                                                                        title="<?= esc_attr__('Najduža strana kutije', 'dexpress-woocommerce') ?>" />
+                                                                    <span class="dex-pp-dim-unit"><?= esc_html__('cm', 'dexpress-woocommerce') ?></span>
+                                                                </div>
+                                                            </div>
+                                                            <div class="dex-pp-dim-cell">
+                                                                <label class="dex-pp-dim-label" for="dex-pp-dy"><?= esc_html__('Širina', 'dexpress-woocommerce') ?></label>
+                                                                <div class="dex-pp-dim-input-row">
+                                                                    <input type="number" id="dex-pp-dy" name="dim_y" min="0" step="0.1"
+                                                                        class="small-text" placeholder="20" />
+                                                                    <span class="dex-pp-dim-unit"><?= esc_html__('cm', 'dexpress-woocommerce') ?></span>
+                                                                </div>
+                                                            </div>
+                                                            <div class="dex-pp-dim-cell">
+                                                                <label class="dex-pp-dim-label" for="dex-pp-dz"><?= esc_html__('Visina', 'dexpress-woocommerce') ?></label>
+                                                                <div class="dex-pp-dim-input-row">
+                                                                    <input type="number" id="dex-pp-dz" name="dim_z" min="0" step="0.1"
+                                                                        class="small-text" placeholder="10"
+                                                                        title="<?= esc_attr__('Od dna kutije do vrha', 'dexpress-woocommerce') ?>" />
+                                                                    <span class="dex-pp-dim-unit"><?= esc_html__('cm', 'dexpress-woocommerce') ?></span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <p class="dex-pp-modal-footnote dex-pp-modal-footnote--inline">
+                                                            <?= esc_html__('D = najduža strana · opciono — možete dopuniti pri slanju.', 'dexpress-woocommerce') ?>
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </section>
                                     </div>
                                 </div>
-                                <div class="dex-pp-field dex-pp-field--full">
-                                    <label for="dex-pp-content"><?= esc_html__('Podrazumevani sadržaj', 'dexpress-woocommerce') ?></label>
-                                    <input type="text" id="dex-pp-content" name="default_content" class="regular-text"
-                                        maxlength="50"
-                                        placeholder="<?= esc_attr__('npr. Odeća', 'dexpress-woocommerce') ?>" />
-                                    <p class="description"><?= esc_html__('Prikazuje se na nalepnici. Maks. 50 znakova.', 'dexpress-woocommerce') ?></p>
-                                </div>
-                            </div><!-- .dex-pp-form-grid -->
-
-                            <p class="dex-pp-form-note">
-                                <?= esc_html__('Dimenzije i masa se odnose na praznu ambalažu, ne na sadržaj pošiljke. Oba polja su opcionalna, ali preporučujemo unos za tačno izračunavanje tarife i tehničku proveru od strane kurira.', 'dexpress-woocommerce') ?>
-                            </p>
+                                <p class="dex-pp-form-note">
+                                    <?= esc_html__('Mere i masa = prazna kutija, ne roba unutra.', 'dexpress-woocommerce') ?>
+                                </p>
+                            </div>
                         </form>
                     </div><!-- .dex-pp-modal__body -->
 
@@ -121,16 +161,17 @@ final class PackageProfilesPage
                 </div><!-- .dex-pp-modal__dialog -->
             </div><!-- #dex-pp-modal -->
 
-            <!-- Dvostubački raspored -->
-            <div class="dex-pp-layout">
-                <main class="dex-pp-main">
-                    <div id="dex-pp-table-wrap">
-                        <?php $this->renderTable($profiles); ?>
+            <div class="dex-pp-page__body dex-pp-layout">
+                <main class="dex-pp-main" id="dex-pp-main">
+                    <div id="dex-pp-table-wrap" class="dex-pp-main__content dex-card">
+                        <div class="dex-card__body">
+                            <?php $this->renderTable($profiles); ?>
+                        </div>
                     </div>
                 </main>
 
-                <aside class="dex-pp-sidebar">
-                    <div class="dex-pp-sidebar-rules">
+                <aside class="dex-pp-sidebar" aria-label="<?= esc_attr__('Uputstvo i ograničenja D Express', 'dexpress-woocommerce') ?>">
+                    <div class="dex-card dex-pp-sidebar-rules">
                         <img
                             src="<?= esc_url(DEXPRESS_PLUGIN_URL . 'assets/images/Uputstvo_za_pakovanje.jpg') ?>"
                             alt="<?= esc_attr__('Uputstvo za pakovanje D Express', 'dexpress-woocommerce') ?>"
@@ -186,18 +227,12 @@ final class PackageProfilesPage
                         </div><!-- #dex-pp-tab-paketomat -->
                     </div><!-- .dex-pp-sidebar-rules -->
                 </aside>
-            </div><!-- .dex-pp-layout -->
-        </div><!-- .wrap -->
+            </div><!-- .dex-pp-page__body -->
+
+        </div><!-- .wrap.dex-pp-page -->
 
         <script>
             (function() {
-                // Delegation: .dex-pp-open-form buttons trigger the header add button
-                document.addEventListener('click', function(e) {
-                    if (e.target && e.target.closest && e.target.closest('.dex-pp-open-form')) {
-                        document.getElementById('dex-pp-add-btn').click();
-                    }
-                });
-
                 // Live gram converter for mass field
                 var weightInput = document.getElementById('dex-pp-weight');
                 var weightGEl   = document.getElementById('dex-pp-weight-g');

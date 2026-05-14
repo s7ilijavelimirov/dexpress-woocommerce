@@ -1,524 +1,517 @@
-/* D-Express order metaboxes */
+/* =============================================================================
+   D Express WooCommerce — Order Metabox (shipment + package shop info)
+   Handle: dexpress-admin-metabox · Page: WooCommerce order edit
+   ============================================================================= */
 
-/* -------------------------------------------------------------------------
-   Base state container
-   ------------------------------------------------------------------------- */
 
-#dexpress-shipment-root .dexpress-state {
-    border: var(--dex-border);
-    border-radius: var(--dex-radius);
-    padding: 10px;
-    background: #fff;
+/* ── Base state container ────────────────────────────────────── */
+
+#dex-shipment-root .dex-state {
+  border: var(--dex-border);
+  border-radius: var(--dex-radius);
+  padding: var(--dex-space-2) var(--dex-space-3);
+  background: var(--dex-white);
 }
 
-#dexpress-shipment-root .dexpress-metabox-empty {
-    color: var(--dex-error);
-    margin: 0;
+#dex-shipment-root .dex-metabox-empty {
+  color: var(--dex-red);
+  margin: 0;
+  font-size: var(--dex-text-sm);
 }
 
-/* -------------------------------------------------------------------------
-   State A — Wizard: step indicator
-   ------------------------------------------------------------------------- */
 
-#dexpress-shipment-root .dexpress-steps {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 6px;
-    margin-bottom: 10px;
+/* ── STATE A — Wizard: step indicator ───────────────────────── */
+
+#dex-shipment-root .dex-steps {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: var(--dex-space-1);
+  margin-bottom: var(--dex-space-3);
 }
 
-#dexpress-shipment-root .dexpress-step {
-    display: inline-block;
-    text-align: center;
-    font-size: var(--dex-text-xs);
-    font-weight: 600;
-    padding: 7px 6px;
-    border-radius: var(--dex-radius);
-    background: var(--dex-gray-100);
-    color: var(--dex-gray-700);
-    transition: background var(--dex-transition), color var(--dex-transition);
+#dex-shipment-root .dex-step {
+  display: inline-block;
+  text-align: center;
+  font-size: var(--dex-text-xs);
+  font-weight: 600;
+  padding: var(--dex-space-1) var(--dex-space-1);
+  border-radius: var(--dex-radius);
+  background: var(--dex-gray-100);
+  color: var(--dex-gray-700);
+  transition: background var(--dex-transition), color var(--dex-transition);
 }
 
-/* Active step uses brand primary */
-#dexpress-shipment-root .dexpress-step.is-active {
-    background: var(--dex-primary);
-    color: #fff;
+#dex-shipment-root .dex-step.is-active {
+  background: var(--dex-red);
+  color: var(--dex-white);
 }
 
-#dexpress-shipment-root .dexpress-step-panel h4 {
-    margin: 4px 0 var(--dex-space-2);
-    font-size: var(--dex-text-base);
+#dex-shipment-root .dex-step-panel h4 {
+  margin: var(--dex-space-1) 0 var(--dex-space-2);
+  font-size: var(--dex-text-base);
 }
 
-/* -------------------------------------------------------------------------
-   State A — Wizard: package cards
-   ------------------------------------------------------------------------- */
 
-#dexpress-shipment-root .dexpress-package-actions {
-    display: flex;
-    justify-content: space-between;
-    gap: 6px;
-    margin-top: var(--dex-space-2);
+/* ── STATE A — Wizard: package cards ────────────────────────── */
+
+#dex-shipment-root .dex-package-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--dex-space-1);
+  margin-top: var(--dex-space-2);
 }
 
-#dexpress-shipment-root .dexpress-package-cards {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: var(--dex-space-2);
+#dex-shipment-root .dex-package-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--dex-space-2);
 }
 
-#side-sortables #dexpress-shipment-root .dexpress-package-cards {
-    grid-template-columns: 1fr;
+#side-sortables #dex-shipment-root .dex-package-cards {
+  grid-template-columns: 1fr;
 }
 
 @media (min-width: 1200px) {
-    #normal-sortables #dexpress-shipment-root .dexpress-package-cards {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
+  #normal-sortables #dex-shipment-root .dex-package-cards {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
-#dexpress-shipment-root .dexpress-package-card {
-    border: var(--dex-border);
-    border-radius: var(--dex-radius-lg);
-    background: #fff;
-    box-shadow: var(--dex-shadow-sm);
+#dex-shipment-root .dex-package-card {
+  border: var(--dex-border);
+  border-radius: var(--dex-radius-lg);
+  background: var(--dex-white);
+  box-shadow: var(--dex-shadow-sm);
 }
 
-#dexpress-shipment-root .dexpress-package-card-head {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: var(--dex-space-2) 10px;
-    border-bottom: var(--dex-border);
-    font-size: var(--dex-text-sm);
-    font-weight: 700;
+#dex-shipment-root .dex-package-card-head {
+  display: flex;
+  align-items: center;
+  gap: var(--dex-space-1);
+  padding: var(--dex-space-2) var(--dex-space-3);
+  border-bottom: var(--dex-border);
+  font-size: var(--dex-text-sm);
+  font-weight: 700;
 }
 
-#dexpress-shipment-root .dexpress-package-card-body {
-    padding: 10px;
+#dex-shipment-root .dex-package-card-body {
+  padding: var(--dex-space-3);
 }
 
-/* dashicons-archive rendered by JS */
-#dexpress-shipment-root .dexpress-package-icon {
-    font-size: var(--dex-text-lg);
-    color: var(--dex-primary);
-    width: var(--dex-text-lg);
-    height: var(--dex-text-lg);
+#dex-shipment-root .dex-package-icon {
+  font-size: var(--dex-text-lg);
+  color: var(--dex-red);
+  width: var(--dex-text-lg);
+  height: var(--dex-text-lg);
 }
 
-/* -------------------------------------------------------------------------
-   State A — Wizard: form fields
-   ------------------------------------------------------------------------- */
 
-#dexpress-shipment-root .dexpress-field-label {
-    display: block;
-    margin-bottom: 3px;
-    font-weight: 600;
-    font-size: var(--dex-text-sm);
-    color: var(--dex-gray-700);
+/* ── STATE A — Wizard: form fields ──────────────────────────── */
+
+#dex-shipment-root .dex-field-label {
+  display: block;
+  margin-bottom: 3px;
+  font-weight: 600;
+  font-size: var(--dex-text-sm);
+  color: var(--dex-gray-700);
 }
 
-#dexpress-shipment-root .dexpress-req {
-    color: var(--dex-error);
+#dex-shipment-root .dex-req {
+  color: var(--dex-red);
 }
 
-#dexpress-shipment-root .dexpress-dims-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 6px;
+#dex-shipment-root .dex-dims-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: var(--dex-space-1);
 }
 
-#dexpress-shipment-root .dexpress-item-allocation {
-    margin-top: var(--dex-space-2);
+#dex-shipment-root .dex-item-allocation {
+  margin-top: var(--dex-space-2);
 }
 
-#dexpress-shipment-root .dexpress-item-allocation table td {
-    vertical-align: middle;
+#dex-shipment-root .dex-item-allocation table td {
+  vertical-align: middle;
 }
 
-#dexpress-shipment-root .dexpress-item-allocation .small-text {
-    width: 70px;
+#dex-shipment-root .dex-item-allocation .small-text {
+  width: 70px;
 }
 
-/* -------------------------------------------------------------------------
-   Package shop destination notice (wizard, before step 3)
-   ------------------------------------------------------------------------- */
 
-#dexpress-shipment-root .dexpress-package-shop-destination {
-    position: relative;
-    margin: 0 0 10px;
-    padding: var(--dex-space-2) 10px var(--dex-space-2) 28px;
-    border-left: 3px solid var(--dex-primary);
-    background: var(--dex-primary-light);
+/* ── STATE A — Package shop destination notice ───────────────── */
+
+#dex-shipment-root .dex-package-shop-destination {
+  position: relative;
+  margin: 0 0 var(--dex-space-3);
+  padding: var(--dex-space-2) var(--dex-space-3) var(--dex-space-2) 28px;
+  border-left: 3px solid var(--dex-blue);
+  background: var(--dex-blue-light);
+  border-radius: 0 var(--dex-radius-sm) var(--dex-radius-sm) 0;
+  font-size: var(--dex-text-sm);
+  color: var(--dex-gray-700);
 }
 
-/* dashicons-location icon via CSS pseudo-element */
-#dexpress-shipment-root .dexpress-package-shop-destination::before {
-    content: '\f230'; /* dashicons-location */
-    font-family: dashicons;
-    position: absolute;
-    left: 7px;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 16px;
-    line-height: 1;
-    color: var(--dex-primary);
+#dex-shipment-root .dex-package-shop-destination::before {
+  content: '\f230'; /* dashicons-location */
+  font-family: dashicons;
+  position: absolute;
+  left: 7px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 16px;
+  line-height: 1;
+  color: var(--dex-blue);
 }
 
-/* -------------------------------------------------------------------------
-   Wizard navigation
-   ------------------------------------------------------------------------- */
 
-#dexpress-shipment-root .dexpress-wizard-nav {
-    display: flex;
-    gap: var(--dex-space-2);
-    margin-top: 10px;
-    align-items: center;
-    flex-wrap: wrap;
+/* ── STATE A — Wizard navigation ────────────────────────────── */
+
+#dex-shipment-root .dex-wizard-nav {
+  display: flex;
+  gap: var(--dex-space-2);
+  margin-top: var(--dex-space-3);
+  align-items: center;
+  flex-wrap: wrap;
 }
 
-#dexpress-shipment-root .dexpress-wizard-error {
-    margin-top: var(--dex-space-2);
-    color: var(--dex-error);
-    background: var(--dex-error-light);
-    border-left: 3px solid var(--dex-error);
-    padding: 7px var(--dex-space-2);
-    font-size: var(--dex-text-sm);
+#dex-shipment-root .dex-wizard-error {
+  margin-top: var(--dex-space-2);
+  color: var(--dex-red);
+  background: var(--dex-red-light);
+  border-left: 3px solid var(--dex-red);
+  border-radius: 0 var(--dex-radius-sm) var(--dex-radius-sm) 0;
+  padding: var(--dex-space-1) var(--dex-space-2);
+  font-size: var(--dex-text-sm);
 }
 
-#dexpress-shipment-root .dexpress-wizard-result {
-    margin-top: var(--dex-space-2);
-    font-size: var(--dex-text-sm);
+#dex-shipment-root .dex-wizard-result {
+  margin-top: var(--dex-space-2);
+  font-size: var(--dex-text-sm);
 }
 
-#dexpress-shipment-root .dexpress-wizard-result.is-error {
-    color: var(--dex-error);
+#dex-shipment-root .dex-wizard-result.is-error {
+  color: var(--dex-red);
 }
 
-#dexpress-shipment-root .dexpress-wizard-result.is-success {
-    color: var(--dex-success);
+#dex-shipment-root .dex-wizard-result.is-success {
+  color: var(--dex-green);
 }
 
-/* -------------------------------------------------------------------------
-   Step 3 — summary table
-   ------------------------------------------------------------------------- */
 
-#dexpress-shipment-root .dexpress-summary-table {
-    margin: 0 0 var(--dex-space-2);
+/* Step 3 summary mount (content filled by JS) */
+
+#dex-shipment-root .dex-step3-summary {
+  min-height: 0;
 }
 
-#dexpress-shipment-root .dexpress-summary-packages {
-    margin: 0;
-    padding-left: 18px;
+
+/* ── STATE A — Step 3 summary ───────────────────────────────── */
+
+#dex-shipment-root .dex-summary-table {
+  margin: 0 0 var(--dex-space-2);
 }
 
-#dexpress-shipment-root .dexpress-summary-packages li {
-    margin: var(--dex-space-1) 0;
+#dex-shipment-root .dex-summary-packages {
+  margin: 0;
+  padding-left: 18px;
 }
 
-/* -------------------------------------------------------------------------
-   State B — Pending send: warning banner
-   ------------------------------------------------------------------------- */
-
-#dexpress-shipment-root .dexpress-draft-warning {
-    margin: 0 0 10px;
-    padding: var(--dex-space-2) 10px;
-    border-left: 3px solid var(--dex-warning);
-    background: var(--dex-warning-light);
-    font-size: var(--dex-text-base);
-    color: var(--dex-gray-700);
+#dex-shipment-root .dex-summary-packages li {
+  margin: var(--dex-space-1) 0;
 }
 
-/* "Pošalji u D-Express" — prominent primary button */
-#dexpress-send-shipment {
-    background: var(--dex-primary) !important;
-    border-color: var(--dex-primary-hover) !important;
-    color: #fff !important;
-    box-shadow: 0 1px 0 var(--dex-primary-hover) !important;
-    transition: background var(--dex-transition), border-color var(--dex-transition);
+
+/* ── STATE B — Pending send: warning banner ──────────────────── */
+
+#dex-shipment-root .dex-draft-warning {
+  margin: 0 0 var(--dex-space-3);
+  padding: var(--dex-space-2) var(--dex-space-3);
+  border-left: 3px solid var(--dex-amber);
+  background: var(--dex-amber-light);
+  border-radius: 0 var(--dex-radius-sm) var(--dex-radius-sm) 0;
+  font-size: var(--dex-text-base);
+  color: var(--dex-gray-700);
 }
 
-#dexpress-send-shipment:hover,
-#dexpress-send-shipment:focus {
-    background: var(--dex-primary-hover) !important;
-    border-color: var(--dex-primary-hover) !important;
-    color: #fff !important;
+/* "Pošalji u D-Express" — ID specificity (1,0,0) overrides WP .button-primary (0,1,0) */
+#dex-send-shipment {
+  background: var(--dex-red);
+  border-color: var(--dex-red-hover);
+  color: var(--dex-white);
+  box-shadow: 0 1px 0 var(--dex-red-hover);
+  transition: background var(--dex-transition), border-color var(--dex-transition);
 }
 
-#dexpress-send-shipment:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
+#dex-send-shipment:hover,
+#dex-send-shipment:focus {
+  background: var(--dex-red-hover);
+  border-color: var(--dex-red-hover);
+  color: var(--dex-white);
 }
 
-/* -------------------------------------------------------------------------
-   State C — Created: success indicator
-   ------------------------------------------------------------------------- */
-
-#dexpress-shipment-root .dexpress-success-indicator {
-    margin: 0 0 10px;
-    padding: 9px 10px;
-    background: var(--dex-success-light);
-    border-left: 3px solid var(--dex-success);
-    color: var(--dex-success);
-    font-weight: 700;
+#dex-send-shipment:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
-/* Local custom properties for created state */
-#dexpress-shipment-root .dexpress-state--created {
-    --dexpress-soft-bg: var(--dex-info-light);
-    --dexpress-subtle-bg: var(--dex-gray-50);
-    --dexpress-text-muted: var(--dex-gray-500);
-    --dexpress-code: var(--dex-gray-900);
+
+/* ── STATE C — Created: success indicator ────────────────────── */
+
+#dex-shipment-root .dex-success-indicator {
+  margin: 0 0 var(--dex-space-3);
+  padding: var(--dex-space-2) var(--dex-space-3);
+  background: var(--dex-green-light);
+  border-left: 3px solid var(--dex-green);
+  border-radius: 0 var(--dex-radius-sm) var(--dex-radius-sm) 0;
+  color: var(--dex-green);
+  font-weight: 700;
+  font-size: var(--dex-text-sm);
 }
 
-/* -------------------------------------------------------------------------
-   State C — Created: environment badge
-   ------------------------------------------------------------------------- */
 
-#dexpress-shipment-root .dexpress-env-badge {
-    border-radius: 999px;
-    padding: 2px var(--dex-space-2);
-    font-size: var(--dex-text-xs);
-    font-weight: 700;
-    border: 1px solid transparent;
+/* ── STATE C — Environment badge ────────────────────────────── */
+
+#dex-shipment-root .dex-env-badge {
+  border-radius: 999px;
+  padding: 2px var(--dex-space-2);
+  font-size: var(--dex-text-xs);
+  font-weight: 700;
+  border: 1px solid transparent;
 }
 
-#dexpress-shipment-root .dexpress-env-badge.is-test {
-    background: var(--dex-warning-light);
-    color: #8a6600;
-    border-color: #f3d27a;
+#dex-shipment-root .dex-env-badge.is-test {
+  background: var(--dex-amber-light);
+  color: var(--dex-amber);
+  border-color: rgba(217, 119, 6, 0.3);
 }
 
-#dexpress-shipment-root .dexpress-env-badge.is-production {
-    background: var(--dex-info-light);
-    color: #0f4f79;
-    border-color: #b8ddf5;
+#dex-shipment-root .dex-env-badge.is-production {
+  background: var(--dex-blue-light);
+  color: var(--dex-blue);
+  border-color: rgba(29, 111, 164, 0.25);
 }
 
-/* -------------------------------------------------------------------------
-   State C — Created: shipment detail layout
-   ------------------------------------------------------------------------- */
 
-#dexpress-shipment-root .dexpress-sent-banner {
-    display: flex;
-    align-items: center;
-    gap: var(--dex-space-2);
-    padding: 10px var(--dex-space-3);
-    background: var(--dexpress-soft-bg);
-    border-radius: var(--dex-radius);
-    font-weight: 600;
+/* ── STATE C — Shipment detail layout ───────────────────────── */
+
+#dex-shipment-root .dex-sent-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--dex-space-2);
+  padding: var(--dex-space-2) var(--dex-space-3);
+  background: var(--dex-blue-light);
+  border-radius: var(--dex-radius);
+  font-weight: 600;
+  font-size: var(--dex-text-sm);
 }
 
-#dexpress-shipment-root .dexpress-sent-body {
-    margin-top: var(--dex-space-3);
-    padding: var(--dex-space-3);
-    background: var(--dexpress-subtle-bg);
-    border-radius: var(--dex-radius);
+#dex-shipment-root .dex-sent-body {
+  margin-top: var(--dex-space-3);
+  padding: var(--dex-space-3);
+  background: var(--dex-gray-50);
+  border-radius: var(--dex-radius);
 }
 
-#dexpress-shipment-root .dexpress-sent-parties {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px var(--dex-space-4);
+#dex-shipment-root .dex-sent-parties {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--dex-space-2) var(--dex-space-4);
 }
 
-#dexpress-shipment-root .dexpress-sent-party {
-    font-size: var(--dex-text-base);
-    line-height: 1.55;
+#dex-shipment-root .dex-sent-party {
+  font-size: var(--dex-text-base);
+  line-height: 1.55;
 }
 
-#dexpress-shipment-root .dexpress-sent-party code {
-    font-family: Consolas, Menlo, Monaco, "Courier New", monospace;
-    color: var(--dexpress-code);
-    font-weight: 700;
+#dex-shipment-root .dex-sent-party code {
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  color: var(--dex-gray-900);
+  font-weight: 700;
 }
 
-#dexpress-shipment-root .dexpress-sent-label {
-    margin: 0;
-    font-size: var(--dex-text-sm);
-    font-weight: 600;
-    color: var(--dexpress-text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
+#dex-shipment-root .dex-sent-label {
+  margin: 0;
+  font-size: var(--dex-text-xs);
+  font-weight: 600;
+  color: var(--dex-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
-#dexpress-shipment-root .dexpress-sent-packages {
-    margin-top: var(--dex-space-3);
+#dex-shipment-root .dex-sent-packages {
+  margin-top: var(--dex-space-3);
 }
 
-#dexpress-shipment-root .dexpress-sent-packages ul {
-    margin: 0;
-    padding-left: 18px;
+#dex-shipment-root .dex-sent-packages ul {
+  margin: 0;
+  padding-left: 18px;
 }
 
-#dexpress-shipment-root .dexpress-sent-packages li {
-    margin: var(--dex-space-1) 0;
-    font-size: var(--dex-text-base);
+#dex-shipment-root .dex-sent-packages li {
+  margin: var(--dex-space-1) 0;
+  font-size: var(--dex-text-base);
 }
 
-#dexpress-shipment-root .dexpress-sent-packages code {
-    font-family: Consolas, Menlo, Monaco, "Courier New", monospace;
-    font-size: var(--dex-text-sm);
-    color: var(--dexpress-code);
+#dex-shipment-root .dex-sent-packages code {
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-size: var(--dex-text-sm);
+  color: var(--dex-gray-900);
 }
 
-#dexpress-shipment-root .dexpress-sent-timeline {
-    margin-top: var(--dex-space-3);
+#dex-shipment-root .dex-sent-timeline {
+  margin-top: var(--dex-space-3);
 }
 
 @media (max-width: 782px) {
-    #dexpress-shipment-root .dexpress-sent-parties {
-        grid-template-columns: 1fr;
-    }
+  #dex-shipment-root .dex-sent-parties {
+    grid-template-columns: 1fr;
+  }
 }
 
-/* -------------------------------------------------------------------------
-   State C — Created: tracking pill
-   ------------------------------------------------------------------------- */
 
-#dexpress-shipment-root .dexpress-pill {
-    display: inline-block;
-    font-size: var(--dex-text-xs);
-    font-weight: 700;
-    border-radius: 999px;
-    padding: 1px 7px;
-    background: var(--dex-info-light);
-    color: var(--dex-info);
-    margin-right: var(--dex-space-1);
+/* ── STATE C — Tracking pill ────────────────────────────────── */
+
+#dex-shipment-root .dex-pill {
+  display: inline-block;
+  font-size: var(--dex-text-xs);
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 1px 7px;
+  background: var(--dex-blue-light);
+  color: var(--dex-blue);
+  margin-right: var(--dex-space-1);
 }
 
-/* -------------------------------------------------------------------------
-   State C — Created: status timeline with dot states
-   ------------------------------------------------------------------------- */
 
-#dexpress-shipment-root .dexpress-status-timeline {
-    margin: 0;
-    padding: 0 0 0 20px;
-    list-style: none;
+/* ── STATE C — Status timeline ───────────────────────────────── */
+
+#dex-shipment-root .dex-status-timeline {
+  margin: 0;
+  padding: 0 0 0 20px;
+  list-style: none;
 }
 
-#dexpress-shipment-root .dexpress-status-step {
-    position: relative;
-    padding: 0 0 10px 4px;
+#dex-shipment-root .dex-status-step {
+  position: relative;
+  padding: 0 0 var(--dex-space-3) var(--dex-space-1);
 }
 
 /* Vertical connector line */
-#dexpress-shipment-root .dexpress-status-step::before {
-    content: "";
-    position: absolute;
-    left: -10px;
-    top: 14px;
-    width: 2px;
-    height: calc(100% - 4px);
-    background: var(--dex-gray-200);
+#dex-shipment-root .dex-status-step::before {
+  content: '';
+  position: absolute;
+  left: -10px;
+  top: 14px;
+  width: 2px;
+  height: calc(100% - 4px);
+  background: var(--dex-gray-200);
 }
 
-#dexpress-shipment-root .dexpress-status-step:last-child::before {
-    display: none;
+#dex-shipment-root .dex-status-step:last-child::before {
+  display: none;
 }
 
-/* Default (pending) dot */
-#dexpress-shipment-root .dexpress-status-dot {
-    position: absolute;
-    left: -14px;
-    top: 4px;
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: var(--dex-gray-300);
+/* Default dot */
+#dex-shipment-root .dex-status-dot {
+  position: absolute;
+  left: -14px;
+  top: 4px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--dex-gray-300);
 }
 
-/* Completed dot — success color + dashicons-yes-alt checkmark */
-#dexpress-shipment-root .dexpress-status-step.is-completed .dexpress-status-dot {
-    background: var(--dex-success);
-    width: 14px;
-    height: 14px;
-    left: -16px;
-    top: 3px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+/* Completed dot */
+#dex-shipment-root .dex-status-step.is-completed .dex-status-dot {
+  background: var(--dex-green);
+  width: 14px;
+  height: 14px;
+  left: -16px;
+  top: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-#dexpress-shipment-root .dexpress-status-step.is-completed .dexpress-status-dot::before {
-    content: '\f147'; /* dashicons-yes-alt */
-    font-family: dashicons;
-    font-size: 10px;
-    line-height: 1;
-    color: #fff;
-    display: block;
+#dex-shipment-root .dex-status-step.is-completed .dex-status-dot::before {
+  content: '\f147'; /* dashicons-yes-alt */
+  font-family: dashicons;
+  font-size: 10px;
+  line-height: 1;
+  color: var(--dex-white);
+  display: block;
 }
 
-/* Current dot — brand primary */
-#dexpress-shipment-root .dexpress-status-step.is-current .dexpress-status-dot {
-    background: var(--dex-primary);
-    box-shadow: 0 0 0 3px rgba(227, 30, 37, 0.15);
+/* Current dot */
+#dex-shipment-root .dex-status-step.is-current .dex-status-dot {
+  background: var(--dex-red);
+  box-shadow: 0 0 0 3px rgba(227, 30, 37, 0.15);
 }
 
-/* -------------------------------------------------------------------------
-   State C — Created: status text content
-   ------------------------------------------------------------------------- */
 
-#dexpress-shipment-root .dexpress-status-content strong {
-    display: block;
-    font-size: var(--dex-text-base);
+/* ── STATE C — Status text ───────────────────────────────────── */
+
+#dex-shipment-root .dex-status-content strong {
+  display: block;
+  font-size: var(--dex-text-base);
 }
 
-#dexpress-shipment-root .dexpress-status-content small {
-    color: var(--dex-gray-500);
+#dex-shipment-root .dex-status-content small {
+  color: var(--dex-text-muted);
 }
 
-/* -------------------------------------------------------------------------
-   State C — Created: actions row
-   ------------------------------------------------------------------------- */
 
-#dexpress-shipment-root .dexpress-created-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--dex-space-2);
-    margin-top: 10px;
+/* ── STATE C — Actions row ───────────────────────────────────── */
+
+#dex-shipment-root .dex-created-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--dex-space-2);
+  margin-top: var(--dex-space-3);
 }
 
-/* -------------------------------------------------------------------------
-   Package shop info metabox
-   ------------------------------------------------------------------------- */
 
-.dexpress-ps-card {
-    border: var(--dex-border);
-    border-radius: var(--dex-radius);
-    padding: 10px;
-    background: #fff;
+/* ── Package shop info metabox ───────────────────────────────── */
+
+.dex-ps-card {
+  border: var(--dex-border);
+  border-radius: var(--dex-radius);
+  padding: var(--dex-space-3);
+  background: var(--dex-white);
 }
 
-.dexpress-ps-title {
-    margin: 0 0 var(--dex-space-2);
-    font-size: var(--dex-text-base);
-    font-weight: 700;
-    color: var(--dex-gray-900);
+.dex-ps-title {
+  margin: 0 0 var(--dex-space-2);
+  font-size: var(--dex-text-base);
+  font-weight: 700;
+  color: var(--dex-gray-900);
 }
 
-.dexpress-ps-icon {
-    margin-right: var(--dex-space-1);
+.dex-ps-icon {
+  margin-right: var(--dex-space-1);
+  color: var(--dex-red);
 }
 
-.dexpress-ps-list {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: var(--dex-space-1);
-    margin: 0;
+.dex-ps-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--dex-space-1);
+  margin: 0;
 }
 
-.dexpress-ps-list dt {
-    margin: 6px 0 0;
-    font-weight: 600;
-    font-size: var(--dex-text-sm);
-    color: var(--dex-gray-500);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
+.dex-ps-list dt {
+  margin: var(--dex-space-1) 0 0;
+  font-weight: 600;
+  font-size: var(--dex-text-xs);
+  color: var(--dex-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
-.dexpress-ps-list dd {
-    margin: 0;
-    font-size: var(--dex-text-base);
-    color: var(--dex-gray-700);
+.dex-ps-list dd {
+  margin: 0;
+  font-size: var(--dex-text-base);
+  color: var(--dex-gray-700);
 }

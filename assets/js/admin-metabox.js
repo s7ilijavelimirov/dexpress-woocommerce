@@ -3,7 +3,7 @@
     'use strict';
 
     var mb = window.dexpressMetabox || {};
-    var $root = $('#dexpress-shipment-root');
+    var $root = $('#dex-shipment-root');
     if (!$root.length) {
         return;
     }
@@ -13,7 +13,7 @@
     }
 
     function setResult(msg, isError) {
-        $('#dexpress-wizard-result').text(msg || '').toggleClass('is-error', !!isError).toggleClass('is-success', !isError && !!msg);
+        $('#dex-wizard-result').text(msg || '').toggleClass('is-error', !!isError).toggleClass('is-success', !isError && !!msg);
     }
 
     function openLabel(url, existingWindow) {
@@ -29,7 +29,7 @@
     }
 
     function initPendingSendState() {
-        var $pending = $('.dexpress-state--draft[data-state="pending_send"]');
+        var $pending = $('.dex-state--draft[data-state="pending_send"]');
         if (!$pending.length) {
             return;
         }
@@ -37,19 +37,19 @@
         var shipmentId = parseInt($pending.data('shipment-id'), 10) || 0;
         var labelUrl = String($pending.data('label-url') || '');
 
-        $('#dexpress-reprint-label').on('click', function () {
+        $('#dex-reprint-label').on('click', function () {
             if (!openLabel(labelUrl)) {
                 setResult('Browser je blokirao pop-up prozor. Omogućite pop-up za admin stranicu.', true);
             }
         });
 
-        $('#dexpress-edit-shipment').on('click', function () {
+        $('#dex-edit-shipment').on('click', function () {
             var url = new URL(window.location.href);
             url.searchParams.set('dexpress_edit_shipment', String(shipmentId));
             window.location.href = url.toString();
         });
 
-        $('#dexpress-send-shipment').on('click', function () {
+        $('#dex-send-shipment').on('click', function () {
             var $btn = $(this);
             $btn.prop('disabled', true).text(mb.i18n.sending || 'Slanje...');
             setResult('', false);
@@ -74,7 +74,7 @@
     }
 
     function initWizardState() {
-        var $wizard = $('.dexpress-state--wizard[data-state="wizard"]');
+        var $wizard = $('.dex-state--wizard[data-state="wizard"]');
         if (!$wizard.length) {
             return;
         }
@@ -97,11 +97,11 @@
         };
 
         function showError(msg) {
-            $('#dexpress-wizard-error').text(msg).prop('hidden', false);
+            $('#dex-wizard-error').text(msg).prop('hidden', false);
         }
 
         function clearError() {
-            $('#dexpress-wizard-error').text('').prop('hidden', true);
+            $('#dex-wizard-error').text('').prop('hidden', true);
         }
 
         function ensureAtLeastOnePackage() {
@@ -120,55 +120,55 @@
                 var key = String(line.id);
                 var qty = (pkg.items && pkg.items[key]) ? parseInt(pkg.items[key], 10) : 0;
                 rows += '<tr><td>' + esc(line.name) + '</td>' +
-                    '<td><input type="number" min="0" max="' + parseInt(line.qty_max, 10) + '" class="small-text dexpress-item-qty" data-pkg="' + pkgIndex + '" data-item="' + key + '" value="' + qty + '"></td>' +
+                    '<td><input type="number" min="0" max="' + parseInt(line.qty_max, 10) + '" class="small-text dex-item-qty" data-pkg="' + pkgIndex + '" data-item="' + key + '" value="' + qty + '"></td>' +
                     '<td>/ ' + parseInt(line.qty_max, 10) + '</td></tr>';
             });
-            return '<div class="dexpress-item-allocation"><p class="dexpress-field-label">Raspodela stavki po paketu</p><table class="widefat striped"><tbody>' + rows + '</tbody></table></div>';
+            return '<div class="dex-item-allocation"><p class="dex-field-label">Raspodela stavki po paketu</p><table class="widefat striped"><tbody>' + rows + '</tbody></table></div>';
         }
 
         function renderPackages() {
             var html = '';
             state.packages.forEach(function (pkg, idx) {
-                html += '<article class="dexpress-package-card">' +
-                    '<div class="dexpress-package-card-head"><span class="dashicons dashicons-archive dexpress-package-icon"></span><strong>PKG_' + (idx + 1) + '</strong></div>' +
-                    '<div class="dexpress-package-card-body">' +
-                    '<p><label class="dexpress-field-label">Težina (kg) <span class="dexpress-req">*</span></label>' +
-                    '<input type="number" min="0.01" step="0.01" class="widefat dexpress-pkg-mass" data-pkg="' + idx + '" value="' + ((pkg.mass || 0) > 0 ? ((pkg.mass || 0) / 1000).toFixed(2) : '') + '"></p>' +
-                    '<div class="dexpress-dims-grid">' +
-                    '<p><label class="dexpress-field-label">Dužina (cm)</label><input type="number" min="0" class="widefat dexpress-pkg-dx" data-pkg="' + idx + '" value="' + (pkg.dim_x || '') + '"></p>' +
-                    '<p><label class="dexpress-field-label">Širina (cm)</label><input type="number" min="0" class="widefat dexpress-pkg-dy" data-pkg="' + idx + '" value="' + (pkg.dim_y || '') + '"></p>' +
-                    '<p><label class="dexpress-field-label">Visina (cm)</label><input type="number" min="0" class="widefat dexpress-pkg-dz" data-pkg="' + idx + '" value="' + (pkg.dim_z || '') + '"></p>' +
+                html += '<article class="dex-package-card">' +
+                    '<div class="dex-package-card-head"><span class="dashicons dashicons-archive dex-package-icon"></span><strong>PKG_' + (idx + 1) + '</strong></div>' +
+                    '<div class="dex-package-card-body">' +
+                    '<p><label class="dex-field-label">Težina (kg) <span class="dex-req">*</span></label>' +
+                    '<input type="number" min="0.01" step="0.01" class="widefat dex-pkg-mass" data-pkg="' + idx + '" value="' + ((pkg.mass || 0) > 0 ? ((pkg.mass || 0) / 1000).toFixed(2) : '') + '"></p>' +
+                    '<div class="dex-dims-grid">' +
+                    '<p><label class="dex-field-label">Dužina (cm)</label><input type="number" min="0" class="widefat dex-pkg-dx" data-pkg="' + idx + '" value="' + (pkg.dim_x || '') + '"></p>' +
+                    '<p><label class="dex-field-label">Širina (cm)</label><input type="number" min="0" class="widefat dex-pkg-dy" data-pkg="' + idx + '" value="' + (pkg.dim_y || '') + '"></p>' +
+                    '<p><label class="dex-field-label">Visina (cm)</label><input type="number" min="0" class="widefat dex-pkg-dz" data-pkg="' + idx + '" value="' + (pkg.dim_z || '') + '"></p>' +
                     '</div>' +
-                    '<p><label class="dexpress-field-label">Sadržaj paketa</label><input type="text" maxlength="50" class="widefat dexpress-pkg-content" data-pkg="' + idx + '" value="' + esc(pkg.content || '') + '"></p>' +
+                    '<p><label class="dex-field-label">Sadržaj paketa</label><input type="text" maxlength="50" class="widefat dex-pkg-content" data-pkg="' + idx + '" value="' + esc(pkg.content || '') + '"></p>' +
                     packageItemsTable(idx, pkg) +
                     '</div></article>';
             });
-            $('#dexpress-package-cards').html(html);
+            $('#dex-package-cards').html(html);
         }
 
         function readOptionsFromForm() {
-            state.options.sender_location_id = parseInt($('#dexpress-sender-location').val(), 10) || 0;
-            state.options.delivery_type = parseInt($('#dexpress-delivery-type').val(), 10) || 2;
-            state.options.payment_type = parseInt($('#dexpress-payment-type').val(), 10) || 2;
-            state.options.return_doc = parseInt($('#dexpress-return-doc').val(), 10) || 0;
-            state.options.self_drop_off = $('#dexpress-self-drop-off').is(':checked') ? 1 : 0;
-            state.options.content = ($('#dexpress-content').val() || '').trim();
-            state.options.note = ($('#dexpress-note').val() || '').trim();
+            state.options.sender_location_id = parseInt($('#dex-sender-location').val(), 10) || 0;
+            state.options.delivery_type = parseInt($('#dex-delivery-type').val(), 10) || 2;
+            state.options.payment_type = parseInt($('#dex-payment-type').val(), 10) || 2;
+            state.options.return_doc = parseInt($('#dex-return-doc').val(), 10) || 0;
+            state.options.self_drop_off = $('#dex-self-drop-off').is(':checked') ? 1 : 0;
+            state.options.content = ($('#dex-content').val() || '').trim();
+            state.options.note = ($('#dex-note').val() || '').trim();
         }
 
         function readPackagesFromForm() {
             state.packages.forEach(function (pkg, idx) {
-                var massKg = parseFloat($('.dexpress-pkg-mass[data-pkg="' + idx + '"]').val()) || 0;
+                var massKg = parseFloat($('.dex-pkg-mass[data-pkg="' + idx + '"]').val()) || 0;
                 pkg.mass = massKg > 0 ? Math.round(massKg * 1000) : 0;
-                var dx = parseInt($('.dexpress-pkg-dx[data-pkg="' + idx + '"]').val(), 10) || 0;
-                var dy = parseInt($('.dexpress-pkg-dy[data-pkg="' + idx + '"]').val(), 10) || 0;
-                var dz = parseInt($('.dexpress-pkg-dz[data-pkg="' + idx + '"]').val(), 10) || 0;
+                var dx = parseInt($('.dex-pkg-dx[data-pkg="' + idx + '"]').val(), 10) || 0;
+                var dy = parseInt($('.dex-pkg-dy[data-pkg="' + idx + '"]').val(), 10) || 0;
+                var dz = parseInt($('.dex-pkg-dz[data-pkg="' + idx + '"]').val(), 10) || 0;
                 pkg.dim_x = dx > 0 ? dx : null;
                 pkg.dim_y = dy > 0 ? dy : null;
                 pkg.dim_z = dz > 0 ? dz : null;
-                pkg.content = (($('.dexpress-pkg-content[data-pkg="' + idx + '"]').val() || '').trim()).slice(0, 50);
+                pkg.content = (($('.dex-pkg-content[data-pkg="' + idx + '"]').val() || '').trim()).slice(0, 50);
                 pkg.items = {};
-                $('.dexpress-item-qty[data-pkg="' + idx + '"]').each(function () {
+                $('.dex-item-qty[data-pkg="' + idx + '"]').each(function () {
                     var qty = parseInt($(this).val(), 10) || 0;
                     if (qty > 0) {
                         pkg.items[String($(this).data('item'))] = qty;
@@ -223,7 +223,7 @@
 
         function renderSummary() {
             var totalMass = 0;
-            var list = '<ul class="dexpress-summary-packages">';
+            var list = '<ul class="dex-summary-packages">';
             state.packages.forEach(function (pkg, idx) {
                 totalMass += parseInt(pkg.mass, 10) || 0;
                 var massKg = ((parseInt(pkg.mass, 10) || 0) / 1000).toFixed(2);
@@ -233,23 +233,23 @@
             list += '</ul>';
 
             var recipient = mb.isPackageShop && mb.destination ? esc(mb.destination) : 'Adresa kupca';
-            var html = '<table class="widefat striped dexpress-summary-table"><tbody>' +
+            var html = '<table class="widefat striped dex-summary-table"><tbody>' +
                 '<tr><th>Broj paketa</th><td>' + state.packages.length + '</td></tr>' +
                 '<tr><th>Ukupna masa</th><td>' + (totalMass / 1000).toFixed(2) + ' kg</td></tr>' +
                 '<tr><th>Sadržaj pošiljke</th><td>' + esc(state.options.content) + '</td></tr>' +
                 '<tr><th>Napomena</th><td>' + esc(state.options.note || '—') + '</td></tr>' +
                 '<tr><th>Primalac</th><td>' + recipient + '</td></tr>' +
                 '</tbody></table>' + list;
-            $('#dexpress-step3-summary').html(html);
+            $('#dex-step3-summary').html(html);
         }
 
         function showStep(n) {
             step = n;
-            $('.dexpress-step').removeClass('is-active').filter('[data-step="' + n + '"]').addClass('is-active');
-            $('.dexpress-step-panel').prop('hidden', true).filter('[data-step="' + n + '"]').prop('hidden', false);
-            $('#dexpress-step-back').prop('hidden', n === 1);
-            $('#dexpress-step-next').prop('hidden', n === 3);
-            $('#dexpress-print-label').prop('hidden', n !== 3);
+            $('.dex-step').removeClass('is-active').filter('[data-step="' + n + '"]').addClass('is-active');
+            $('.dex-step-panel').prop('hidden', true).filter('[data-step="' + n + '"]').prop('hidden', false);
+            $('#dex-step-back').prop('hidden', n === 1);
+            $('#dex-step-next').prop('hidden', n === 3);
+            $('#dex-print-label').prop('hidden', n !== 3);
             if (n === 3) {
                 renderSummary();
             }
@@ -314,17 +314,17 @@
         ensureAtLeastOnePackage();
         renderPackages();
         if (state.options.sender_location_id) {
-            $('#dexpress-sender-location').val(String(state.options.sender_location_id));
+            $('#dex-sender-location').val(String(state.options.sender_location_id));
         }
-        $('#dexpress-delivery-type').val(String(state.options.delivery_type));
-        $('#dexpress-payment-type').val(String(state.options.payment_type));
-        $('#dexpress-return-doc').val(String(state.options.return_doc));
-        $('#dexpress-self-drop-off').prop('checked', !!state.options.self_drop_off);
-        $('#dexpress-content').val(state.options.content);
-        $('#dexpress-note').val(state.options.note);
+        $('#dex-delivery-type').val(String(state.options.delivery_type));
+        $('#dex-payment-type').val(String(state.options.payment_type));
+        $('#dex-return-doc').val(String(state.options.return_doc));
+        $('#dex-self-drop-off').prop('checked', !!state.options.self_drop_off);
+        $('#dex-content').val(state.options.content);
+        $('#dex-note').val(state.options.note);
         showStep(1);
 
-        $('#dexpress-add-package').on('click', function () {
+        $('#dex-add-package').on('click', function () {
             if (state.packages.length >= maxPackages) {
                 showError('Dostignut je maksimalan broj paketa.');
                 return;
@@ -334,7 +334,7 @@
             clearError();
         });
 
-        $('#dexpress-remove-package').on('click', function () {
+        $('#dex-remove-package').on('click', function () {
             if (state.packages.length <= 1) {
                 return;
             }
@@ -343,18 +343,18 @@
             clearError();
         });
 
-        $('#dexpress-step-next').on('click', function () {
+        $('#dex-step-next').on('click', function () {
             if (!validateStep(step + 1)) {
                 return;
             }
             showStep(step + 1);
         });
 
-        $('#dexpress-step-back').on('click', function () {
+        $('#dex-step-back').on('click', function () {
             showStep(step - 1);
         });
 
-        $('#dexpress-print-label').on('click', function () {
+        $('#dex-print-label').on('click', function () {
             if (!validateStep(3)) {
                 return;
             }
@@ -402,12 +402,12 @@
         });
     }
 
-    if ($('.dexpress-state--wizard').length) {
+    if ($('.dex-state--wizard').length) {
         initWizardState();
-    } else if ($('.dexpress-state--draft[data-state="pending_send"]').length) {
+    } else if ($('.dex-state--draft[data-state="pending_send"]').length) {
         initPendingSendState();
-    } else if ($('.dexpress-state--created[data-state="created"]').length) {
-        $('.dexpress-copy-track').on('click', function () {
+    } else if ($('.dex-state--created[data-state="created"]').length) {
+        $('.dex-copy-track').on('click', function () {
             var code = String($(this).data('track') || '').trim();
             if (!code) {
                 return;

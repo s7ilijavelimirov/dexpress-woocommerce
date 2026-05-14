@@ -16,14 +16,25 @@ final class SettingsPage
     private const PAGE_SLUG = 'dexpress-settings';
 
     private const TABS = [
-        'api'              => 'D Express kredencijali',
-        'webhook'          => 'Webhook',
+        'api'              => 'API Kredencijali',
+        'sifarnici'        => 'Šifarnici',
         'sender_locations' => 'Lokacije pošiljaoca',
+        'webhook'          => 'Webhook',
         'checkout'         => 'Checkout',
         'email'            => 'Email podešavanja',
         'logging'          => 'Logovanje',
-        'sifarnici'        => 'Šifarnici',
         'simulation'       => 'Simulacija',
+    ];
+
+    private const TAB_ICONS = [
+        'api'              => 'dashicons-lock',
+        'sifarnici'        => 'dashicons-database-import',
+        'sender_locations' => 'dashicons-location',
+        'webhook'          => 'dashicons-rest-api',
+        'checkout'         => 'dashicons-cart',
+        'email'            => 'dashicons-email',
+        'logging'          => 'dashicons-editor-code',
+        'simulation'       => 'dashicons-performance',
     ];
 
     public function __construct(
@@ -46,9 +57,31 @@ final class SettingsPage
 
         $notice = $this->getNotice();
 
-        echo '<div class="wrap dexpress-settings-wrap">';
-        echo '<img src="' . esc_url(DEXPRESS_PLUGIN_URL . 'assets/images/Dexpress-logo.jpg') . '" alt="D Express" class="dexpress-header-logo">';
-        echo '<h1>' . esc_html__('D Express podešavanja', 'dexpress-woocommerce') . '</h1>';
+        $envValue = $this->options->getString('api.environment', 'test');
+        $envLabel = $envValue === 'production'
+            ? esc_html__('Produkcija', 'dexpress-woocommerce')
+            : esc_html__('Test mode', 'dexpress-woocommerce');
+        $envClass = $envValue === 'production'
+            ? 'dex-settings-header__env--production'
+            : 'dex-settings-header__env--test';
+
+        echo '<div class="wrap dex-settings-wrap">';
+
+        $logoUrl = DEXPRESS_PLUGIN_URL . 'assets/images/Dexpress-logo.jpg';
+
+        echo '<div class="dex-settings-header">';
+        echo '<div class="dex-settings-header__brand">';
+        echo '<img src="' . esc_url($logoUrl) . '" alt="D Express" class="dex-settings-header__logo">';
+        echo '<div>';
+        echo '<div class="dex-settings-header__name">D Express for WooCommerce</div>';
+        echo '<div class="dex-settings-header__sub">' . esc_html__('Podešavanja plugina', 'dexpress-woocommerce') . '</div>';
+        echo '</div>';
+        echo '</div>';
+        echo '<div class="dex-settings-header__right">';
+        echo '<span class="dex-settings-header__env ' . esc_attr($envClass) . '">' . $envLabel . '</span>';
+        echo '</div>';
+        echo '</div>';
+
         if ($notice) {
             $this->renderNotice($notice);
         }
@@ -56,28 +89,50 @@ final class SettingsPage
         $usageWarning = ShipmentCodeAllocator::consumeUsageWarningTransient();
         if ($usageWarning !== null && $usageWarning !== '') {
             printf(
-                '<div class="notice notice-warning is-dismissible"><p>%s</p></div>',
+                '<div class="dex-notice dex-notice--warning dex-settings-page-notice"><div class="dex-notice__content"><p class="dex-notice__body">%s</p></div></div>',
                 esc_html($usageWarning),
             );
         }
 
-        echo '<nav class="nav-tab-wrapper woo-nav-tab-wrapper">';
+        echo '<div class="dex-tabs">';
         foreach (self::TABS as $slug => $label) {
-            $url      = add_query_arg(['page' => self::PAGE_SLUG, 'tab' => $slug], admin_url('admin.php'));
-            $active   = $activeTab === $slug ? ' nav-tab-active' : '';
-            printf(
-                '<a href="%s" class="nav-tab%s">%s</a>',
-                esc_url($url),
-                esc_attr($active),
-                esc_html($label),
-            );
+            $url    = add_query_arg(['page' => self::PAGE_SLUG, 'tab' => $slug], admin_url('admin.php'));
+            $active = $activeTab === $slug ? ' is-active' : '';
+            $icon = isset(self::TAB_ICONS[$slug])
+                ? '<span class="dashicons ' . esc_attr(self::TAB_ICONS[$slug]) . '" aria-hidden="true"></span>'
+                : '';
+            echo '<a href="' . esc_url($url) . '" class="dex-tabs__item' . esc_attr($active) . '">';
+            echo $icon;
+            echo esc_html($label);
+            echo '</a>';
         }
-        echo '</nav>';
+        echo '</div>';
 
-        echo '<div class="dexpress-tab-content">';
+        echo '<div class="dex-tabs__panel">';
         $this->renderTab($activeTab);
         echo '</div>';
 
+        $this->renderUnsavedModal();
+
+        echo '</div>';
+    }
+
+    private function renderUnsavedModal(): void
+    {
+        echo '<div id="dex-unsaved-modal" class="dex-modal" role="dialog" aria-modal="true" aria-labelledby="dex-unsaved-modal-title">';
+        echo '<div class="dex-modal__backdrop"></div>';
+        echo '<div class="dex-modal__dialog">';
+        echo '<div class="dex-modal__header">';
+        echo '<h3 id="dex-unsaved-modal-title" class="dex-modal__title">' . esc_html__('Nesačuvane promene', 'dexpress-woocommerce') . '</h3>';
+        echo '</div>';
+        echo '<div class="dex-modal__body">';
+        echo '<p>' . esc_html__('Imate nesačuvane promene. Ako napustite ovaj tab, promene će biti izgubljene.', 'dexpress-woocommerce') . '</p>';
+        echo '</div>';
+        echo '<div class="dex-modal__footer">';
+        echo '<button type="button" id="dex-unsaved-confirm" class="dex-btn dex-btn--danger">' . esc_html__('Napusti bez čuvanja', 'dexpress-woocommerce') . '</button>';
+        echo '<button type="button" id="dex-unsaved-cancel" class="dex-btn dex-btn--secondary">' . esc_html__('Ostani na stranici', 'dexpress-woocommerce') . '</button>';
+        echo '</div>';
+        echo '</div>';
         echo '</div>';
     }
 
@@ -190,14 +245,14 @@ final class SettingsPage
 
     private function renderNotice(array $notice): void
     {
-        $class = match ($notice['type']) {
-            'success' => 'notice-success',
-            'warning' => 'notice-warning',
-            default   => 'notice-error',
+        $modifier = match ($notice['type']) {
+            'success' => 'success',
+            'warning' => 'warning',
+            default   => 'error',
         };
         printf(
-            '<div class="notice %s is-dismissible"><p>%s</p></div>',
-            esc_attr($class),
+            '<div class="dex-notice dex-notice--%s dex-settings-page-notice"><div class="dex-notice__content"><p class="dex-notice__body">%s</p></div></div>',
+            esc_attr($modifier),
             esc_html($notice['message']),
         );
     }

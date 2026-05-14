@@ -1,24 +1,35 @@
-/* D Express — Bulk Shipment Wizard */
+/* =============================================================================
+   D Express WooCommerce — Bulk Shipment Wizard (4-step)
+   Handle: dexpress-bulk-shipment · Page: dexpress_page_dexpress-bulk-shipment
+   ============================================================================= */
 
-.dex-bulk-wrap { max-width: 1100px; }
 
-/* ── Stepper ────────────────────────────────────────────────── */
+/* ── Page wrap ───────────────────────────────────────────────── */
+
+.dex-bulk-wrap {
+  max-width: 100%;
+}
+
+
+/* ── Stepper (4 steps, centered) ─────────────────────────────── */
+
 .dex-bulk-stepper {
   display: flex;
   align-items: center;
-  margin: var(--dex-space-4) 0 var(--dex-space-6);
+  max-width: 640px;
+  margin: var(--dex-space-4) auto var(--dex-space-6);
 }
 
 .dex-bulk-step {
   display: flex;
   align-items: center;
   gap: var(--dex-space-2);
-  opacity: .45;
+  opacity: 0.45;
   transition: opacity var(--dex-transition);
 }
 
 .dex-bulk-step--active { opacity: 1; }
-.dex-bulk-step--done   { opacity: .75; }
+.dex-bulk-step--done   { opacity: 0.75; }
 
 .dex-bulk-step__num {
   width: 28px;
@@ -32,16 +43,17 @@
   font-size: var(--dex-text-sm);
   font-weight: 700;
   flex-shrink: 0;
+  transition: background var(--dex-transition), color var(--dex-transition);
 }
 
 .dex-bulk-step--active .dex-bulk-step__num {
-  background: var(--dex-primary);
-  color: #fff;
+  background: var(--dex-red);
+  color: var(--dex-white);
 }
 
 .dex-bulk-step--done .dex-bulk-step__num {
-  background: var(--dex-success);
-  color: #fff;
+  background: var(--dex-green);
+  color: var(--dex-white);
 }
 
 .dex-bulk-step__label {
@@ -58,12 +70,18 @@
   margin: 0 var(--dex-space-3);
 }
 
-/* ── Panels ─────────────────────────────────────────────────── */
-.dex-bulk-panel { margin-bottom: var(--dex-space-6); }
 
-/* ── Profile cards (Step 1) ─────────────────────────────────── */
+/* ── Step panels ─────────────────────────────────────────────── */
+
+.dex-bulk-panel {
+  margin-bottom: var(--dex-space-6);
+}
+
+
+/* ── Profile cards row (Step 1) ──────────────────────────────── */
+
 .dex-bulk-profiles-row {
-  background: #fff;
+  background: var(--dex-white);
   border: var(--dex-border);
   border-radius: var(--dex-radius-lg);
   padding: var(--dex-space-4);
@@ -98,8 +116,8 @@
 
 .dex-profile-card:hover,
 .dex-profile-card--active {
-  border-color: var(--dex-primary);
-  background: var(--dex-primary-light);
+  border-color: var(--dex-red);
+  background: var(--dex-red-light);
 }
 
 .dex-profile-card strong {
@@ -109,12 +127,14 @@
 
 .dex-profile-card span {
   font-size: var(--dex-text-xs);
-  color: var(--dex-gray-500);
+  color: var(--dex-text-muted);
 }
 
+
 /* ── Defaults card (Step 1) ──────────────────────────────────── */
+
 .dex-bulk-defaults-card {
-  background: #fff;
+  background: var(--dex-white);
   border: var(--dex-border);
   border-radius: var(--dex-radius-lg);
   padding: var(--dex-space-4) var(--dex-space-6);
@@ -127,12 +147,28 @@
   color: var(--dex-gray-700);
 }
 
+
+/* ── Step 2 header row ───────────────────────────────────────── */
+
+.dex-bulk-step2-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--dex-space-3);
+}
+
+.dex-bulk-step2-header h3 {
+  margin: 0;
+}
+
+
 /* ── Orders table (Step 2) ───────────────────────────────────── */
+
 .dex-bulk-orders-table {
   width: 100%;
   border-collapse: collapse;
   font-size: var(--dex-text-sm);
-  background: #fff;
+  background: var(--dex-white);
   border: var(--dex-border);
   border-radius: var(--dex-radius-lg);
   overflow: hidden;
@@ -142,12 +178,13 @@
   background: var(--dex-gray-50);
   padding: var(--dex-space-2) var(--dex-space-3);
   font-size: var(--dex-text-xs);
-  font-weight: 600;
-  color: var(--dex-gray-500);
+  font-weight: 700;
+  color: var(--dex-text-muted);
   text-transform: uppercase;
-  letter-spacing: .04em;
+  letter-spacing: 0.06em;
   border-bottom: var(--dex-border);
   white-space: nowrap;
+  text-align: left;
 }
 
 .dex-bulk-orders-table td {
@@ -156,16 +193,137 @@
   vertical-align: top;
 }
 
-.dex-bulk-orders-table tr:last-child td { border-bottom: 0; }
+.dex-bulk-orders-table tr:last-child td {
+  border-bottom: 0;
+}
+
 .dex-bulk-orders-table input[type="number"],
-.dex-bulk-orders-table input[type="text"] { box-sizing: border-box; }
+.dex-bulk-orders-table input[type="text"] {
+  box-sizing: border-box;
+}
+
+/* Fixed column widths */
+.dex-bulk-orders-table .dex-col-order  { width: 200px; max-width: 200px; }
+.dex-bulk-orders-table .dex-col-weight { width: 110px; }
+.dex-bulk-orders-table .dex-col-dims   { white-space: nowrap; width: 200px; }
+
+/* Higher specificity to override generic input rules */
+.dex-bulk-orders-table .dex-col-weight input[type="number"] { width: 80px; }
+.dex-bulk-orders-table input[type="number"].dex-dim-input   { width: 50px; min-width: 50px; }
+.dex-bulk-orders-table input[type="text"].dex-text-medium   { width: 100%; }
+
+/* Dims flex cell */
+.dex-bulk-dims-cell {
+  display: flex;
+  align-items: center;
+  gap: var(--dex-space-1);
+  flex-wrap: nowrap;
+}
+
+.dex-bulk-dims-cell > span {
+  color: var(--dex-gray-300);
+  font-size: var(--dex-text-xs);
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.dex-bulk-dims-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--dex-space-1);
+}
+
+/* Address below order number */
+.dex-bulk-addr {
+  font-size: var(--dex-text-xs);
+  color: var(--dex-text-muted);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 160px;
+}
+
+.dex-bulk-orders-table td.dex-col-order .dex-bulk-addr {
+  max-width: 180px;
+}
+
+/* COD / Paketomat badges */
+.dex-bulk-badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-top: var(--dex-space-1);
+}
+
+.dex-bulk-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px var(--dex-space-1);
+  border-radius: 99px;
+  font-size: var(--dex-text-xs);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.dex-bulk-badge--cod  { background: var(--dex-amber-light); color: var(--dex-amber); }
+.dex-bulk-badge--shop { background: var(--dex-blue-light);  color: var(--dex-blue); }
+
+/* Product list inside Step 2 order cell */
+.dex-bulk-prod-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--dex-text-xs);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dex-bulk-qty {
+  font-weight: 600;
+  color: var(--dex-text-muted);
+  margin-right: 2px;
+}
+
+.dex-bulk-wg    { color: var(--dex-gray-300); font-size: var(--dex-text-xs); }
+.dex-bulk-more  { color: var(--dex-gray-300); font-style: italic; }
+.dex-bulk-empty { color: var(--dex-gray-300); }
+
+/* Calculated mass hint below weight input */
+.dex-bulk-calc-hint {
+  font-size: var(--dex-text-xs);
+  color: var(--dex-gray-300);
+  margin-top: 3px;
+}
+
+/* Customer + total in order cell */
+.dex-bulk-order-meta {
+  display: flex;
+  align-items: baseline;
+  gap: var(--dex-space-1);
+  margin-top: 2px;
+}
+
+.dex-bulk-customer {
+  font-size: var(--dex-text-xs);
+  color: var(--dex-gray-500);
+}
+
+.dex-bulk-total {
+  font-size: var(--dex-text-xs);
+  font-weight: 600;
+  color: var(--dex-gray-700);
+}
+
 
 /* ── Results table (Step 3) ──────────────────────────────────── */
+
 .dex-bulk-results-table {
   width: 100%;
   border-collapse: collapse;
   font-size: var(--dex-text-sm);
-  background: #fff;
+  background: var(--dex-white);
   border: var(--dex-border);
   border-radius: var(--dex-radius-lg);
   overflow: hidden;
@@ -176,10 +334,12 @@
   background: var(--dex-gray-50);
   padding: var(--dex-space-2) var(--dex-space-3);
   font-size: var(--dex-text-xs);
-  font-weight: 600;
-  color: var(--dex-gray-500);
+  font-weight: 700;
+  color: var(--dex-text-muted);
   text-transform: uppercase;
+  letter-spacing: 0.06em;
   border-bottom: var(--dex-border);
+  text-align: left;
 }
 
 .dex-bulk-results-table td {
@@ -188,9 +348,20 @@
   vertical-align: middle;
 }
 
-.dex-bulk-results-table tr:last-child td { border-bottom: 0; }
+.dex-bulk-results-table tr:last-child td {
+  border-bottom: 0;
+}
 
-/* ── Progress bar ────────────────────────────────────────────── */
+/* Error rows — double selector beats hover state */
+.dex-bulk-results-table .dex-row-has-error td,
+.dex-bulk-results-table .dex-row-has-error:hover td {
+  background: var(--dex-red-light);
+  border-color: var(--dex-red);
+}
+
+
+/* ── Progress bar (Step 3 send phase) ────────────────────────── */
+
 .dex-bulk-progress-bar {
   height: 8px;
   background: var(--dex-gray-200);
@@ -201,31 +372,35 @@
 
 .dex-bulk-progress-fill {
   height: 100%;
-  background: var(--dex-primary);
+  background: var(--dex-red);
   border-radius: 99px;
-  transition: width .3s ease;
+  transition: width var(--dex-transition-slow);
 }
 
-/* ── Status badges (inline) ──────────────────────────────────── */
+
+/* ── Row status badges ───────────────────────────────────────── */
+
 .dex-row-status {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 2px 8px;
+  gap: var(--dex-space-1);
+  padding: 2px var(--dex-space-2);
   border-radius: 99px;
   font-size: var(--dex-text-xs);
   font-weight: 600;
   white-space: nowrap;
 }
 
-.dex-row-status--pending { background: var(--dex-gray-100);      color: var(--dex-gray-500); }
-.dex-row-status--saving  { background: var(--dex-info-light);    color: var(--dex-info); }
-.dex-row-status--saved   { background: var(--dex-success-light); color: var(--dex-success); }
-.dex-row-status--sending { background: var(--dex-info-light);    color: var(--dex-info); }
-.dex-row-status--sent    { background: var(--dex-success-light); color: var(--dex-success); }
-.dex-row-status--error   { background: var(--dex-error-light);   color: var(--dex-error); }
+.dex-row-status--pending  { background: var(--dex-gray-100);     color: var(--dex-gray-500); }
+.dex-row-status--saving   { background: var(--dex-blue-light);   color: var(--dex-blue); }
+.dex-row-status--saved    { background: var(--dex-green-light);  color: var(--dex-green); }
+.dex-row-status--sending  { background: var(--dex-blue-light);   color: var(--dex-blue); }
+.dex-row-status--sent     { background: var(--dex-green-light);  color: var(--dex-green); }
+.dex-row-status--error    { background: var(--dex-red-light);    color: var(--dex-red); }
 
-/* ── Footer akcije ───────────────────────────────────────────── */
+
+/* ── Step footer actions ─────────────────────────────────────── */
+
 .dex-bulk-step-footer {
   display: flex;
   align-items: center;
@@ -233,33 +408,15 @@
   padding-top: var(--dex-space-4);
   margin-top: var(--dex-space-4);
   border-top: var(--dex-border);
+  flex-wrap: wrap;
 }
 
-/* ── Layout helpers (zamena inline stilova) ──────────────────── */
-.dex-bulk-dims-wrap {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
 
-.dex-bulk-step2-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--dex-space-3);
-}
+/* ── Final summary card (Step 4) ─────────────────────────────── */
 
-.dex-bulk-step2-header h3 { margin: 0; }
-
-.dex-bulk-orders-table .dex-col-dims { white-space: nowrap; width: 200px; }
-/* Higher specificity (0,3,1) overrides generic (0,2,1) */
-.dex-bulk-orders-table input[type="number"].dex-dim-input { width: 50px; min-width: 50px; }
-.dex-bulk-orders-table .dex-text-medium { width: 100%; min-width: 90px; }
-
-/* ── Final summary card (posle send faze) ────────────────────── */
 .dex-bulk-summary {
   margin-top: var(--dex-space-4);
-  background: #fff;
+  background: var(--dex-white);
   border: var(--dex-border);
   border-radius: var(--dex-radius-lg);
   overflow: hidden;
@@ -269,11 +426,11 @@
   padding: var(--dex-space-3) var(--dex-space-4);
   font-size: var(--dex-text-base);
   font-weight: 700;
-  color: #fff;
+  color: var(--dex-white);
 }
 
-.dex-bulk-summary__header--success { background: var(--dex-success); }
-.dex-bulk-summary__header--partial { background: var(--dex-warning, #d97706); }
+.dex-bulk-summary__header--success { background: var(--dex-green); }
+.dex-bulk-summary__header--partial { background: var(--dex-amber); }
 
 .dex-bulk-summary__body {
   padding: var(--dex-space-4);
@@ -291,173 +448,38 @@
 .dex-bulk-summary__stat {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 12px;
+  gap: var(--dex-space-1);
+  padding: var(--dex-space-1) var(--dex-space-3);
   border-radius: 99px;
   font-size: var(--dex-text-sm);
   font-weight: 600;
 }
 
-.dex-bulk-summary__stat--sent  { background: var(--dex-success-light); color: var(--dex-success); }
-.dex-bulk-summary__stat--error { background: var(--dex-error-light);   color: var(--dex-error); }
+.dex-bulk-summary__stat--sent  { background: var(--dex-green-light); color: var(--dex-green); }
+.dex-bulk-summary__stat--error { background: var(--dex-red-light);   color: var(--dex-red); }
 
 .dex-bulk-summary__section {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--dex-space-1);
   align-items: flex-start;
 }
 
+/* Tracking codes textarea */
 .dex-bulk-tracking-codes {
   width: 100%;
-  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
   font-size: var(--dex-text-sm);
-  padding: 8px;
+  padding: var(--dex-space-2);
   border: var(--dex-border);
   border-radius: var(--dex-radius);
   background: var(--dex-gray-50);
   resize: vertical;
+  box-sizing: border-box;
 }
 
 .dex-bulk-summary__actions {
   display: flex;
   flex-wrap: wrap;
   gap: var(--dex-space-2);
-}
-
-/* ── Step 2 table: novi elementi ─────────────────────────────── */
-
-/* Adresa ispod broja narudžbine */
-.dex-bulk-addr {
-  font-size: var(--dex-text-xs);
-  color: var(--dex-gray-500);
-  margin-top: 2px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 160px;
-}
-
-/* Bedževi: Pouzećem / Paketomat */
-.dex-bulk-badge-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 3px;
-  margin-top: 4px;
-}
-
-.dex-bulk-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 1px 6px;
-  border-radius: 99px;
-  font-size: 10px;
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-.dex-bulk-badge--cod  { background: #fef3c7; color: #92400e; }
-.dex-bulk-badge--shop { background: var(--dex-info-light, #e0f2fe); color: var(--dex-info, #0369a1); }
-
-/* Lista proizvoda u Step 2 */
-.dex-bulk-prod-list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  font-size: var(--dex-text-xs);
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.dex-bulk-qty {
-  font-weight: 600;
-  color: var(--dex-gray-500);
-  margin-right: 2px;
-}
-
-.dex-bulk-wg {
-  color: var(--dex-gray-400);
-  font-size: 10px;
-}
-
-.dex-bulk-more {
-  color: var(--dex-gray-400);
-  font-style: italic;
-}
-
-.dex-bulk-empty {
-  color: var(--dex-gray-400);
-}
-
-/* Hint sa izračunatom masom ispod weight inputa */
-.dex-bulk-calc-hint {
-  font-size: 10px;
-  color: var(--dex-gray-400);
-  margin-top: 3px;
-}
-
-/* Kupac + iznos u jednoj liniji unutar order ćelije */
-.dex-bulk-order-meta {
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
-  margin-top: 2px;
-}
-
-.dex-bulk-customer {
-  font-size: var(--dex-text-xs);
-  color: var(--dex-gray-600);
-}
-
-.dex-bulk-total {
-  font-size: var(--dex-text-xs);
-  font-weight: 600;
-  color: var(--dex-gray-700);
-}
-
-/* Greška u results tabeli — vizuelno isticanje reda */
-.dex-row-has-error { background: var(--dex-error-light, #fef2f2) !important; }
-.dex-row-has-error td { border-color: var(--dex-error, #dc2626) !important; }
-
-/* ── Kolone: fiksne širine da tabela ne poskakuje ───────────── */
-.dex-bulk-orders-table .dex-col-order  { width: 200px; max-width: 200px; }
-.dex-bulk-orders-table .dex-col-weight { width: 110px; }
-
-/* Weight input eksplicitna širina — (0,3,1) > generic (0,2,1) */
-.dex-bulk-orders-table .dex-col-weight input[type="number"] { width: 80px; }
-
-/* Text inputs (content, note) pune širine kolone */
-.dex-bulk-orders-table input[type="text"].dex-text-medium { width: 100%; }
-
-/* Dim inputs u flex wrapperu */
-.dex-bulk-dims-cell {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  flex-wrap: nowrap;
-}
-
-.dex-bulk-dims-cell > span {
-  color: var(--dex-gray-400);
-  font-size: 11px;
-  flex-shrink: 0;
-  user-select: none;
-}
-
-/* Order cell — addr ne sme da širi kolonu */
-.dex-bulk-orders-table td.dex-col-order .dex-bulk-addr {
-  max-width: 180px;
-}
-
-/* Wizard kontejner — puna širina WP admin content areaa */
-.dex-bulk-wrap {
-  max-width: 100%;
-}
-
-/* Stepper — 4 koraka, širi opseg */
-.dex-bulk-stepper {
-  max-width: 640px;
-  margin-left: auto;
-  margin-right: auto;
 }

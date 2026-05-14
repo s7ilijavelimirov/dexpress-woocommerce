@@ -41,15 +41,15 @@ final class OnboardingPage
         $this->logger->info('[ONBOARDING] Wizard page loaded', ['user_id' => get_current_user_id()]);
 
         wp_enqueue_style(
-            'dexpress-design-system',
-            DEXPRESS_PLUGIN_URL . 'assets/css/admin-design-system.css',
+            'dex-admin',
+            DEXPRESS_PLUGIN_URL . 'assets/css/admin.css',
             [],
             DEXPRESS_VERSION,
         );
         wp_enqueue_style(
             'dexpress-onboarding',
             DEXPRESS_PLUGIN_URL . 'assets/css/admin-onboarding.css',
-            ['dashicons', 'dexpress-design-system'],
+            ['dashicons', 'dex-admin'],
             DEXPRESS_VERSION,
         );
         wp_enqueue_script(

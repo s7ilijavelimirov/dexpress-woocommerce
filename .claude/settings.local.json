@@ -1,30 +1,17 @@
 {
   "permissions": {
     "allow": [
-      "Bash(php -l src/Application/Shipment/CreateShipmentService.php)",
-      "Bash(php -l src/Application/Shipment/ShipmentStatusOrderNoteFormatter.php)",
-      "Bash(php -l src/Application/Webhook/ShipmentStatusIngestionService.php)",
-      "Bash(php -l src/Domain/Shipment/StatusEmailBucket.php)",
-      "Bash(php -l src/Application/Email/ShipmentEmailRenderContextFactory.php)",
-      "Bash(php -l src/Presentation/Hooks/PluginActivator.php)",
-      "Bash(php -l src/Presentation/Admin/Pages/OnboardingPage.php)",
-      "Bash(php -l src/Presentation/Admin/Menu/AdminMenu.php)",
-      "Bash(php -l src/Container/Providers/AdminServiceProvider.php)",
-      "Bash(php -l src/Plugin.php)",
-      "Bash(php -l src/Presentation/Admin/Pages/DashboardPage.php)",
-      "Bash(php -l src/Infrastructure/Persistence/WpdbPackageProfileRepository.php)",
-      "Bash(php -l src/Presentation/Admin/Ajax/PackageProfileController.php)",
-      "Bash(php -l src/Presentation/Admin/Ajax/BulkShipmentController.php)",
-      "Bash(php -l src/Presentation/Admin/Hooks/OrdersBulkAction.php)",
-      "Bash(php -l src/Presentation/Admin/Pages/PackageProfilesPage.php)",
-      "Bash(xargs grep:*)",
-      "Bash(php -l src/Presentation/Admin/Pages/ShipmentsPage.php)",
-      "Bash(php -l src/Presentation/Admin/Label/PrintLabelController.php)",
-      "Bash(php -l src/Presentation/Admin/Pages/BulkShipmentPage.php)",
-      "Bash(php -l src/Presentation/Admin/Pages/ShipmentListTable.php)",
-      "Bash(php -l \"C:\\\\Users\\\\S7DEVPQ6GF\\\\Local Sites\\\\d-express\\\\app\\\\public\\\\wp-content\\\\plugins\\\\dexpress-woocommerce\\\\src\\\\Presentation\\\\Admin\\\\Pages\\\\OnboardingPage.php\")",
-      "Bash(php -l \"C:\\\\Users\\\\S7DEVPQ6GF\\\\Local Sites\\\\d-express\\\\app\\\\public\\\\wp-content\\\\plugins\\\\dexpress-woocommerce\\\\src\\\\Presentation\\\\Admin\\\\Pages\\\\BulkShipmentPage.php\")",
-      "Bash(php -l \"C:\\\\Users\\\\S7DEVPQ6GF\\\\Local Sites\\\\d-express\\\\app\\\\public\\\\wp-content\\\\plugins\\\\dexpress-woocommerce\\\\src\\\\Presentation\\\\Admin\\\\Label\\\\PrintLabelController.php\")"
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\S7DEVPQ6GF\\\\Local Sites\\\\d-express\\\\app\\\\public\\\\wp-content\\\\plugins\\\\dexpress-woocommerce\" -Recurse -Directory)",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "PowerShell(\\(Get-Content \"C:\\\\Users\\\\S7DEVPQ6GF\\\\Local Sites\\\\d-express\\\\app\\\\public\\\\wp-content\\\\plugins\\\\dexpress-woocommerce\\\\assets\\\\css\\\\admin.css\" | Measure-Object -Line\\).Lines)",
+      "Bash(Remove-Item \"C:\\\\Users\\\\S7DEVPQ6GF\\\\Local Sites\\\\d-express\\\\app\\\\public\\\\wp-content\\\\plugins\\\\dexpress-woocommerce\\\\assets\\\\css\\\\admin-shipments.css\" -Force)",
+      "Bash(Remove-Item \"C:\\\\Users\\\\S7DEVPQ6GF\\\\Local Sites\\\\d-express\\\\app\\\\public\\\\wp-content\\\\plugins\\\\dexpress-woocommerce\\\\assets\\\\css\\\\admin-design-system.css\" -Force)",
+      "Bash(Write-Host \"Deleted both files.\")",
+      "PowerShell(Remove-Item *)",
+      "Bash(dir /s /b \"C:\\\\Users\\\\S7DEVPQ6GF\\\\Local Sites\\\\d-express\\\\app\\\\public\\\\wp-content\\\\plugins\\\\dexpress-woocommerce\")"
     ]
   }
 }

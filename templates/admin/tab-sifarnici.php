@@ -58,36 +58,40 @@ $syncTypes = [
 $hasCredentials = $options->getString('api.username') !== '';
 ?>
 
+<div class="dex-notice dex-notice--info dex-tab-intro">
+    <div class="dex-notice__content">
+        <p class="dex-notice__body"><?php esc_html_e('Šifarnici su liste gradova, ulica i poštanskih brojeva koje D-Express koristi. Plugin ih automatski osvežava — ručna sinhronizacija je potrebna samo ako primetite da nedostaju lokacije.', 'dexpress-woocommerce'); ?></p>
+    </div>
+</div>
+
 <?php if (!$hasCredentials) : ?>
-    <div class="notice notice-warning inline">
-        <p>
-            <?php
-            printf(
-                /* translators: %s: link to API settings tab */
-                esc_html__('Pre sinhronizacije unesite API kredencijale u tabu %s.', 'dexpress-woocommerce'),
-                '<a href="' . esc_url(add_query_arg(['page' => 'dexpress-settings', 'tab' => 'api'], admin_url('admin.php'))) . '">' . esc_html__('API podešavanja', 'dexpress-woocommerce') . '</a>',
-            );
-            ?>
-        </p>
+    <div class="dex-notice dex-notice--warning dex-tab-intro">
+        <div class="dex-notice__content">
+            <p class="dex-notice__body">
+                <?php
+                printf(
+                    /* translators: %s: link to API settings tab */
+                    esc_html__('Pre sinhronizacije unesite API kredencijale u tabu %s.', 'dexpress-woocommerce'),
+                    '<a href="' . esc_url(add_query_arg(['page' => 'dexpress-settings', 'tab' => 'api'], admin_url('admin.php'))) . '">' . esc_html__('API podešavanja', 'dexpress-woocommerce') . '</a>',
+                );
+                ?>
+            </p>
+        </div>
     </div>
 <?php endif; ?>
 
-<h2><?php esc_html_e('Referentni podaci', 'dexpress-woocommerce'); ?></h2>
-<p class="description" style="margin-bottom:16px;">
-    <?php esc_html_e('Šifarnici se automatski ažuriraju putem WP Cron-a prema prikazanoj učestalosti. Kliknite Sinhronizuj za ručno osvežavanje.', 'dexpress-woocommerce'); ?>
-</p>
-
-<p>
+<div class="dex-sifarnici-toolbar">
     <button type="button"
-            id="dexpress-sync-all"
-            class="button button-primary"
+            id="dex-sync-all"
+            class="dex-btn dex-btn--primary"
             <?php disabled(!$hasCredentials); ?>>
+        <span class="dashicons dashicons-update" aria-hidden="true"></span>
         <?php esc_html_e('Sinhronizuj sve šifarnike', 'dexpress-woocommerce'); ?>
     </button>
-    <span id="dexpress-sync-all-result" class="dexpress-inline-result" style="margin-left:10px;" aria-live="polite"></span>
-</p>
+    <span id="dex-sync-all-result" class="dex-inline-result" aria-live="polite"></span>
+</div>
 
-<table class="widefat dexpress-sync-table" style="margin-top:16px;">
+<table class="widefat dex-sync-table">
     <thead>
         <tr>
             <th><?php esc_html_e('Šifarnik', 'dexpress-woocommerce'); ?></th>
@@ -102,7 +106,7 @@ $hasCredentials = $options->getString('api.username') !== '';
             <tr data-sync-type="<?php echo esc_attr($type); ?>">
                 <td>
                     <strong><?php echo esc_html($info['label']); ?></strong>
-                    <span class="dexpress-sync-status" aria-live="polite"></span>
+                    <span class="dex-sync-status" aria-live="polite"></span>
                 </td>
                 <td><?php echo esc_html($info['freq']); ?></td>
                 <td>
@@ -112,29 +116,28 @@ $hasCredentials = $options->getString('api.username') !== '';
                         echo esc_html($dt ? $dt->format('d.m.Y H:i:s') : $lastSync);
                         ?>
                     <?php else : ?>
-                        <em style="color:#888;"><?php esc_html_e('Nikad', 'dexpress-woocommerce'); ?></em>
+                        <em class="dex-text-muted"><?php esc_html_e('Nikad', 'dexpress-woocommerce'); ?></em>
                     <?php endif; ?>
                 </td>
                 <td>
                     <button type="button"
-                            class="button button-small dexpress-manual-sync"
+                            class="dex-btn dex-btn--secondary dex-btn--sm dex-manual-sync"
                             data-type="<?php echo esc_attr($type); ?>"
                             <?php disabled(!$hasCredentials); ?>>
                         <?php esc_html_e('Sinhronizuj', 'dexpress-woocommerce'); ?>
                     </button>
-                    <span class="dexpress-sync-result" aria-live="polite"></span>
+                    <span class="dex-sync-result" aria-live="polite"></span>
                 </td>
             </tr>
         <?php endforeach; ?>
     </tbody>
 </table>
 
-<div class="dexpress-danger-zone" style="margin-top:32px;">
-    <div class="dexpress-danger-zone-header">
-        <span class="dashicons dashicons-warning" style="vertical-align:middle;margin-right:6px;"></span>
+<div class="dex-danger-zone">
+    <div class="dex-danger-zone__header">
         <?php esc_html_e('Opasna zona', 'dexpress-woocommerce'); ?>
     </div>
-    <div class="dexpress-danger-zone-body">
+    <div class="dex-danger-zone__body">
         <form method="post" action="">
             <?php wp_nonce_field('dexpress_save_settings', 'dexpress_settings_nonce'); ?>
             <input type="hidden" name="dexpress_save_settings" value="1">
@@ -156,7 +159,7 @@ $hasCredentials = $options->getString('api.username') !== '';
                                    <?php checked($options->getBool('advanced.delete_data_on_uninstall', false)); ?>>
                             <?php esc_html_e('Obriši sve tabele i podešavanja pri deinstalaciji plugina', 'dexpress-woocommerce'); ?>
                         </label>
-                        <p class="description" style="color:#8b1a1a;">
+                        <p class="description">
                             <?php esc_html_e('Kada je uključeno, brisanje plugina sa Plugins ekrana trajno briše SVE tabele i podešavanja. Ova akcija se ne može poništiti.', 'dexpress-woocommerce'); ?>
                         </p>
                     </td>

@@ -22,17 +22,24 @@ final class AdminMenu
     /** Roditeljski slug menija — isti kao prva podstavka da nema duplog unosa. */
     private const MENU_SLUG = 'dexpress';
 
-    /** Svi `admin.php?page=…` slugovi za koje učitavamo zajednički admin CSS/JS. */
-    private const ADMIN_PAGE_SLUGS = [
-        self::MENU_SLUG,
-        'dexpress-shipments',
-        'dexpress-payments',
-        'dexpress-settings',
-        'dexpress-diagnostics',
-        OnboardingPage::PAGE_SLUG,
-        PackageProfilesPage::PAGE_SLUG,
-        BulkShipmentPage::PAGE_SLUG,
-    ];
+    /**
+     * Svi `admin.php?page=…` slugovi za koje učitavamo zajednički admin CSS/JS.
+     *
+     * @return list<string>
+     */
+    private static function adminPageSlugs(): array
+    {
+        return [
+            self::MENU_SLUG,
+            'dexpress-shipments',
+            'dexpress-payments',
+            'dexpress-settings',
+            DiagnosticsPage::PAGE_SLUG,
+            OnboardingPage::PAGE_SLUG,
+            PackageProfilesPage::PAGE_SLUG,
+            BulkShipmentPage::PAGE_SLUG,
+        ];
+    }
 
     public function __construct(
         private readonly DashboardPage       $dashboardPage,
@@ -169,24 +176,17 @@ final class AdminMenu
         }
 
         wp_enqueue_style(
-            'dexpress-design-system',
-            DEXPRESS_PLUGIN_URL . 'assets/css/admin-design-system.css',
-            [],
-            DEXPRESS_VERSION,
-        );
-
-        wp_enqueue_style(
-            'dexpress-admin',
+            'dex-admin',
             DEXPRESS_PLUGIN_URL . 'assets/css/admin.css',
-            ['dexpress-design-system'],
+            [],
             DEXPRESS_VERSION,
         );
 
         if ($hookSuffix === 'toplevel_page_dexpress') {
             wp_enqueue_style(
-                'dexpress-admin-dashboard',
+                'dex-dashboard',
                 DEXPRESS_PLUGIN_URL . 'assets/css/admin-dashboard.css',
-                ['dexpress-design-system'],
+                ['dex-admin'],
                 DEXPRESS_VERSION,
             );
         }
@@ -194,22 +194,21 @@ final class AdminMenu
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended
         $page = isset($_GET['page']) ? sanitize_key((string) $_GET['page']) : '';
 
-
         if ($page === PackageProfilesPage::PAGE_SLUG) {
             wp_enqueue_style(
-                'dexpress-package-profiles',
+                'dex-package-profiles',
                 DEXPRESS_PLUGIN_URL . 'assets/css/admin-package-profiles.css',
-                ['dexpress-design-system'],
+                ['dex-admin'],
                 DEXPRESS_VERSION,
             );
             wp_enqueue_script(
-                'dexpress-package-profiles',
+                'dex-package-profiles',
                 DEXPRESS_PLUGIN_URL . 'assets/js/admin-package-profiles.js',
                 ['jquery'],
                 DEXPRESS_VERSION,
                 true,
             );
-            wp_localize_script('dexpress-package-profiles', 'dexpressProfiles', [
+            wp_localize_script('dex-package-profiles', 'dexpressProfiles', [
                 'ajaxUrl' => admin_url('admin-ajax.php'),
                 'iconUrl' => DEXPRESS_PLUGIN_URL . 'assets/images/package-box.svg',
                 'nonces'  => [
@@ -230,13 +229,13 @@ final class AdminMenu
 
         if ($page === BulkShipmentPage::PAGE_SLUG) {
             wp_enqueue_style(
-                'dexpress-bulk-shipment',
+                'dex-bulk-shipment',
                 DEXPRESS_PLUGIN_URL . 'assets/css/admin-bulk-shipment.css',
-                ['dexpress-design-system'],
+                ['dex-admin'],
                 DEXPRESS_VERSION,
             );
             wp_enqueue_script(
-                'dexpress-bulk-shipment',
+                'dex-bulk-shipment',
                 DEXPRESS_PLUGIN_URL . 'assets/js/admin-bulk-shipment.js',
                 ['jquery'],
                 DEXPRESS_VERSION,
@@ -245,15 +244,24 @@ final class AdminMenu
             // Nonce za štampu nalepnica prosleđujemo ovde (BulkShipmentPage::render() doda ostatak podataka).
         }
 
+        if ($page === DiagnosticsPage::PAGE_SLUG) {
+            wp_enqueue_style(
+                'dex-diagnostics',
+                DEXPRESS_PLUGIN_URL . 'assets/css/admin-diagnostics.css',
+                ['dex-admin'],
+                DEXPRESS_VERSION,
+            );
+        }
+
         wp_enqueue_script(
-            'dexpress-admin-settings',
+            'dex-admin-settings',
             DEXPRESS_PLUGIN_URL . 'assets/js/admin-settings.js',
             ['jquery'],
             DEXPRESS_VERSION,
             true,
         );
 
-        wp_localize_script('dexpress-admin-settings', 'dexpressAdmin', [
+        wp_localize_script('dex-admin-settings', 'dexpressAdmin', [
             'ajaxUrl'      => admin_url('admin-ajax.php'),
             'syncAllOrder' => SyncCatalogOrder::ALL_SEQUENCE,
             'nonces'       => [
@@ -292,7 +300,7 @@ final class AdminMenu
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended
         $page = isset($_GET['page']) ? sanitize_key((string) $_GET['page']) : '';
 
-        return $page !== '' && in_array($page, self::ADMIN_PAGE_SLUGS, true);
+        return $page !== '' && in_array($page, self::adminPageSlugs(), true);
     }
 
     public function addMenuItems(): void
@@ -368,7 +376,7 @@ final class AdminMenu
             __('D Express — dijagnostika', 'dexpress-woocommerce'),
             __('Dijagnostika', 'dexpress-woocommerce'),
             'manage_woocommerce',
-            'dexpress-diagnostics',
+            DiagnosticsPage::PAGE_SLUG,
             [$this->diagnosticsPage, 'render'],
         );
 

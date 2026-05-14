@@ -29,8 +29,8 @@ final class TestConnectionController
         $username    = sanitize_text_field($_POST['username'] ?? '');
         $rawPassword = $_POST['password'] ?? '';
 
-        if ($username === '') {
-            // Use stored credentials if no new ones are posted.
+        if ($username === '' || $rawPassword === '') {
+            // Fall back to stored credentials when either field is missing (e.g. password in saved-state UI).
             $username = $this->options->getString('api.username');
 
             $stored = $this->options->getString('api.password');

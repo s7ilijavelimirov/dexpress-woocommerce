@@ -1,668 +1,2456 @@
-/* D Express WooCommerce Integration — Admin styles */
+/* =============================================================================
+   D Express WooCommerce — Admin CSS
+   Version 2.0.0 · 2026-05-13
+
+   Contents:
+     1. Design tokens (:root)
+     2. Base reset (scoped to [class*="dex-"])
+     3. WordPress .form-table overrides (.dex-settings-wrap)
+     4. Shared components
+        4.01  Page Header        (.dex-page-header)
+        4.02  Card               (.dex-card)
+        4.03  Stat Card          (.dex-stat-card)
+        4.04  Button             (.dex-btn)
+        4.05  Badge              (.dex-badge)
+        4.06  Status Dot         (.dex-status-dot)
+        4.07  Table              (.dex-table)
+        4.08  Modal              (.dex-modal)
+        4.09  Form Field         (.dex-field)
+        4.10  Inline Result      (.dex-inline-result)
+        4.11  Tab Bar            (.dex-tabs)
+        4.12  Progress Bar       (.dex-progress)
+        4.13  Stepper            (.dex-stepper)
+        4.14  Empty State        (.dex-empty)
+        4.15  Alert / Notice     (.dex-notice)
+        4.16  Autocomplete       (.dex-dropdown)
+        4.17  Copy Field         (.dex-copy-field)
+        4.18  Sync Row           (.dex-sync-row)
+     5. Utility classes
+   ============================================================================= */
+
+
+/* =============================================================================
+   1. DESIGN TOKENS
+   ============================================================================= */
+
+:root {
+  /* ── Brand ─────────────────────────────────────────────────── */
+  --dex-red: #E31E25;
+  --dex-red-hover: #C41920;
+  --dex-red-light: #FFF0F0;
+
+  /* ── Semantic — Success ─────────────────────────────────────── */
+  --dex-green: #1A9E5C;
+  --dex-green-light: #EDF7F2;
+
+  /* ── Semantic — Warning ─────────────────────────────────────── */
+  --dex-amber: #D97706;
+  --dex-amber-light: #FFFBEB;
+
+  /* ── Semantic — Info ────────────────────────────────────────── */
+  --dex-blue: #1D6FA4;
+  --dex-blue-light: #EFF6FF;
+
+  /* ── Neutral scale ──────────────────────────────────────────── */
+  --dex-gray-50: #F9FAFB;
+  --dex-gray-100: #F3F4F6;
+  --dex-gray-200: #E5E7EB;
+  --dex-gray-300: #D1D5DB;
+  --dex-gray-500: #6B7280;
+  --dex-gray-700: #374151;
+  --dex-gray-900: #111827;
+  --dex-white: #FFFFFF;
+
+  /* ── Surface & text aliases ─────────────────────────────────── */
+  --dex-bg: #F9FAFB;
+  --dex-text: #111827;
+  --dex-text-muted: #6B7280;
+
+  /* ── Typography ─────────────────────────────────────────────── */
+  --dex-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans,
+    Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+
+  --dex-text-xs: 11px;
+  --dex-text-sm: 12px;
+  --dex-text-base: 14px;
+  --dex-text-lg: 16px;
+  --dex-text-xl: 20px;
+  --dex-text-2xl: 24px;
+
+  /* ── Spacing (4px grid) ─────────────────────────────────────── */
+  --dex-space-1: 4px;
+  --dex-space-2: 8px;
+  --dex-space-3: 12px;
+  --dex-space-4: 16px;
+  --dex-space-5: 20px;
+  --dex-space-6: 24px;
+  --dex-space-8: 32px;
+  --dex-space-10: 40px;
+  --dex-space-12: 48px;
+
+  /* ── Borders & radius ───────────────────────────────────────── */
+  --dex-radius-sm: 4px;
+  --dex-radius: 8px;
+  --dex-radius-lg: 12px;
+  --dex-radius-xl: 16px;
+
+  --dex-border-color: #E5E7EB;
+  --dex-border: 1px solid var(--dex-border-color);
+
+  /* ── Shadows ────────────────────────────────────────────────── */
+  --dex-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --dex-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --dex-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 2px 4px rgba(0, 0, 0, 0.04);
+  --dex-shadow-lg: 0 10px 24px rgba(0, 0, 0, 0.08);
+
+  /* ── Transitions ────────────────────────────────────────────── */
+  --dex-transition: 150ms ease;
+  --dex-transition-slow: 250ms ease;
+}
+
+
+/* =============================================================================
+   2. BASE RESET (scoped — no global reset)
+   ============================================================================= */
+
+[class*="dex-"],
+[class*="dex-"]::before,
+[class*="dex-"]::after {
+  box-sizing: border-box;
+}
 
-/* -------------------------------------------------------------------------
-   Settings tabs
-   ------------------------------------------------------------------------- */
+/* [class*="dex-"] {
+  font-family: var(--dex-font);
+} */
 
-.dexpress-settings-wrap .nav-tab-wrapper {
-    margin-bottom: 0;
-    padding-bottom: 0;
+
+/* =============================================================================
+   3. WORDPRESS .form-table OVERRIDES (scoped to .dex-settings-wrap)
+   ============================================================================= */
+
+.dex-settings-wrap .form-table th {
+  font-size: var(--dex-text-xs);
+  font-weight: 700;
+  color: var(--dex-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  vertical-align: top;
+  padding-top: var(--dex-space-3);
+  padding-bottom: var(--dex-space-3);
+  width: 200px;
+}
+
+.dex-settings-wrap .form-table td {
+  font-size: var(--dex-text-base);
+  color: var(--dex-gray-700);
+  vertical-align: top;
+  padding-top: var(--dex-space-3);
+  padding-bottom: var(--dex-space-3);
+}
+
+.dex-settings-wrap .form-table td p.description {
+  font-size: var(--dex-text-xs);
+  color: var(--dex-text-muted);
+  margin-top: var(--dex-space-1);
+}
+
+.dex-settings-wrap .form-table input.regular-text,
+.dex-settings-wrap .form-table input[type="text"],
+.dex-settings-wrap .form-table input[type="password"],
+.dex-settings-wrap .form-table input[type="number"],
+.dex-settings-wrap .form-table input[type="email"],
+.dex-settings-wrap .form-table select {
+  font-family: var(--dex-font);
+  font-size: var(--dex-text-base);
+  border-color: var(--dex-border-color);
+  border-radius: var(--dex-radius);
+  transition: border-color var(--dex-transition), box-shadow var(--dex-transition);
+}
+
+.dex-settings-wrap .form-table input:focus,
+.dex-settings-wrap .form-table select:focus,
+.dex-settings-wrap .form-table textarea:focus {
+  border-color: var(--dex-red);
+  box-shadow: 0 0 0 3px rgba(227, 30, 37, 0.12);
+  outline: none;
+}
+
+
+/* =============================================================================
+   4.01 PAGE HEADER
+   ============================================================================= */
+
+.dex-page-header__icon .dashicons {
+  font-size: 22px;
+  width: 22px;
+  height: 22px;
+  line-height: 1;
+  color: var(--dex-red);
+}
+
+.dex-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--dex-space-4);
+  padding: var(--dex-space-5) var(--dex-space-5);
+  margin-bottom: var(--dex-space-6);
+  flex-wrap: wrap;
+  background: var(--dex-white);
+  border: var(--dex-border);
+  border-left: 4px solid var(--dex-red);
+  border-radius: var(--dex-radius-lg);
+  box-shadow: var(--dex-shadow-sm);
+}
+
+.dex-page-header__left {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--dex-space-3);
+  min-width: 0;
+}
+
+.dex-page-header__icon {
+  width: 22px;
+  height: 22px;
+  margin-top: 2px;
+  color: var(--dex-red);
+  flex-shrink: 0;
+}
+
+.dex-page-header__titles {
+  min-width: 0;
+}
+
+.dex-page-header__title {
+  font-size: var(--dex-text-xl);
+  font-weight: 700;
+  color: var(--dex-text);
+  margin: 0;
+  padding: 0;
+  border: none;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.dex-page-header__subtitle {
+  font-size: var(--dex-text-sm);
+  color: var(--dex-text-muted);
+  margin: var(--dex-space-2) 0 0;
+  line-height: 1.5;
+  max-width: 56ch;
+}
+
+.dex-page-header__right {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--dex-space-2);
+}
+
+@media (max-width: 600px) {
+  .dex-page-header {
+    padding: var(--dex-space-4);
+    gap: var(--dex-space-3);
+  }
+
+  .dex-page-header__subtitle {
+    max-width: none;
+  }
+}
+
+
+/* =============================================================================
+   4.02 CARD
+   ============================================================================= */
+
+.dex-card {
+  background: var(--dex-white);
+  border: var(--dex-border);
+  border-radius: var(--dex-radius);
+  box-shadow: var(--dex-shadow-sm);
+  overflow: hidden;
+}
+
+.dex-card__header .dashicons {
+  font-size: 14px;
+  width: 14px;
+  height: 14px;
+  line-height: 1;
+  color: var(--dex-text-muted);
+  flex-shrink: 0;
+}
+
+.dex-card--highlight {
+  border-color: var(--dex-blue);
+  box-shadow: 0 0 0 1px var(--dex-blue), var(--dex-shadow-sm);
+}
+
+.dex-card__header {
+  display: flex;
+  align-items: center;
+
+  gap: var(--dex-space-3);
+  padding: var(--dex-space-3) var(--dex-space-4);
+  background: var(--dex-gray-50);
+  border-bottom: var(--dex-border);
+  min-height: 44px;
+}
+
+.dex-card__title {
+  font-size: var(--dex-text-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0;
+}
+
+.dex-card__body {
+  padding: var(--dex-space-4);
+}
+
+.dex-card__footer {
+  display: flex;
+  align-items: center;
+  gap: var(--dex-space-3);
+  padding: var(--dex-space-3) var(--dex-space-4);
+  background: var(--dex-gray-50);
+  border-top: var(--dex-border);
+  flex-wrap: wrap;
+}
+
+
+/* =============================================================================
+   4.03 STAT CARD
+   ============================================================================= */
+
+.dex-stat-card {
+  background: var(--dex-white);
+  border: var(--dex-border);
+  border-radius: var(--dex-radius);
+  box-shadow: var(--dex-shadow-sm);
+  padding: var(--dex-space-4);
+  display: flex;
+  align-items: center;
+  gap: var(--dex-space-3);
+}
+
+.dex-stat-card__icon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--dex-radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.dex-stat-card__icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.dex-stat-card__icon--red {
+  background: rgba(227, 30, 37, 0.08);
+  color: var(--dex-red);
+}
+
+.dex-stat-card__icon--green {
+  background: rgba(26, 158, 92, 0.08);
+  color: var(--dex-green);
+}
+
+.dex-stat-card__icon--blue {
+  background: rgba(29, 111, 164, 0.08);
+  color: var(--dex-blue);
+}
+
+.dex-stat-card__icon--amber {
+  background: rgba(217, 119, 6, 0.08);
+  color: var(--dex-amber);
+}
+
+.dex-stat-card__body {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--dex-space-1);
+}
+
+.dex-stat-card__value {
+  font-size: var(--dex-text-2xl);
+  font-weight: 700;
+  line-height: 1;
+  margin: 0;
+  color: var(--dex-text);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.dex-stat-card__value--success {
+  color: var(--dex-green);
+}
+
+.dex-stat-card__value--warning {
+  color: var(--dex-amber);
+}
+
+.dex-stat-card__value--error {
+  color: var(--dex-red);
+}
+
+.dex-stat-card__value--info {
+  color: var(--dex-blue);
+}
+
+.dex-stat-card__label {
+  font-size: var(--dex-text-xs);
+  font-weight: 700;
+  color: var(--dex-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+
+/* =============================================================================
+   4.04 BUTTON
+   ============================================================================= */
+
+@keyframes dex-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.dex-btn {
+  /* Spinner color per variant — overridden by variant rules below */
+  --_dex-spinner: var(--dex-white);
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--dex-space-2);
+  padding: 0 var(--dex-space-4);
+  height: 32px;
+  font-family: var(--dex-font);
+  font-size: var(--dex-text-sm);
+  font-weight: 600;
+  line-height: 1;
+  border-radius: var(--dex-radius);
+  cursor: pointer;
+  white-space: nowrap;
+  text-decoration: none;
+  position: relative;
+  transition:
+    background var(--dex-transition),
+    border-color var(--dex-transition),
+    box-shadow var(--dex-transition),
+    color var(--dex-transition),
+    opacity var(--dex-transition);
+}
+
+.dex-btn svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+/* ── Size modifiers ──────────────────────────────────────────── */
+
+.dex-btn--sm {
+  height: 26px;
+  padding: 0 var(--dex-space-3);
+  font-size: var(--dex-text-xs);
+}
+
+.dex-btn--sm svg {
+  width: 14px;
+  height: 14px;
+}
+
+.dex-btn--lg {
+  height: 40px;
+  padding: 0 var(--dex-space-5);
+  font-size: var(--dex-text-base);
+}
+
+.dex-btn--lg svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* ── Primary ─────────────────────────────────────────────────── */
+
+.dex-btn--primary {
+  background: var(--dex-red);
+  border: 1px solid var(--dex-red-hover);
+  color: var(--dex-white);
+  --_dex-spinner: var(--dex-white);
+}
+
+.dex-btn--primary:hover,
+.dex-btn--primary:focus {
+  background: var(--dex-red-hover);
+  border-color: var(--dex-red-hover);
+  box-shadow: 0 2px 8px rgba(227, 30, 37, 0.28);
+  color: var(--dex-white);
+  outline: none;
+}
+
+.dex-btn--primary:disabled,
+.dex-btn--primary.is-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+  box-shadow: none;
+}
+
+/* ── Secondary ───────────────────────────────────────────────── */
+
+.dex-btn--secondary {
+  background: var(--dex-white);
+  border: var(--dex-border);
+  color: var(--dex-gray-700);
+  --_dex-spinner: var(--dex-gray-500);
+}
+
+.dex-btn--secondary:hover,
+.dex-btn--secondary:focus {
+  background: var(--dex-gray-50);
+  border-color: var(--dex-gray-300);
+  color: var(--dex-text);
+  outline: none;
+}
+
+.dex-btn--secondary:disabled,
+.dex-btn--secondary.is-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* ── Danger ──────────────────────────────────────────────────── */
+
+.dex-btn--danger {
+  background: transparent;
+  border: 1px solid var(--dex-red);
+  color: var(--dex-red);
+  --_dex-spinner: var(--dex-red);
+}
+
+.dex-btn--danger:hover,
+.dex-btn--danger:focus {
+  background: var(--dex-red-light);
+  outline: none;
+}
+
+.dex-btn--danger:disabled,
+.dex-btn--danger.is-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* ── Ghost ───────────────────────────────────────────────────── */
+
+.dex-btn--ghost {
+  background: transparent;
+  border: none;
+  color: var(--dex-gray-500);
+  padding: 0 var(--dex-space-2);
+  --_dex-spinner: var(--dex-gray-500);
+}
+
+.dex-btn--ghost:hover,
+.dex-btn--ghost:focus {
+  color: var(--dex-gray-900);
+  background: var(--dex-gray-100);
+  outline: none;
+}
+
+.dex-btn--ghost:disabled,
+.dex-btn--ghost.is-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* ── Loading state ───────────────────────────────────────────── */
+
+.dex-btn.is-loading {
+  cursor: not-allowed;
+  pointer-events: none;
+  color: transparent;
+}
+
+.dex-btn.is-loading svg {
+  opacity: 0;
+}
+
+.dex-btn.is-loading::after {
+  content: '';
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  border-top-color: var(--_dex-spinner);
+  border-radius: 50%;
+  animation: dex-spin 600ms linear infinite;
+}
+
+.dex-btn--secondary.is-loading::after,
+.dex-btn--danger.is-loading::after,
+.dex-btn--ghost.is-loading::after {
+  border-color: rgba(0, 0, 0, 0.1);
+  border-top-color: var(--_dex-spinner);
+}
+
+
+/* =============================================================================
+   4.05 BADGE
+   ============================================================================= */
+
+.dex-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--dex-space-1);
+  padding: 2px var(--dex-space-2);
+  border-radius: var(--dex-radius-sm);
+  font-size: var(--dex-text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  line-height: 1.4;
+  vertical-align: middle;
+}
+
+.dex-badge__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+.dex-badge--success {
+  background: var(--dex-green-light);
+  color: var(--dex-green);
+  border: 1px solid rgba(26, 158, 92, 0.2);
+}
+
+.dex-badge--error {
+  background: var(--dex-red-light);
+  color: var(--dex-red);
+  border: 1px solid rgba(227, 30, 37, 0.2);
+}
+
+.dex-badge--warning {
+  background: var(--dex-amber-light);
+  color: var(--dex-amber);
+  border: 1px solid rgba(217, 119, 6, 0.2);
+}
+
+.dex-badge--info {
+  background: var(--dex-blue-light);
+  color: var(--dex-blue);
+  border: 1px solid rgba(29, 111, 164, 0.2);
+}
+
+.dex-badge--neutral {
+  background: var(--dex-gray-100);
+  color: var(--dex-gray-500);
+  border: 1px solid var(--dex-gray-200);
+}
+
+
+/* =============================================================================
+   4.06 STATUS DOT
+   ============================================================================= */
+
+@keyframes dex-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.dex-status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+
+.dex-status-dot--ok {
+  background: var(--dex-green);
+  animation: dex-pulse 2.4s ease infinite;
+}
+
+.dex-status-dot--warn {
+  background: var(--dex-amber);
+}
+
+.dex-status-dot--error {
+  background: var(--dex-red);
+}
+
+.dex-status-dot--info {
+  background: var(--dex-blue);
+}
+
+.dex-status-dot--neutral {
+  background: var(--dex-gray-300);
+}
+
+
+/* =============================================================================
+   4.07 TABLE
+   ============================================================================= */
+
+.dex-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.dex-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--dex-text-sm);
+  font-family: var(--dex-font);
+  background: var(--dex-white);
+}
+
+.dex-table thead th {
+  background: var(--dex-gray-50);
+  border-bottom: var(--dex-border);
+  padding: var(--dex-space-2) var(--dex-space-3);
+  font-size: var(--dex-text-xs);
+  font-weight: 700;
+  color: var(--dex-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  text-align: left;
+}
+
+.dex-table tbody td {
+  padding: var(--dex-space-2) var(--dex-space-3);
+  border-bottom: var(--dex-border);
+  color: var(--dex-gray-700);
+  vertical-align: middle;
+  font-size: var(--dex-text-sm);
+}
+
+.dex-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.dex-table tbody tr:hover td {
+  background: var(--dex-gray-50);
+}
+
+/* Error row — higher specificity than hover to prevent override */
+.dex-table tbody tr.dex-table__row--error td,
+.dex-table tbody tr.dex-table__row--error:hover td {
+  background: var(--dex-red-light);
+  border-color: var(--dex-red);
+}
+
+/* Link style inside table cells */
+.dex-table a {
+  color: var(--dex-gray-700);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.dex-table a:hover {
+  color: var(--dex-red);
+}
+
+
+/* =============================================================================
+   4.08 MODAL
+   ============================================================================= */
+
+@keyframes dex-modal-fade {
+  from {
+    opacity: 0;
+    transform: scale(0.98) translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.dex-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  align-items: center;
+  justify-content: center;
+}
+
+.dex-modal.is-open {
+  display: flex;
+}
+
+body.dex-modal-open {
+  overflow: hidden;
+}
+
+.dex-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.dex-modal__dialog {
+  position: relative;
+  width: min(600px, calc(100vw - var(--dex-space-8)));
+  max-height: calc(100vh - var(--dex-space-8));
+  display: flex;
+  flex-direction: column;
+  background: var(--dex-white);
+  border-radius: var(--dex-radius-lg);
+  box-shadow: var(--dex-shadow-lg);
+  overflow: hidden;
+  animation: dex-modal-fade var(--dex-transition-slow) ease both;
+}
+
+.dex-modal__dialog--wide {
+  width: min(800px, calc(100vw - var(--dex-space-8)));
+}
+
+.dex-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--dex-space-3);
+  padding: var(--dex-space-4) var(--dex-space-6);
+  border-bottom: var(--dex-border);
+  border-top: 3px solid var(--dex-red);
+  border-radius: var(--dex-radius-lg) var(--dex-radius-lg) 0 0;
+  flex-shrink: 0;
+  background: var(--dex-white);
+}
+
+.dex-modal__title {
+  font-size: var(--dex-text-lg);
+  font-weight: 700;
+  color: var(--dex-text);
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.dex-modal__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: none;
+  border-radius: var(--dex-radius-sm);
+  cursor: pointer;
+  padding: 0;
+  color: var(--dex-gray-500);
+  font-size: var(--dex-text-lg);
+  line-height: 1;
+  flex-shrink: 0;
+  transition: color var(--dex-transition), background var(--dex-transition);
+}
+
+.dex-modal__close:hover,
+.dex-modal__close:focus {
+  color: var(--dex-text);
+  background: var(--dex-gray-100);
+  outline: none;
+}
+
+.dex-modal__close svg {
+  width: 16px;
+  height: 16px;
+}
+
+.dex-modal__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--dex-space-6);
+}
+
+.dex-modal__footer {
+  display: flex;
+  align-items: center;
+  gap: var(--dex-space-3);
+  padding: var(--dex-space-4) var(--dex-space-6);
+  border-top: var(--dex-border);
+  background: var(--dex-gray-50);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+
+/* =============================================================================
+   4.09 FORM FIELD
+   ============================================================================= */
+
+.dex-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dex-space-1);
+}
+
+.dex-field__label {
+  display: block;
+  font-size: var(--dex-text-sm);
+  font-weight: 600;
+  color: var(--dex-gray-700);
+}
+
+.dex-field__required {
+  color: var(--dex-red);
+  margin-left: 2px;
+}
+
+.dex-field input[type="text"],
+.dex-field input[type="password"],
+.dex-field input[type="number"],
+.dex-field input[type="email"],
+.dex-field input[type="url"],
+.dex-field input[type="tel"],
+.dex-field input[type="search"],
+.dex-field select {
+  display: block;
+  width: 100%;
+  height: 36px;
+  border: var(--dex-border);
+  border-radius: var(--dex-radius);
+  font-family: var(--dex-font);
+  font-size: var(--dex-text-base);
+  color: var(--dex-text);
+  background: var(--dex-white);
+  padding: 0 var(--dex-space-3);
+  transition: border-color var(--dex-transition), box-shadow var(--dex-transition);
+  box-sizing: border-box;
+}
+
+.dex-field textarea {
+  display: block;
+  width: 100%;
+  border: var(--dex-border);
+  border-radius: var(--dex-radius);
+  font-family: var(--dex-font);
+  font-size: var(--dex-text-base);
+  color: var(--dex-text);
+  background: var(--dex-white);
+  padding: var(--dex-space-2) var(--dex-space-3);
+  min-height: 80px;
+  resize: vertical;
+  transition: border-color var(--dex-transition), box-shadow var(--dex-transition);
+  box-sizing: border-box;
+}
+
+.dex-field input:focus,
+.dex-field select:focus,
+.dex-field textarea:focus {
+  border-color: var(--dex-red);
+  box-shadow: 0 0 0 3px rgba(227, 30, 37, 0.12);
+  outline: none;
+}
+
+.dex-field input:disabled,
+.dex-field input[readonly],
+.dex-field select:disabled,
+.dex-field textarea:disabled,
+.dex-field textarea[readonly] {
+  background: var(--dex-gray-50);
+  color: var(--dex-text-muted);
+  cursor: not-allowed;
+  border-color: var(--dex-gray-200);
+}
+
+.dex-field__hint {
+  font-size: var(--dex-text-xs);
+  color: var(--dex-text-muted);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.dex-field__error {
+  font-size: var(--dex-text-xs);
+  color: var(--dex-red);
+  margin: 0;
+  display: none;
+  line-height: 1.5;
+}
+
+.dex-field__error.is-visible {
+  display: block;
+}
+
+/* Error state on container */
+.dex-field.is-error input,
+.dex-field.is-error select,
+.dex-field.is-error textarea {
+  border-color: var(--dex-red);
+  box-shadow: 0 0 0 2px rgba(227, 30, 37, 0.1);
+}
+
+.dex-field.is-error .dex-field__error {
+  display: block;
+}
+
+/* Password wrap variant */
+.dex-field--password {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--dex-space-2);
+}
+
+.dex-field--password input {
+  flex: 1;
+  min-width: 0;
+}
+
+.dex-field--password .dex-btn {
+  flex-shrink: 0;
+}
+
+/* Inline input + toggle button row (used inside a stacked .dex-field) */
+.dex-pw-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--dex-space-2);
+}
+
+.dex-pw-wrap input {
+  flex: 1;
+  min-width: 0;
+  width: auto;
+}
+
+.dex-pw-wrap .dashicons {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  line-height: 1;
+}
+
+
+/* =============================================================================
+   4.10 INLINE RESULT
+   ============================================================================= */
+
+.dex-inline-result {
+  display: inline-block;
+  font-size: var(--dex-text-sm);
+  font-weight: 600;
+  margin-left: var(--dex-space-3);
+  line-height: 1.4;
+}
+
+.dex-inline-result--success,
+.dex-inline-result.is-success {
+  color: var(--dex-green);
+}
+
+.dex-inline-result--error,
+.dex-inline-result.is-error {
+  color: var(--dex-red);
+}
+
+
+/* =============================================================================
+   4.11 TAB BAR
+   ============================================================================= */
+
+.dex-tabs {
+  display: flex;
+  border-bottom: var(--dex-border);
+  background: var(--dex-gray-50);
+  gap: 0;
+  margin-bottom: 0;
+  flex-wrap: wrap;
+}
+
+.dex-tabs__item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--dex-space-1);
+  padding: var(--dex-space-3) var(--dex-space-4);
+  font-family: var(--dex-font);
+  font-size: var(--dex-text-sm);
+  font-weight: 600;
+  color: var(--dex-text-muted);
+  border-top: none;
+  border-left: none;
+  border-right: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  cursor: pointer;
+  text-decoration: none;
+  background: transparent;
+  white-space: nowrap;
+  transition:
+    color var(--dex-transition),
+    border-color var(--dex-transition),
+    background var(--dex-transition);
+}
+
+.dex-tabs__item svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.dex-tabs__item .dashicons {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  line-height: 1;
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+
+.dex-tabs__item.is-active .dashicons {
+  color: var(--dex-red);
+}
+
+.dex-tabs__item:hover {
+  color: var(--dex-text);
+  background: var(--dex-gray-50);
+}
+
+.dex-tabs__item.is-active {
+  color: var(--dex-red);
+  border-bottom-color: var(--dex-red);
+  background: var(--dex-white);
+}
+
+.dex-tabs__item:focus {
+  outline: none !important;
+  box-shadow: none !important;
+  color: var(--dex-red);
+  border-bottom-color: var(--dex-red);
+  background: var(--dex-white);
+}
+
+.dex-tabs__panel {
+  background: var(--dex-white);
+  border: var(--dex-border);
+  border-top: none;
+  padding: var(--dex-space-5);
+}
+
+
+/* =============================================================================
+   4.12 PROGRESS BAR
+   ============================================================================= */
+
+.dex-progress {
+  height: 6px;
+  background: var(--dex-gray-200);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.dex-progress__fill {
+  height: 100%;
+  background: var(--dex-red);
+  border-radius: 99px;
+  width: 0%;
+  transition: width var(--dex-transition-slow);
+}
+
+
+/* =============================================================================
+   4.13 STEPPER
+   ============================================================================= */
+
+.dex-stepper {
+  display: flex;
+  align-items: center;
+}
+
+.dex-stepper__step {
+  display: flex;
+  align-items: center;
+  gap: var(--dex-space-2);
+  opacity: 0.45;
+  transition: opacity var(--dex-transition);
+}
+
+.dex-stepper__step--active {
+  opacity: 1;
+}
+
+.dex-stepper__step--done {
+  opacity: 0.75;
+}
+
+.dex-stepper__num {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--dex-gray-200);
+  color: var(--dex-gray-700);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--dex-font);
+  font-size: var(--dex-text-sm);
+  font-weight: 700;
+  flex-shrink: 0;
+  transition: background var(--dex-transition), color var(--dex-transition);
+}
+
+.dex-stepper__num svg {
+  width: 14px;
+  height: 14px;
+}
+
+.dex-stepper__step--active .dex-stepper__num {
+  background: var(--dex-red);
+  color: var(--dex-white);
+}
+
+.dex-stepper__step--done .dex-stepper__num {
+  background: var(--dex-green);
+  color: var(--dex-white);
+}
+
+.dex-stepper__label {
+  font-size: var(--dex-text-sm);
+  font-weight: 600;
+  color: var(--dex-gray-700);
+  white-space: nowrap;
+}
+
+.dex-stepper__line {
+  flex: 1;
+  height: 2px;
+  background: var(--dex-gray-200);
+  margin: 0 var(--dex-space-3);
+}
+
+
+/* =============================================================================
+   4.14 EMPTY STATE
+   ============================================================================= */
+
+.dex-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: var(--dex-space-12) var(--dex-space-6);
+}
+
+.dex-empty__icon {
+  width: 64px;
+  height: 64px;
+  margin-bottom: var(--dex-space-4);
+  color: var(--dex-gray-300);
+  flex-shrink: 0;
+}
+
+.dex-empty__title {
+  font-size: var(--dex-text-xl);
+  font-weight: 700;
+  color: var(--dex-text);
+  margin: 0 0 var(--dex-space-2);
+  letter-spacing: -0.01em;
+  padding: 0;
+  border: none;
+}
+
+.dex-empty__desc {
+  font-size: var(--dex-text-base);
+  color: var(--dex-text-muted);
+  max-width: 360px;
+  margin: 0 0 var(--dex-space-6);
+  line-height: 1.65;
+}
+
+
+/* =============================================================================
+   4.15 ALERT / NOTICE
+   ============================================================================= */
+
+.dex-notice {
+  display: flex;
+  gap: var(--dex-space-3);
+  padding: var(--dex-space-3) var(--dex-space-4);
+  border-radius: 0;
+  border-left: 3px solid transparent;
+}
+
+.dex-notice__icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.dex-notice__content {
+  flex: 1;
+  min-width: 0;
+}
+
+.dex-notice__title {
+  font-size: var(--dex-text-sm);
+  font-weight: 700;
+  margin: 0 0 var(--dex-space-1);
+  line-height: 1.4;
+}
+
+.dex-notice__body {
+  font-size: var(--dex-text-sm);
+  color: var(--dex-gray-700);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Variant: info */
+.dex-notice--info {
+  background: var(--dex-blue-light);
+  border-color: var(--dex-blue);
+  color: var(--dex-blue);
+}
+
+.dex-notice--info .dex-notice__title {
+  color: var(--dex-blue);
+}
+
+/* Variant: success */
+.dex-notice--success {
+  background: var(--dex-green-light);
+  border-color: var(--dex-green);
+  color: var(--dex-green);
+}
+
+.dex-notice--success .dex-notice__title {
+  color: var(--dex-green);
+}
+
+/* Variant: warning */
+.dex-notice--warning {
+  background: var(--dex-amber-light);
+  border-color: var(--dex-amber);
+  color: var(--dex-amber);
+}
+
+.dex-notice--warning .dex-notice__title {
+  color: var(--dex-amber);
+}
+
+/* Variant: error */
+.dex-notice--error {
+  background: var(--dex-red-light);
+  border-color: var(--dex-red);
+  color: var(--dex-red);
+}
+
+.dex-notice--error .dex-notice__title {
+  color: var(--dex-red);
+}
+
+/* Body text always readable regardless of variant color */
+.dex-notice--info .dex-notice__body,
+.dex-notice--success .dex-notice__body,
+.dex-notice--warning .dex-notice__body,
+.dex-notice--error .dex-notice__body {
+  color: var(--dex-gray-700);
+}
+
+
+/* =============================================================================
+   4.16 AUTOCOMPLETE DROPDOWN
+   ============================================================================= */
+
+.dex-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  background: var(--dex-white);
+  border: var(--dex-border);
+  border-top: none;
+  border-radius: 0 0 var(--dex-radius) var(--dex-radius);
+  max-height: 240px;
+  overflow-y: auto;
+  box-shadow: var(--dex-shadow);
+  display: none;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dex-dropdown.is-open {
+  display: block;
+}
+
+.dex-dropdown__item {
+  padding: var(--dex-space-2) var(--dex-space-3);
+  font-size: var(--dex-text-base);
+  color: var(--dex-gray-700);
+  cursor: pointer;
+  border-bottom: 1px solid var(--dex-gray-100);
+  transition: background var(--dex-transition), color var(--dex-transition);
+  line-height: 1.4;
+}
+
+.dex-dropdown__item:last-child {
+  border-bottom: none;
+}
+
+.dex-dropdown__item:hover,
+.dex-dropdown__item:focus,
+.dex-dropdown__item.is-active {
+  background: var(--dex-blue-light);
+  color: var(--dex-blue);
+  outline: none;
+}
+
+.dex-dropdown__empty {
+  padding: var(--dex-space-2) var(--dex-space-3);
+  font-size: var(--dex-text-sm);
+  color: var(--dex-text-muted);
+  font-style: italic;
+  cursor: default;
+  line-height: 1.4;
+}
+
+
+/* =============================================================================
+   4.17 COPY FIELD
+   ============================================================================= */
+
+.dex-copy-field {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--dex-space-2);
+  max-width: 100%;
+}
+
+.dex-copy-field__code {
+  display: inline-block;
+  padding: var(--dex-space-1) var(--dex-space-3);
+  background: var(--dex-gray-50);
+  border: var(--dex-border);
+  border-radius: var(--dex-radius);
+  font-family: ui-monospace, "SFMono-Regular", Consolas, "Courier New", monospace;
+  font-size: var(--dex-text-sm);
+  color: var(--dex-text);
+  word-break: break-all;
+  min-width: 0;
+  flex: 1;
+  line-height: 1.5;
+}
+
+.dex-copy-field__btn {
+  flex-shrink: 0;
+}
+
+/* Copied feedback state — applied by JS for 1.5s */
+.dex-copy-field.is-copied .dex-copy-field__btn {
+  color: var(--dex-green);
+  border-color: var(--dex-green);
+}
+
+
+/* =============================================================================
+   4.18 SYNC ROW
+   ============================================================================= */
+
+.dex-sync-row {
+  display: flex;
+  align-items: center;
+  gap: var(--dex-space-3);
+  padding: var(--dex-space-2) 0;
+  border-bottom: var(--dex-border);
+  flex-wrap: wrap;
+}
+
+.dex-sync-row:last-child {
+  border-bottom: none;
+}
+
+.dex-sync-row__label {
+  flex: 1;
+  font-size: var(--dex-text-base);
+  color: var(--dex-text);
+  min-width: 140px;
+}
+
+.dex-sync-row__status {
+  display: flex;
+  align-items: center;
+  gap: var(--dex-space-1);
+  font-size: var(--dex-text-xs);
+  color: var(--dex-text-muted);
+  white-space: nowrap;
+}
+
+.dex-sync-row__action {
+  flex-shrink: 0;
+}
+
+.dex-sync-row__result {
+  flex-shrink: 0;
+}
+
+
+/* =============================================================================
+   5. UTILITY CLASSES
+   ============================================================================= */
+
+/* Screen-reader only — !important required to prevent layout overrides */
+.dex-sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+.dex-monospace {
+  font-family: ui-monospace, "SFMono-Regular", Consolas, "Courier New", monospace;
+}
+
+.dex-text-muted {
+  color: var(--dex-text-muted);
+}
+
+.dex-text-danger {
+  color: var(--dex-red);
+}
+
+/* Hides any element — overrides display rules set by component CSS */
+.dex-hidden {
+  display: none !important;
+}
+
+
+/* =============================================================================
+   4.19 ENVIRONMENT TOGGLE
+   ============================================================================= */
+
+.dex-env-toggle {
+  display: inline-flex;
+  border-radius: var(--dex-radius-sm);
+  overflow: hidden;
+  border: var(--dex-border);
+}
+
+.dex-env-option {
+  padding: 7px var(--dex-space-5);
+  font-family: var(--dex-font);
+  font-size: var(--dex-text-sm);
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  background: var(--dex-gray-50);
+  color: var(--dex-text-muted);
+  transition: background var(--dex-transition), color var(--dex-transition);
+}
+
+.dex-env-option:focus {
+  outline: 2px solid var(--dex-blue);
+  outline-offset: -2px;
+}
+
+.dex-env-option[data-value="test"].is-active {
+  background: var(--dex-amber-light);
+  color: var(--dex-amber);
+  border-right: var(--dex-border);
+}
+
+.dex-env-option[data-value="production"].is-active {
+  background: var(--dex-red-light);
+  color: var(--dex-red);
+}
+
+.dex-env-status {
+  margin-top: var(--dex-space-3);
+  padding: var(--dex-space-2) var(--dex-space-3);
+
+  font-size: var(--dex-text-sm);
+  border-left: 3px solid transparent;
+  max-width: 480px;
+}
+
+.dex-env-status.is-test {
+  background: var(--dex-amber-light);
+  border-color: var(--dex-amber);
+  color: var(--dex-amber);
+}
+
+.dex-env-status.is-production {
+  background: var(--dex-red-light);
+  border-color: var(--dex-red);
+  color: var(--dex-red);
+}
+
+
+/* =============================================================================
+   4.20 USAGE METER
+   ============================================================================= */
+
+.dex-test-connection-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--dex-space-2);
+  margin-top: var(--dex-space-4);
+}
+
+.dex-shipment-range-monitor {
+  margin-top: var(--dex-space-4);
+}
+
+.dex-usage-count {
+  font-size: var(--dex-text-sm);
+  font-weight: 600;
+  color: var(--dex-text);
+  margin: 0 0 var(--dex-space-2);
 }
 
-/* Active tab: primary brand indicator via inset shadow */
-.dexpress-settings-wrap .nav-tab-active,
-.dexpress-settings-wrap .nav-tab-active:focus,
-.dexpress-settings-wrap .nav-tab-active:hover {
-    background-color: #fff;
-    border-bottom-color: #fff;
-    box-shadow: inset 0 3px 0 var(--dex-primary);
+.dex-usage-meter {
+  height: 8px;
+  background: var(--dex-gray-200);
+  border-radius: 99px;
+  overflow: hidden;
+  max-width: 400px;
 }
 
-/* Remove left margin on first tab */
-.dexpress-settings-wrap .nav-tab-wrapper .nav-tab:first-child {
-    margin-left: 0;
+.dex-usage-meter-fill {
+  height: 100%;
+  background: var(--dex-green);
+  border-radius: 99px;
+  transition: width var(--dex-transition-slow);
 }
 
-.dexpress-tab-content {
-    background: #fff;
-    border: var(--dex-border);
-    border-top: none;
-    padding: 20px;
-    margin-bottom: 20px;
+.dex-usage-meter.is-warning .dex-usage-meter-fill {
+  background: var(--dex-amber);
 }
 
-/* -------------------------------------------------------------------------
-   Password field with toggle
-   ------------------------------------------------------------------------- */
+.dex-usage-meter.is-exhausted .dex-usage-meter-fill {
+  background: var(--dex-red);
+}
+
+.dex-usage-remaining {
+  font-size: var(--dex-text-sm);
+  color: var(--dex-text);
+  margin: var(--dex-space-3) 0 0;
+}
 
-.dexpress-password-wrap {
-    display: flex;
-    align-items: center;
-    gap: var(--dex-space-2);
+
+/* =============================================================================
+   4.21 DANGER ZONE
+   ============================================================================= */
+
+.dex-danger-zone {
+  margin-top: var(--dex-space-8);
+  border: 1px solid rgba(227, 30, 37, 0.3);
+  border-radius: var(--dex-radius);
+  overflow: hidden;
 }
 
-.dexpress-password-wrap input {
-    flex: 0 0 auto;
+.dex-danger-zone__header {
+  display: flex;
+  align-items: center;
+  gap: var(--dex-space-2);
+  padding: var(--dex-space-3) var(--dex-space-4);
+  background: var(--dex-red-light);
+  color: var(--dex-red);
+  font-weight: 700;
+  font-size: var(--dex-text-sm);
 }
 
-/* Eye toggle button — icon-only, matches input height */
-.dexpress-pw-toggle.button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0 6px;
-    min-width: 30px;
-    height: 30px;
-    line-height: 1;
+.dex-danger-zone__body {
+  padding: var(--dex-space-4);
+  background: var(--dex-white);
 }
 
-.dexpress-pw-toggle .dashicons {
-    font-size: 18px;
-    width: 18px;
-    height: 18px;
-    color: var(--dex-gray-500);
-    transition: color var(--dex-transition);
+.dex-danger-zone__body .description {
+  color: var(--dex-red);
 }
+
+
+/* =============================================================================
+   4.22 SIMULATION FLOW
+   ============================================================================= */
 
-.dexpress-pw-toggle:hover .dashicons,
-.dexpress-pw-toggle:focus .dashicons {
-    color: var(--dex-gray-900);
+.dex-sim-timing-wrap {
+  margin-top: var(--dex-space-4);
+  padding: var(--dex-space-4);
+  background: var(--dex-gray-50);
+  border: var(--dex-border);
+  border-radius: var(--dex-radius);
 }
 
-/* -------------------------------------------------------------------------
-   Inline result text (success/error after AJAX actions)
-   ------------------------------------------------------------------------- */
+.dex-sim-timing-wrap__label {
+  font-size: var(--dex-text-sm);
+  font-weight: 600;
+  color: var(--dex-text);
+  margin: 0 0 var(--dex-space-3);
+}
 
-.dexpress-inline-result {
-    display: inline-block;
-    margin-left: 10px;
-    font-weight: 500;
+.dex-sim-quick-checkbox {
+  display: none;
 }
 
-.dexpress-inline-result.is-success {
-    color: var(--dex-success);
+.dex-sim-toggle {
+  display: inline-flex;
+  border: var(--dex-border);
+  border-radius: var(--dex-radius-sm);
+  overflow: hidden;
+  margin-bottom: var(--dex-space-3);
 }
 
-.dexpress-inline-result.is-error {
-    color: var(--dex-error);
+.dex-sim-toggle__btn {
+  padding: 6px var(--dex-space-4);
+  font-family: var(--dex-font);
+  font-size: var(--dex-text-sm);
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  background: var(--dex-gray-50);
+  color: var(--dex-text-muted);
+  transition: background var(--dex-transition), color var(--dex-transition);
 }
 
-/* -------------------------------------------------------------------------
-   Šifarnici — sync status indicators
-   ------------------------------------------------------------------------- */
+.dex-sim-toggle__btn.is-selected {
+  background: var(--dex-red-light);
+  color: var(--dex-red);
+}
 
-.dexpress-sync-table .dexpress-sync-status {
-    display: inline-block;
-    margin-left: var(--dex-space-2);
-    min-width: 22px;
-    vertical-align: middle;
+.dex-sim-timing-panel__intro {
+  font-size: var(--dex-text-sm);
+  color: var(--dex-text-muted);
+  margin: 0 0 var(--dex-space-2);
 }
 
-.dexpress-sync-table .dexpress-sync-status .spinner {
-    float: none;
-    margin: 0;
-    vertical-align: middle;
+.dex-sim-timing-list {
+  margin: 0;
+  padding-left: var(--dex-space-5);
+  font-size: var(--dex-text-sm);
+  color: var(--dex-gray-700);
 }
 
-.dexpress-sync-table .dexpress-sync-status .dashicons.dexpress-sync-ok {
-    color: var(--dex-success);
-    font-size: 20px;
-    width: 20px;
-    height: 20px;
+.dex-sim-timing-list li {
+  margin-bottom: var(--dex-space-1);
 }
 
-.dexpress-sync-table .dexpress-sync-status .dashicons.dexpress-sync-err {
-    color: var(--dex-error);
-    font-size: 20px;
-    width: 20px;
-    height: 20px;
+.dex-sim-flow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--dex-space-2);
+  margin-top: var(--dex-space-5);
+  padding: var(--dex-space-3) var(--dex-space-4);
+  background: var(--dex-gray-50);
+  border: var(--dex-border);
+  border-radius: var(--dex-radius);
 }
 
-/* -------------------------------------------------------------------------
-   Info box (webhook tab)
-   ------------------------------------------------------------------------- */
+.dex-sim-flow__step {
+  display: flex;
+  align-items: center;
+}
 
-.dexpress-info-box {
-    background: var(--dex-info-light);
-    border-left: 4px solid var(--dex-info);
-    padding: var(--dex-space-3) var(--dex-space-4);
-    margin-top: 20px;
-    max-width: 600px;
+.dex-sim-flow__box {
+  display: inline-block;
+  padding: var(--dex-space-1) var(--dex-space-3);
+  background: var(--dex-white);
+  border: var(--dex-border);
+  border-radius: var(--dex-radius-sm);
+  font-size: var(--dex-text-xs);
+  font-weight: 600;
+  color: var(--dex-gray-700);
+  white-space: nowrap;
 }
 
-.dexpress-info-box h3 {
-    margin-top: 0;
+.dex-sim-flow__arrow {
+  color: var(--dex-gray-300);
+  font-size: var(--dex-text-sm);
 }
+
 
-.dexpress-notice-warning {
-    color: var(--dex-error);
-    font-weight: 500;
+/* =============================================================================
+   4.23 SETTINGS PAGE MISC
+   ============================================================================= */
+
+.dex-settings-section__lead {
+  font-size: var(--dex-text-sm);
+  color: var(--dex-text-muted);
+  margin: 0 0 var(--dex-space-4);
+  line-height: 1.6;
 }
 
-/* -------------------------------------------------------------------------
-   Locations table
-   ------------------------------------------------------------------------- */
+.dex-settings-wrap .notice {
+  margin: var(--dex-space-4) 0;
+}
 
-.dexpress-locations-table td,
-.dexpress-locations-table th {
-    vertical-align: middle;
+.dex-sifarnici-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--dex-space-3);
+  margin-bottom: var(--dex-space-4);
 }
 
-/* -------------------------------------------------------------------------
-   Status badges
-   ------------------------------------------------------------------------- */
+.dex-sync-table {
+  margin-top: 0 !important;
+}
 
-.dexpress-badge {
-    display: inline-block;
-    padding: 2px var(--dex-space-2);
-    border-radius: var(--dex-radius-sm);
-    font-size: var(--dex-text-sm);
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
+.dex-sync-table .dex-sync-ok {
+  color: var(--dex-green);
 }
 
-.dexpress-badge-default {
-    background: var(--dex-success-light);
-    color: var(--dex-success);
+.dex-sync-table .dex-sync-err {
+  color: var(--dex-red);
 }
 
-/* -------------------------------------------------------------------------
-   WooCommerce orders list — D Express delivery status column
-   ------------------------------------------------------------------------- */
+.dex-info-box {
+  margin-top: var(--dex-space-5);
+  padding: var(--dex-space-4);
+  background: var(--dex-blue-light);
+  border-left: 4px solid var(--dex-blue);
+  border-radius: var(--dex-radius);
+}
 
-.wp-admin .dexpress-order-delivery-badge {
-    display: inline-block;
-    padding: 6px var(--dex-space-3);
-    border-radius: var(--dex-radius-sm);
-    line-height: 1.35;
-    white-space: normal;
-    word-break: break-word;
+.dex-info-box h3 {
+  font-size: var(--dex-text-sm);
+  font-weight: 700;
+  color: var(--dex-blue);
+  margin: 0 0 var(--dex-space-3);
 }
 
-.wp-admin .dexpress-order-delivery-badge--delivered {
-    background: var(--dex-success-light);
-    color: var(--dex-success);
+.dex-info-box ol,
+.dex-info-box p {
+  font-size: var(--dex-text-sm);
+  color: var(--dex-gray-700);
+  margin: 0 0 var(--dex-space-2);
 }
 
-.wp-admin .dexpress-order-delivery-badge--progress {
-    background: var(--dex-info-light);
-    color: var(--dex-info);
+.dex-info-box ol {
+  padding-left: var(--dex-space-5);
 }
 
-.wp-admin .dexpress-order-delivery-badge--problem {
-    background: var(--dex-error-light);
-    color: var(--dex-error);
+.dex-notice-warning {
+  color: var(--dex-amber);
+  font-weight: 600;
 }
 
-.wp-admin .dexpress-order-delivery-badge--neutral {
-    background: var(--dex-gray-100);
-    color: var(--dex-gray-500);
+.dex-locations-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--dex-space-3);
+  margin-bottom: var(--dex-space-2);
 }
 
-/* -------------------------------------------------------------------------
-   Sync table
-   ------------------------------------------------------------------------- */
+.dex-locations-header h2 {
+  margin: 0;
+}
 
-.dexpress-sync-table td,
-.dexpress-sync-table th {
-    vertical-align: middle;
+.dex-locations-table td small {
+  font-size: var(--dex-text-xs);
+  color: var(--dex-text-muted);
 }
 
-.dexpress-sync-result {
-    display: block;
-    margin-top: var(--dex-space-1);
-    font-size: var(--dex-text-sm);
-    color: var(--dex-success);
+/* .dex-settings-wrap .dex-card + .dex-card,
+.dex-settings-wrap .dex-card + .dex-card--highlight {
+  margin-top: var(--dex-space-4);
+} */
+
+.dex-settings-wrap form>.dex-card:not(:first-child) {
+  margin-top: var(--dex-space-4);
 }
 
-/* -------------------------------------------------------------------------
-   Modal overlay + modal
-   ------------------------------------------------------------------------- */
+.dex-tab-intro {
+  margin-bottom: var(--dex-space-5);
+}
 
-.dexpress-modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 100000;
+.dex-sim-timing-wrap.is-hidden {
+  display: none;
 }
 
-.dexpress-modal {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: #fff;
-    border: var(--dex-border);
-    box-shadow: 0 5px 30px rgba(0, 0, 0, 0.3);
-    z-index: 100001;
-    min-width: 520px;
-    max-width: 700px;
-    width: 90%;
-    max-height: 90vh;
-    overflow-y: auto;
+.dex-settings-wrap .submit {
+  padding-left: 0;
 }
 
-.dexpress-modal-content {
-    padding: 20px var(--dex-space-6);
+/* Stacked field list used in settings cards (replaces form-table where cleaner layout is needed) */
+.dex-settings-fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dex-space-5);
+  max-width: 520px;
 }
 
-.dexpress-modal-content h3 {
-    margin-top: 0;
-    border-bottom: 1px solid var(--dex-gray-200);
-    padding-bottom: 10px;
-    margin-bottom: var(--dex-space-4);
+/* Inline Od / Do range selector */
+.dex-range-row {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--dex-space-3);
+  flex-wrap: wrap;
 }
 
-.dexpress-modal-actions {
-    display: flex;
-    align-items: center;
-    gap: var(--dex-space-2);
-    padding-top: var(--dex-space-4);
-    border-top: 1px solid var(--dex-gray-200);
-    margin-top: var(--dex-space-1);
+.dex-range-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dex-space-1);
 }
 
-/* -------------------------------------------------------------------------
-   Copy target
-   ------------------------------------------------------------------------- */
+.dex-range-item__label {
+  font-size: var(--dex-text-xs);
+  font-weight: 600;
+  color: var(--dex-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
 
-code.dexpress-copy-target {
-    display: inline-block;
-    padding: var(--dex-space-1) var(--dex-space-2);
-    background: var(--dex-gray-50);
-    border: var(--dex-border);
-    border-radius: var(--dex-radius-sm);
-    font-size: var(--dex-text-base);
-    word-break: break-all;
+.dex-range-row__sep {
+  padding-bottom: var(--dex-space-2);
+  color: var(--dex-text-muted);
+  font-weight: 600;
+  font-size: var(--dex-text-base);
 }
 
-/* -------------------------------------------------------------------------
-   Town + street autocomplete
-   ------------------------------------------------------------------------- */
+/* Compact inputs for code / number fields */
+.dex-input--code {
+  width: 80px;
+  text-transform: uppercase;
+  font-family: ui-monospace, "SFMono-Regular", Consolas, "Courier New", monospace;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  text-align: center;
+}
 
-.dexpress-town-autocomplete,
-.dexpress-street-autocomplete {
-    position: relative;
-    display: inline-block;
+.dex-input--number {
+  width: 100px;
 }
 
-.dexpress-suggestions {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    z-index: 9999;
-    background: #fff;
-    border: var(--dex-border);
-    border-top: none;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-    min-width: 100%;
-    max-height: 240px;
-    overflow-y: auto;
+/* Dashicons inside dex-btn */
+.dex-btn .dashicons {
+  font-size: 14px;
+  width: 14px;
+  height: 14px;
+  line-height: 1;
+  flex-shrink: 0;
 }
 
-.dexpress-suggestion-item {
-    padding: var(--dex-space-2) var(--dex-space-3);
-    cursor: pointer;
-    font-size: var(--dex-text-base);
-    line-height: 1.4;
-    outline: none;
-    transition: background var(--dex-transition), color var(--dex-transition);
+.dex-btn--sm .dashicons {
+  font-size: 13px;
+  width: 13px;
+  height: 13px;
 }
+
+
+/* =============================================================================
+   4.24 SETTINGS HEADER
+   ============================================================================= */
 
-.dexpress-suggestion-item:hover,
-.dexpress-suggestion-item:focus {
-    background: var(--dex-info-light);
-    color: var(--dex-info);
+.dex-settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--dex-space-4);
+  padding: var(--dex-space-3) var(--dex-space-5);
+  margin-bottom: 0px;
+  background: var(--dex-white);
+  border: var(--dex-border);
+  border-left: 3px solid var(--dex-red);
+  border-radius: 0;
+  border-bottom: none;
+  flex-wrap: wrap;
 }
 
-.dexpress-suggestion-empty {
-    color: var(--dex-gray-500);
-    cursor: default;
-    font-style: italic;
+.dex-settings-header__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--dex-space-3);
 }
 
-.dexpress-suggestion-empty:hover,
-.dexpress-suggestion-empty:focus {
-    background: none;
-    color: var(--dex-gray-500);
+.dex-settings-header__logo {
+  height: 36px;
+  width: auto;
+  display: block;
+  flex-shrink: 0;
 }
 
-/* -------------------------------------------------------------------------
-   Phone / field inline error
-   ------------------------------------------------------------------------- */
+.dex-settings-header__mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: var(--dex-red);
+  border-radius: var(--dex-radius-sm);
+  color: var(--dex-white);
+  font-size: var(--dex-text-lg);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  flex-shrink: 0;
+  font-family: var(--dex-font);
+}
 
-.dexpress-field-error {
-    display: none;
-    color: var(--dex-error);
-    font-size: var(--dex-text-sm);
-    margin-top: var(--dex-space-1);
+.dex-settings-header__name {
+  font-size: var(--dex-text-base);
+  font-weight: 700;
+  color: var(--dex-text);
+  line-height: 1;
+  letter-spacing: -0.01em;
 }
 
-.dexpress-field-error.is-visible {
-    display: block;
+.dex-settings-header__sub {
+  font-size: var(--dex-text-xs);
+  color: var(--dex-text-muted);
+  font-weight: 400;
+  margin-top: 2px;
 }
 
-/* -------------------------------------------------------------------------
-   Danger zone
-   ------------------------------------------------------------------------- */
+.dex-settings-header__right {
+  display: flex;
+  align-items: center;
+  gap: var(--dex-space-2);
+  flex-shrink: 0;
+}
 
-.dexpress-danger-zone {
-    border: 2px solid var(--dex-error);
-    border-radius: var(--dex-radius-sm);
-    overflow: hidden;
-    max-width: 900px;
+.dex-settings-header__env {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--dex-space-1);
+  padding: 3px var(--dex-space-2);
+  border-radius: var(--dex-radius-sm);
+  font-size: var(--dex-text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  line-height: 1.4;
 }
 
-.dexpress-danger-zone-header {
-    background: var(--dex-error);
-    color: #fff;
-    font-weight: 600;
-    font-size: 14px;
-    padding: 10px var(--dex-space-4);
+.dex-settings-header__env--test {
+  background: var(--dex-amber-light);
+  color: var(--dex-amber);
+  border: 1px solid rgba(217, 119, 6, 0.25);
 }
 
-.dexpress-danger-zone-header .dashicons {
-    font-size: 18px;
-    width: 18px;
-    height: 18px;
+.dex-settings-header__env--production {
+  background: var(--dex-green-light);
+  color: var(--dex-green);
+  border: 1px solid rgba(26, 158, 92, 0.25);
 }
 
-.dexpress-danger-zone-body {
-    background: var(--dex-error-light);
-    padding: var(--dex-space-1) var(--dex-space-4) var(--dex-space-4);
+/* Settings-header + tab bar rendered as one connected unit */
+.dex-settings-header+.dex-tabs {
+  border-left: var(--dex-border);
+  border-right: var(--dex-border);
+  border-top: var(--dex-border);
 }
 
-.dexpress-danger-zone-body .form-table th {
-    color: var(--dex-gray-500);
+.dex-settings-header+.dex-tabs+.dex-tabs__panel {
+  border-left: var(--dex-border);
+  border-right: var(--dex-border);
+  border-bottom: var(--dex-border);
+  border-radius: 0 0 var(--dex-radius) var(--dex-radius);
 }
 
-/* -------------------------------------------------------------------------
-   Locations header + misc
-   ------------------------------------------------------------------------- */
 
-.dexpress-locations-header {
-    display: flex;
-    align-items: center;
-    margin-bottom: var(--dex-space-2);
+/* =============================================================================
+   4.25 CHECK ROW (checkbox field pattern)
+   ============================================================================= */
+
+.dex-check-row {
+  display: flex;
+  gap: var(--dex-space-3);
+  padding: var(--dex-space-4) 0;
+  border-bottom: var(--dex-border);
+  align-items: center;
 }
 
-.dexpress-required {
-    color: var(--dex-error);
-    font-weight: 600;
-    margin-left: 1px;
+.dex-check-row:last-child {
+  border-bottom: none;
 }
 
-.dexpress-number-input {
-    width: 120px;
+.dex-check-row__checkbox {
+  margin-top: 2px;
+  flex-shrink: 0;
+  accent-color: var(--dex-red);
+  width: 15px;
+  height: 15px;
 }
 
-.dexpress-ac-spinner {
-    float: none;
-    margin: 0 0 0 6px;
-    vertical-align: middle;
+.dex-check-row__body {
+  flex: 1;
+  min-width: 0;
 }
 
-/* -------------------------------------------------------------------------
-   Settings page header
-   ------------------------------------------------------------------------- */
+.dex-check-row__label {
+  display: block;
+  font-size: var(--dex-text-base);
+  font-weight: 600;
+  color: var(--dex-text);
+  cursor: pointer;
+  line-height: 1.3;
+  margin-bottom: var(--dex-space-1);
+}
 
-.dexpress-settings-header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
+.dex-check-row__desc {
+  font-size: var(--dex-text-xs);
+  color: var(--dex-text-muted);
+  margin: 0;
+  line-height: 1.5;
+  max-width: 560px;
 }
 
-.dexpress-settings-header h1 {
-    margin: 0;
-    font-size: var(--dex-text-xl);
-    font-weight: 600;
-    color: var(--dex-gray-900);
+
+/* =============================================================================
+   4.26 WORDPRESS BUTTON OVERRIDES (scoped to .dex-settings-wrap)
+   ============================================================================= */
+
+.dex-settings-wrap .button-primary {
+  background: var(--dex-red) !important;
+  border-color: var(--dex-red-hover) !important;
+  color: var(--dex-white) !important;
+  border-radius: var(--dex-radius) !important;
+  font-family: var(--dex-font) !important;
+  font-size: var(--dex-text-sm) !important;
+  font-weight: 600 !important;
+  height: 32px !important;
+  line-height: 30px !important;
+  padding: 0 var(--dex-space-4) !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  text-decoration: none !important;
+  cursor: pointer !important;
+  transition: background var(--dex-transition), border-color var(--dex-transition), box-shadow var(--dex-transition) !important;
 }
 
-.dexpress-header-logo {
-    height: 50px;
-    width: auto;
-    border-radius: var(--dex-radius);
+.dex-settings-wrap .button-primary:hover {
+  background: var(--dex-red-hover) !important;
+  border-color: var(--dex-red-hover) !important;
+  box-shadow: 0 2px 8px rgba(227, 30, 37, 0.28) !important;
+  color: var(--dex-white) !important;
 }
 
-/* -------------------------------------------------------------------------
-   Settings tab — card sections
-   ------------------------------------------------------------------------- */
+.dex-settings-wrap .button-primary:focus {
+  background: var(--dex-red-hover) !important;
+  border-color: var(--dex-red-hover) !important;
+  box-shadow: 0 0 0 3px rgba(227, 30, 37, 0.20) !important;
+  color: var(--dex-white) !important;
+  outline: none !important;
+}
 
-.dexpress-tab-content .dexpress-settings-section {
-    border: var(--dex-border);
-    border-radius: var(--dex-radius-lg);
-    margin: 0 0 20px;
-    background: #fff;
-    max-width: 920px;
-    box-shadow: var(--dex-shadow-sm);
+.dex-settings-wrap .button-primary:disabled,
+.dex-settings-wrap .button-primary.disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
 }
 
-.dexpress-tab-content .dexpress-settings-section--highlight {
-    border-color: var(--dex-info);
-    box-shadow: 0 0 0 1px var(--dex-info), var(--dex-shadow-sm);
+.dex-settings-wrap .button-secondary,
+.dex-settings-wrap .button:not(.button-primary):not(.button-small):not(.dex-btn) {
+  background: var(--dex-white) !important;
+  border: var(--dex-border) !important;
+  color: var(--dex-gray-700) !important;
+  border-radius: var(--dex-radius) !important;
+  font-family: var(--dex-font) !important;
+  font-size: var(--dex-text-sm) !important;
+  font-weight: 600 !important;
+  height: 32px !important;
+  line-height: 30px !important;
+  padding: 0 var(--dex-space-4) !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  cursor: pointer !important;
+  transition: background var(--dex-transition), border-color var(--dex-transition) !important;
 }
 
-.dexpress-tab-content .dexpress-settings-section-head {
-    padding: 10px 14px;
-    background: var(--dex-gray-50);
-    border-bottom: var(--dex-border);
-    border-radius: var(--dex-radius-lg) var(--dex-radius-lg) 0 0;
+.dex-settings-wrap .button-secondary:hover,
+.dex-settings-wrap .button:not(.button-primary):not(.button-small):not(.dex-btn):hover {
+  background: var(--dex-gray-50) !important;
+  border-color: var(--dex-gray-300) !important;
+  color: var(--dex-text) !important;
 }
 
-.dexpress-tab-content .dexpress-settings-section--highlight .dexpress-settings-section-head {
-    background: var(--dex-info-light);
-    border-bottom-color: var(--dex-gray-200);
+.dex-settings-wrap .button-secondary:focus,
+.dex-settings-wrap .button:not(.button-primary):not(.button-small):not(.dex-btn):focus {
+  background: var(--dex-gray-50) !important;
+  border-color: var(--dex-gray-300) !important;
+  box-shadow: 0 0 0 3px rgba(227, 30, 37, 0.15) !important;
+  outline: none !important;
 }
 
-.dexpress-tab-content .dexpress-settings-section-title {
-    margin: 0;
-    font-size: var(--dex-text-lg);
-    line-height: 1.4;
-    font-weight: 600;
-    color: var(--dex-gray-700);
+.dex-settings-wrap .button-small,
+.dex-settings-wrap .button.button-small {
+  background: var(--dex-white) !important;
+  border: var(--dex-border) !important;
+  color: var(--dex-gray-700) !important;
+  border-radius: var(--dex-radius-sm) !important;
+  font-family: var(--dex-font) !important;
+  font-size: var(--dex-text-xs) !important;
+  font-weight: 600 !important;
+  height: 26px !important;
+  line-height: 24px !important;
+  padding: 0 var(--dex-space-3) !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  cursor: pointer !important;
 }
 
-.dexpress-tab-content .dexpress-settings-section-body {
-    padding: var(--dex-space-4) 18px 18px;
+.dex-settings-wrap .button-small:hover {
+  background: var(--dex-gray-50) !important;
+  border-color: var(--dex-gray-300) !important;
+  color: var(--dex-text) !important;
 }
 
-.dexpress-tab-content .dexpress-settings-section-body .form-table {
-    margin-top: 0;
+.dex-settings-wrap .button-small:focus {
+  box-shadow: 0 0 0 3px rgba(227, 30, 37, 0.15) !important;
+  outline: none !important;
 }
 
-.dexpress-tab-content .dexpress-settings-section-lead {
-    margin: 0 0 var(--dex-space-3);
-    max-width: 720px;
-    font-size: var(--dex-text-base);
-    color: var(--dex-gray-700);
+.dex-settings-wrap .button-small:disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
 }
+
 
-.dexpress-tab-content .dexpress-usage-count {
-    font-size: var(--dex-text-lg);
-    font-weight: 600;
+/* =============================================================================
+   4.27 WORDPRESS NOTICE OVERRIDES (scoped to .dex-settings-wrap)
+   ============================================================================= */
+
+.dex-settings-wrap .notice,
+.dex-settings-wrap .updated,
+.dex-settings-wrap .error {
+  border-radius: var(--dex-radius) !important;
+  border-left-width: 4px !important;
+  box-shadow: none !important;
+  font-family: var(--dex-font) !important;
+  font-size: var(--dex-text-sm) !important;
+  padding: var(--dex-space-3) var(--dex-space-4) !important;
+  margin: var(--dex-space-4) 0 !important;
 }
 
-.dexpress-tab-content .dexpress-usage-meter {
-    height: 10px;
-    background: var(--dex-gray-100);
-    border-radius: var(--dex-radius);
-    overflow: hidden;
-    max-width: 480px;
-    border: var(--dex-border);
+.dex-settings-wrap .notice p,
+.dex-settings-wrap .updated p,
+.dex-settings-wrap .error p {
+  font-size: var(--dex-text-sm) !important;
+  color: var(--dex-gray-700) !important;
+  margin: 0 !important;
+  line-height: 1.5 !important;
 }
 
-.dexpress-tab-content .dexpress-usage-meter-fill {
-    height: 100%;
-    background: linear-gradient(90deg, var(--dex-info), #1d4ed8);
-    border-radius: var(--dex-radius-sm) 0 0 var(--dex-radius-sm);
-    transition: width var(--dex-transition);
+.dex-settings-wrap .notice-success,
+.dex-settings-wrap .updated {
+  background: var(--dex-green-light) !important;
+  border-left-color: var(--dex-green) !important;
 }
 
-.dexpress-tab-content .dexpress-usage-meter.is-warning .dexpress-usage-meter-fill {
-    background: linear-gradient(90deg, var(--dex-warning), var(--dex-error));
+.dex-settings-wrap .notice-info {
+  background: var(--dex-blue-light) !important;
+  border-left-color: var(--dex-blue) !important;
 }
 
-.dexpress-tab-content .dexpress-usage-meter.is-exhausted .dexpress-usage-meter-fill {
-    background: var(--dex-error);
+.dex-settings-wrap .notice-warning {
+  background: var(--dex-amber-light) !important;
+  border-left-color: var(--dex-amber) !important;
 }
 
-/* -------------------------------------------------------------------------
-   Simulation tab — horizontal status flow
-   ------------------------------------------------------------------------- */
+.dex-settings-wrap .notice-error,
+.dex-settings-wrap .error {
+  background: var(--dex-red-light) !important;
+  border-left-color: var(--dex-red) !important;
+}
 
-.dexpress-tab-content .dexpress-settings-section--simulation {
-    max-width: 920px;
+.dex-settings-wrap .notice.inline {
+  display: block !important;
 }
+
 
-.dexpress-tab-content .dexpress-sim-flow {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: flex-start;
-    gap: 6px 4px;
-    margin: var(--dex-space-4) 0 20px;
-    padding: 14px var(--dex-space-4);
-    background: var(--dex-gray-50);
-    border: var(--dex-border);
-    border-radius: var(--dex-radius-sm);
-    max-width: 100%;
+/* =============================================================================
+   4.28 TAB DESCRIPTION LINE
+   ============================================================================= */
+
+/* Card stack spacing when a form follows a non-form card */
+.dex-settings-form {
+  margin-top: var(--dex-space-4);
 }
 
-.dexpress-tab-content .dexpress-sim-flow__step {
-    display: flex;
-    align-items: center;
+/* Webhook instructions footer variant */
+.dex-card__footer--instructions {
+  flex-direction: column;
+  align-items: flex-start;
 }
 
-.dexpress-tab-content .dexpress-sim-flow__box {
-    display: inline-block;
-    padding: var(--dex-space-2) var(--dex-space-3);
-    font-size: var(--dex-text-sm);
-    font-weight: 600;
-    line-height: 1.2;
-    color: var(--dex-gray-900);
-    background: #fff;
-    border: var(--dex-border);
-    border-radius: var(--dex-radius-sm);
-    box-shadow: var(--dex-shadow-sm);
-    white-space: nowrap;
+.dex-webhook-instructions__title {
+  font-size: var(--dex-text-xs);
+  font-weight: 700;
+  color: var(--dex-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0 0 var(--dex-space-2);
 }
 
-.dexpress-tab-content .dexpress-sim-flow__arrow {
-    color: var(--dex-gray-500);
-    font-size: 16px;
-    font-weight: 600;
-    padding: 0 2px;
-    user-select: none;
+.dex-webhook-instructions__list {
+  margin: 0 0 var(--dex-space-2);
+  padding-left: var(--dex-space-5);
+  font-size: var(--dex-text-sm);
+  color: var(--dex-gray-700);
+  line-height: 1.7;
 }
 
-.dexpress-tab-content .dexpress-sim-timing-wrap {
-    margin-top: var(--dex-space-2);
-    padding: var(--dex-space-4) 18px;
-    background: var(--dex-gray-50);
-    border: var(--dex-border);
-    border-radius: var(--dex-radius-sm);
-    max-width: 720px;
+.dex-webhook-instructions__note {
+  font-size: var(--dex-text-xs);
+  color: var(--dex-text-muted);
+  margin: 0;
 }
+
+
+
 
-.dexpress-tab-content .dexpress-sim-timing-wrap__label {
-    margin: 0 0 10px;
-    font-size: var(--dex-text-base);
-    font-weight: 600;
-    color: var(--dex-gray-900);
+.dex-tab-desc {
+  font-size: var(--dex-text-sm);
+  color: var(--dex-text-muted);
+  margin: 0 0 var(--dex-space-5);
+  line-height: 1.6;
 }
 
-.dexpress-tab-content .dexpress-sim-quick-checkbox {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
+
+/* =============================================================================
+   4.29 INLINE INPUT (number + text suffix)
+   ============================================================================= */
+
+.dex-input-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--dex-space-2);
 }
 
-.dexpress-tab-content .dexpress-sim-toggle {
-    display: inline-flex;
-    margin-bottom: 14px;
-    border: var(--dex-border);
-    border-radius: var(--dex-radius-sm);
-    overflow: hidden;
-    background: #fff;
+.dex-input-inline input {
+  width: 80px;
 }
 
-.dexpress-tab-content .dexpress-sim-toggle__btn {
-    margin: 0;
-    padding: var(--dex-space-2) 18px;
-    font-size: var(--dex-text-base);
-    font-weight: 600;
-    line-height: 1.3;
-    color: var(--dex-gray-500);
-    background: #fff;
-    border: none;
-    border-right: var(--dex-border);
-    cursor: pointer;
-    box-shadow: none;
-    transition: color var(--dex-transition), background var(--dex-transition);
+.dex-input-inline__suffix {
+  font-size: var(--dex-text-sm);
+  color: var(--dex-text-muted);
+  white-space: nowrap;
 }
+
+
+/* =============================================================================
+   4.30 CODE PATH
+   ============================================================================= */
 
-.dexpress-tab-content .dexpress-sim-toggle__btn:last-child {
-    border-right: none;
+code.dex-code-path {
+  display: inline-block;
+  padding: var(--dex-space-1) var(--dex-space-3);
+  background: var(--dex-gray-100);
+  border: var(--dex-border);
+  border-radius: var(--dex-radius-sm);
+  font-family: ui-monospace, "SFMono-Regular", Consolas, "Courier New", monospace;
+  font-size: var(--dex-text-xs);
+  color: var(--dex-gray-700);
+  word-break: break-all;
+  line-height: 1.5;
 }
 
-.dexpress-tab-content .dexpress-sim-toggle__btn:hover {
-    color: var(--dex-info);
-    background: var(--dex-info-light);
+
+/* =============================================================================
+   4.31 PASSWORD SAVED STATE
+   ============================================================================= */
+
+.dex-pw-saved {
+  display: flex;
+  align-items: center;
+  gap: var(--dex-space-2);
+  flex-wrap: wrap;
+  padding: var(--dex-space-2) var(--dex-space-3);
+  background: var(--dex-gray-50);
+  border: var(--dex-border);
+  border-radius: var(--dex-radius);
+  max-width: 520px;
 }
 
-.dexpress-tab-content .dexpress-sim-toggle__btn.is-selected {
-    color: #fff;
-    background: var(--dex-info);
+.dex-pw-saved__dots {
+  font-family: ui-monospace, "SFMono-Regular", Consolas, "Courier New", monospace;
+  font-size: var(--dex-text-base);
+  color: var(--dex-text-muted);
+  letter-spacing: 0.2em;
+  user-select: none;
+  flex-shrink: 0;
 }
 
-.dexpress-tab-content .dexpress-sim-toggle__btn.is-selected:hover {
-    color: #fff;
-    background: var(--dex-info);
+.dex-pw-saved__label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--dex-space-1);
+  padding: 2px var(--dex-space-2);
+  background: var(--dex-green-light);
+  border: 1px solid rgba(26, 158, 92, 0.2);
+  border-radius: var(--dex-radius-sm);
+  font-size: var(--dex-text-xs);
+  font-weight: 700;
+  color: var(--dex-green);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  flex-shrink: 0;
 }
 
-.dexpress-tab-content .dexpress-sim-timing-panel__intro {
-    margin: 0 0 10px;
-    max-width: 640px;
+.dex-pw-saved__label .dashicons {
+  font-size: 13px;
+  width: 13px;
+  height: 13px;
+  line-height: 1;
 }
 
-.dexpress-tab-content .dexpress-sim-timing-list {
-    margin: 0 0 4px 1.1em;
-    padding: 0;
-    list-style: disc;
-    max-width: 640px;
+/* Push "Promeni" to the right side */
+.dex-pw-saved .dex-btn {
+  margin-left: auto;
 }
 
-.dexpress-tab-content .dexpress-sim-timing-list li {
-    margin-bottom: 6px;
-    line-height: 1.45;
+/* =============================================================================
+   4.32 API TAB TWO-COLUMN GRID
+   ============================================================================= */
+
+/* Notice rendered above tabs (save feedback) */
+.dex-settings-page-notice {
+  margin-bottom: var(--dex-space-4);
+  border-radius: 0;
 }
 
-/* -------------------------------------------------------------------------
-   Typography — Design System
-   ------------------------------------------------------------------------- */
+.dex-api-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--dex-space-6);
+  align-items: start;
+}
 
-/* Page-level body text */
-.dexpress-tab-content,
-.dexpress-tab-content p,
-.dexpress-tab-content td,
-.dexpress-tab-content label {
-    font-size: var(--dex-text-base);
-    color: var(--dex-gray-700);
+.dex-settings-wrap form>.dex-api-grid {
+  margin-bottom: var(--dex-space-4);
 }
 
-/* Form table label column */
-.dexpress-tab-content .form-table th {
-    font-size: var(--dex-text-sm);
-    color: var(--dex-gray-500);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    font-weight: 600;
+@media (max-width: 900px) {
+  .dex-api-grid {
+    grid-template-columns: 1fr;
+  }
 }

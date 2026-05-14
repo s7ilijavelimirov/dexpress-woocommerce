@@ -87,16 +87,9 @@ final class OrdersListDeliveryStatusColumn
         }
 
         wp_enqueue_style(
-            'dexpress-design-system',
-            DEXPRESS_PLUGIN_URL . 'assets/css/admin-design-system.css',
-            [],
-            DEXPRESS_VERSION,
-        );
-
-        wp_enqueue_style(
-            'dexpress-orders-list',
+            'dex-admin',
             DEXPRESS_PLUGIN_URL . 'assets/css/admin.css',
-            ['dexpress-design-system'],
+            [],
             DEXPRESS_VERSION,
         );
     }

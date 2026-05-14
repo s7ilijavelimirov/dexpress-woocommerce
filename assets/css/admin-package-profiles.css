@@ -1,390 +1,156 @@
-/* D Express — Package Profiles admin page */
+/* =============================================================================
+   D Express WooCommerce — Package Profiles
+   Handle: dexpress-package-profiles · Page: dexpress_page_dexpress-package-profiles
+   ============================================================================= */
 
-/* ── Page header ─────────────────────────────────────────────── */
-.dex-pp-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin: 0 0 16px;
-  flex-wrap: wrap;
+
+/* ── Page shell ──────────────────────────────────────────────── */
+
+.dex-pp-page {
+  max-width: none;
+  width: auto;
+  box-sizing: border-box;
 }
 
-.dex-pp-page .dex-pp-header__title {
-  font-size: 22px;
-  font-weight: 700;
-  color: var(--dex-gray-900);
-  margin: 0 0 3px;
-  padding: 0;
-  line-height: 1.2;
-  letter-spacing: -0.01em;
-}
-
-.dex-pp-header__sub {
-  font-size: 12px;
-  color: var(--dex-gray-500);
-  margin: 0;
-}
-
-/* Brand-red "Add Profile" button */
-.dex-pp-add-trigger {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  background: var(--dex-primary);
-  color: #fff;
-  border: 1px solid var(--dex-primary-hover);
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  line-height: 1;
-  text-decoration: none;
-  transition: background 130ms ease, box-shadow 130ms ease;
-  white-space: nowrap;
-}
-
-.dex-pp-add-trigger:hover {
-  background: var(--dex-primary-hover);
-  color: #fff;
-  box-shadow: 0 2px 8px rgba(227,30,37,.28);
-}
-
-.dex-pp-add-trigger:focus {
-  outline: 2px solid rgba(227,30,37,.4);
-  outline-offset: 2px;
-  color: #fff;
-}
-
-.dex-pp-add-trigger .dashicons {
-  font-size: 16px;
-  width: 16px;
-  height: 16px;
-}
-
-/* ── Page subtitle lead ───────────────────────────────────────── */
-.dex-pp-page-subtitle {
-  font-size: var(--dex-text-base);
-  color: var(--dex-gray-500);
-  margin: 0 0 var(--dex-space-6);
-  max-width: 680px;
-  line-height: 1.65;
-}
-
-/* ── Form fields (inside modal) ──────────────────────────────── */
-.dex-pp-form-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--dex-space-4);
-}
-
-.dex-pp-field {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.dex-pp-field--full {
-  grid-column: 1 / -1;
-}
-
-.dex-pp-field label {
-  font-size: var(--dex-text-sm);
-  font-weight: 600;
-  color: var(--dex-gray-700);
-}
-
-.dex-pp-field .required { color: var(--dex-primary); }
-
-/* Override WP input styles inside modal */
-.dex-pp-modal__body input[type="text"],
-.dex-pp-modal__body input[type="number"],
-.dex-pp-modal__body textarea {
-  border-color: var(--dex-gray-300);
-  border-radius: var(--dex-radius);
-  font-size: var(--dex-text-base);
-  color: var(--dex-gray-900);
-  transition: border-color 120ms ease, box-shadow 120ms ease;
-}
-
-.dex-pp-modal__body input[type="text"]:focus,
-.dex-pp-modal__body input[type="number"]:focus,
-.dex-pp-modal__body textarea:focus {
-  border-color: var(--dex-primary);
-  box-shadow: 0 0 0 3px rgba(227,30,37,.1);
-  outline: none;
-}
-
-.dex-pp-modal__body input.regular-text,
-.dex-pp-modal__body textarea.large-text {
+.dex-pp-page__body {
+  margin: var(--dex-space-4) 0 0;
   width: 100%;
   box-sizing: border-box;
 }
 
-/* Dimensions row */
-.dex-pp-dims {
-  display: flex;
-  align-items: flex-end;
-  gap: var(--dex-space-2);
-}
-
-.dex-pp-dims input.small-text { width: 72px; }
-
-.dex-pp-dim-group {
+.dex-pp-main__content .dex-card__body {
+  flex: 1 1 auto;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  min-height: 0;
 }
 
-.dex-pp-dim-label {
-  font-size: var(--dex-text-xs);
-  font-weight: 700;
-  color: var(--dex-gray-500);
-  text-transform: uppercase;
-  letter-spacing: .05em;
-}
-
-.dex-pp-dim-hint {
-  font-size: var(--dex-text-xs);
-  color: var(--dex-gray-300);
-  font-style: italic;
-}
-
-.dex-pp-dims-sep {
-  font-size: var(--dex-text-base);
-  color: var(--dex-gray-300);
-  padding-bottom: 6px;
-  flex-shrink: 0;
-  font-weight: 300;
-}
-
-.dex-pp-weight-g {
-  font-size: var(--dex-text-xs);
-  color: var(--dex-gray-500);
-  min-height: 1em;
-  font-variant-numeric: tabular-nums;
-}
-
-.dex-pp-form-note {
-  font-size: var(--dex-text-xs);
-  color: var(--dex-gray-500);
-  margin: var(--dex-space-4) 0 0;
-  line-height: 1.6;
-  padding: 10px 12px;
-  background: var(--dex-gray-50);
-  border-left: 3px solid var(--dex-gray-200);
-  border-radius: 0 var(--dex-radius-sm) var(--dex-radius-sm) 0;
-}
-
-/* Status message */
-.dex-pp-msg {
-  font-size: var(--dex-text-sm);
-  font-weight: 500;
-}
-
-.dex-pp-msg--ok    { color: var(--dex-success); }
-.dex-pp-msg--error { color: var(--dex-error); }
-
-/* ── Modal ───────────────────────────────────────────────────── */
-#dex-pp-modal {
-  display: none;
-  position: fixed;
-  inset: 0;
-  z-index: 100000;
-  align-items: center;
-  justify-content: center;
-}
-
-#dex-pp-modal.is-open { display: flex; }
-
-body.dex-pp-modal-open { overflow: hidden; }
-
-.dex-pp-modal__backdrop {
-  position: absolute;
-  inset: 0;
-  background: rgba(0,0,0,.45);
-  backdrop-filter: blur(2px);
-}
-
-.dex-pp-modal__dialog {
-  position: relative;
-  width: min(600px, calc(100vw - 32px));
-  max-height: calc(100vh - 32px);
+.dex-pp-main__content {
+  min-width: 0;
+  flex: 1 1 auto;
   display: flex;
   flex-direction: column;
-  background: #fff;
-  border-radius: 10px;
-  box-shadow: 0 20px 60px rgba(0,0,0,.2), 0 4px 16px rgba(0,0,0,.1);
-  overflow: hidden;
+  min-height: 0;
 }
 
-.dex-pp-modal__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--dex-space-3);
-  padding: var(--dex-space-4) var(--dex-space-6);
-  border-bottom: var(--dex-border);
-  border-top: 3px solid var(--dex-primary);
-  border-radius: 10px 10px 0 0;
-  flex-shrink: 0;
-  background: #fff;
-}
 
-.dex-pp-modal__title {
-  font-size: var(--dex-text-lg);
-  font-weight: 700;
-  color: var(--dex-gray-900);
-  margin: 0;
-  letter-spacing: -0.01em;
-}
-
-.dex-pp-modal__close {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  background: none;
-  border: none;
-  border-radius: var(--dex-radius-sm);
-  cursor: pointer;
-  padding: 0;
-  color: var(--dex-gray-500);
-  font-size: 16px;
-  line-height: 1;
-  transition: color var(--dex-transition), background var(--dex-transition);
-  flex-shrink: 0;
-}
-
-.dex-pp-modal__close:hover,
-.dex-pp-modal__close:focus {
-  color: var(--dex-gray-900);
-  background: var(--dex-gray-100);
-  outline: none;
-}
-
-.dex-pp-modal__body {
-  padding: var(--dex-space-6);
-  overflow-y: auto;
-  flex: 1;
-}
-
-.dex-pp-modal__footer {
-  display: flex;
-  align-items: center;
-  gap: var(--dex-space-3);
-  padding: var(--dex-space-4) var(--dex-space-6);
-  border-top: var(--dex-border);
-  background: var(--dex-gray-50);
-  flex-shrink: 0;
-}
-
-/* Primary save button — brand red */
-.dex-pp-modal__footer .button-primary {
-  background: var(--dex-primary);
-  border-color: var(--dex-primary-hover);
-  color: #fff;
-  box-shadow: 0 1px 3px rgba(227,30,37,.3);
-}
-
-.dex-pp-modal__footer .button-primary:hover,
-.dex-pp-modal__footer .button-primary:focus {
-  background: var(--dex-primary-hover);
-  border-color: #a8171e;
-  color: #fff;
-  box-shadow: 0 2px 8px rgba(227,30,37,.35);
-}
-
-/* ── Two-column layout ───────────────────────────────────────── */
 .dex-pp-layout {
   display: flex;
-  gap: var(--dex-space-6);
-  align-items: flex-start;
+  gap: var(--dex-space-5);
+  align-items: stretch;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-.dex-pp-main  { flex: 1; min-width: 0; }
+.dex-pp-main {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-self: stretch;
+}
 
 .dex-pp-sidebar {
   width: 340px;
   flex-shrink: 0;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
 }
 
+
 /* ── Empty state ─────────────────────────────────────────────── */
+
 .dex-pp-empty {
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  padding: 48px var(--dex-space-6);
-  background: #fff;
+  padding: var(--dex-space-12) var(--dex-space-6);
+  background: var(--dex-white);
   border: var(--dex-border);
-  border-radius: 10px;
+  border-radius: var(--dex-radius-lg);
   box-shadow: var(--dex-shadow-sm);
+  flex: 1 1 auto;
+  justify-content: center;
+  min-height: 280px;
 }
 
 .dex-pp-empty-icon {
   width: 100px;
   height: 100px;
   margin-bottom: var(--dex-space-4);
-  opacity: .7;
+  opacity: 0.7;
+  color: var(--dex-gray-300);
 }
 
 .dex-pp-empty-title {
   font-size: var(--dex-text-xl);
   font-weight: 700;
-  color: var(--dex-gray-900);
+  color: var(--dex-text);
   margin: 0 0 var(--dex-space-2);
   letter-spacing: -0.01em;
+  padding: 0;
+  border: none;
 }
 
 .dex-pp-empty-desc {
   font-size: var(--dex-text-base);
-  color: var(--dex-gray-500);
+  color: var(--dex-text-muted);
   max-width: 360px;
   margin: 0 0 var(--dex-space-6);
   line-height: 1.65;
 }
 
+/* Empty state CTA — override WP .button-primary with higher specificity */
 .dex-pp-empty .button-primary {
-  background: var(--dex-primary);
-  border-color: var(--dex-primary-hover);
-  color: #fff;
-  padding: 8px 20px;
+  background: var(--dex-red);
+  border-color: var(--dex-red-hover);
+  color: var(--dex-white);
+  padding: var(--dex-space-2) var(--dex-space-5);
   height: auto;
   font-size: var(--dex-text-base);
   font-weight: 600;
-  box-shadow: 0 2px 8px rgba(227,30,37,.25);
+  box-shadow: 0 2px 8px rgba(227, 30, 37, 0.25);
 }
 
-.dex-pp-empty .button-primary:hover {
-  background: var(--dex-primary-hover);
-  border-color: #a8171e;
-  color: #fff;
+.dex-pp-empty .button-primary:hover,
+.dex-pp-empty .button-primary:focus {
+  background: var(--dex-red-hover);
+  border-color: var(--dex-red-hover);
+  color: var(--dex-white);
+  box-shadow: 0 2px 8px rgba(227, 30, 37, 0.35);
 }
+
 
 /* ── Card grid ───────────────────────────────────────────────── */
+
 .dex-pp-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 14px;
+  /* Tačno 4 kartice po redu; ostatak u novim redovima, poravnato na start */
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--dex-space-3);
+  flex: 1 1 auto;
+  align-content: start;
+  justify-items: stretch;
 }
 
+
 /* ── Profile card ────────────────────────────────────────────── */
+
 .dex-pp-card {
-  background: #fff;
-  border: 1px solid var(--dex-gray-200);
-  border-radius: 10px;
-  box-shadow: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+  background: var(--dex-white);
+  border: var(--dex-border);
+  border-radius: 0 0 var(--dex-radius-lg) var(--dex-radius-lg);
+  box-shadow: var(--dex-shadow-sm);
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  transition: box-shadow 130ms ease, transform 130ms ease;
+  transition: box-shadow var(--dex-transition), transform var(--dex-transition);
   position: relative;
 }
 
-/* Brand accent stripe */
+/* 3px brand accent top stripe */
 .dex-pp-card::before {
   content: '';
   position: absolute;
@@ -392,18 +158,18 @@ body.dex-pp-modal-open { overflow: hidden; }
   left: 0;
   right: 0;
   height: 3px;
-  background: linear-gradient(90deg, var(--dex-primary), rgba(227,30,37,.55));
-  border-radius: 10px 10px 0 0;
+  background: linear-gradient(90deg, var(--dex-red), rgba(227, 30, 37, 0.55));
+  border-radius: var(--dex-radius-lg) var(--dex-radius-lg) 0 0;
   pointer-events: none;
 }
 
 .dex-pp-card:hover {
-  box-shadow: 0 6px 20px rgba(0,0,0,.1), 0 2px 6px rgba(0,0,0,.06);
+  box-shadow: var(--dex-shadow);
   transform: translateY(-1px);
 }
 
 .dex-pp-card-inner {
-  padding: 20px 16px 12px; /* 20px top leaves room for accent stripe */
+  padding: var(--dex-space-5) var(--dex-space-4) var(--dex-space-3);
   flex: 1;
 }
 
@@ -414,16 +180,18 @@ body.dex-pp-modal-open { overflow: hidden; }
   margin-bottom: var(--dex-space-3);
 }
 
-/* Icon as a tinted bubble — works for both PHP and JS-rebuilt cards */
 .dex-pp-card-icon {
   width: 44px;
   height: 44px;
-  padding: 8px;
-  background: rgba(227,30,37,.07);
-  border-radius: 10px;
-  object-fit: contain;
+  padding: var(--dex-space-2);
+  background: rgba(227, 30, 37, 0.07);
+  border-radius: var(--dex-radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
   box-sizing: border-box;
+  color: var(--dex-red);
 }
 
 .dex-pp-card-title {
@@ -448,16 +216,16 @@ body.dex-pp-modal-open { overflow: hidden; }
   display: grid;
   grid-template-columns: auto 1fr;
   column-gap: var(--dex-space-3);
-  row-gap: 4px;
+  row-gap: var(--dex-space-1);
   margin: 0;
 }
 
 .dex-pp-card-meta dt {
   font-size: 9px;
   font-weight: 700;
-  color: var(--dex-gray-500);
+  color: var(--dex-text-muted);
   text-transform: uppercase;
-  letter-spacing: .07em;
+  letter-spacing: 0.07em;
   white-space: nowrap;
   padding-top: 1px;
 }
@@ -471,7 +239,7 @@ body.dex-pp-modal-open { overflow: hidden; }
 
 .dex-pp-card-desc {
   font-size: var(--dex-text-xs);
-  color: var(--dex-gray-500);
+  color: var(--dex-text-muted);
   margin: var(--dex-space-2) 0 0;
   line-height: 1.5;
 }
@@ -482,18 +250,18 @@ body.dex-pp-modal-open { overflow: hidden; }
   align-items: center;
   flex-wrap: wrap;
   gap: var(--dex-space-1);
-  padding: 10px 16px;
+  padding: var(--dex-space-2) var(--dex-space-4);
   border-top: 1px solid var(--dex-gray-100);
   background: var(--dex-gray-50);
 }
 
-/* Edit — brand primary */
+/* Edit button — (0,3,1) specificity overrides WP (0,1,0) */
 .dex-pp-card-actions .button.dex-pp-edit-btn {
-  background: var(--dex-primary);
-  border-color: var(--dex-primary-hover);
-  color: #fff;
+  background: var(--dex-red);
+  border-color: var(--dex-red-hover);
+  color: var(--dex-white);
   font-size: var(--dex-text-xs);
-  padding: 2px 10px;
+  padding: 2px var(--dex-space-2);
   height: 26px;
   line-height: 24px;
   box-shadow: none;
@@ -501,31 +269,33 @@ body.dex-pp-modal-open { overflow: hidden; }
 
 .dex-pp-card-actions .button.dex-pp-edit-btn:hover,
 .dex-pp-card-actions .button.dex-pp-edit-btn:focus {
-  background: var(--dex-primary-hover);
-  border-color: #a8171e;
-  color: #fff;
-  box-shadow: 0 1px 4px rgba(227,30,37,.3);
+  background: var(--dex-red-hover);
+  border-color: var(--dex-red-hover);
+  color: var(--dex-white);
+  box-shadow: 0 1px 4px rgba(227, 30, 37, 0.3);
   outline: none;
 }
 
-/* Set-as-default — neutral */
+/* Set-as-default button */
 .dex-pp-card-actions .button.dex-pp-default-btn {
   font-size: var(--dex-text-xs);
   height: 26px;
   line-height: 24px;
-  padding: 2px 10px;
+  padding: 2px var(--dex-space-2);
 }
 
-/* Delete — danger link */
+/* Delete button */
 .dex-pp-card-actions .button-link-delete.dex-pp-delete-btn {
   font-size: var(--dex-text-xs);
   height: 26px;
   line-height: 26px;
-  padding: 0 6px;
+  padding: 0 var(--dex-space-1);
   margin-left: auto;
 }
 
+
 /* ── Add new card ────────────────────────────────────────────── */
+
 .dex-pp-card--add {
   border: 2px dashed var(--dex-gray-300);
   background: transparent;
@@ -537,20 +307,21 @@ body.dex-pp-modal-open { overflow: hidden; }
   min-height: 160px;
   gap: var(--dex-space-2);
   color: var(--dex-gray-500);
-  transition: border-color 130ms ease, color 130ms ease, background 130ms ease;
+  transition: border-color var(--dex-transition), color var(--dex-transition), background var(--dex-transition);
   text-align: center;
   padding: var(--dex-space-4);
   box-shadow: none;
 }
 
-/* No accent stripe on the add card */
-.dex-pp-card--add::before { display: none; }
+.dex-pp-card--add::before {
+  display: none;
+}
 
 .dex-pp-card--add:hover,
 .dex-pp-card--add:focus {
-  border-color: var(--dex-primary);
-  color: var(--dex-primary);
-  background: var(--dex-primary-light);
+  border-color: var(--dex-red);
+  color: var(--dex-red);
+  background: var(--dex-red-light);
   box-shadow: none;
   outline: none;
   transform: none;
@@ -567,7 +338,9 @@ body.dex-pp-modal-open { overflow: hidden; }
   font-weight: 600;
 }
 
-/* ── Badge ───────────────────────────────────────────────────── */
+
+/* ── Badges ──────────────────────────────────────────────────── */
+
 .dex-pp-badge {
   display: inline-flex;
   align-items: center;
@@ -578,13 +351,13 @@ body.dex-pp-modal-open { overflow: hidden; }
   white-space: nowrap;
   vertical-align: middle;
   text-transform: uppercase;
-  letter-spacing: .05em;
+  letter-spacing: 0.05em;
 }
 
 .dex-pp-badge--default {
-  background: var(--dex-success-light);
-  color: var(--dex-success);
-  border: 1px solid rgba(22,163,74,.2);
+  background: var(--dex-green-light);
+  color: var(--dex-green);
+  border: 1px solid rgba(26, 158, 92, 0.2);
 }
 
 .dex-pp-tab-badge {
@@ -598,79 +371,532 @@ body.dex-pp-modal-open { overflow: hidden; }
   color: var(--dex-gray-500);
   vertical-align: middle;
   text-transform: uppercase;
-  letter-spacing: .04em;
+  letter-spacing: 0.04em;
 }
 
+
+/* ── Status message ──────────────────────────────────────────── */
+
+.dex-pp-msg {
+  font-size: var(--dex-text-sm);
+  font-weight: 600;
+}
+
+.dex-pp-msg--ok {
+  color: var(--dex-green);
+}
+
+.dex-pp-msg--error {
+  color: var(--dex-red);
+}
+
+
+/* ── Modal ───────────────────────────────────────────────────── */
+
+#dex-pp-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  align-items: center;
+  justify-content: center;
+}
+
+#dex-pp-modal.is-open {
+  display: flex;
+}
+
+body.dex-pp-modal-open {
+  overflow: hidden;
+}
+
+.dex-pp-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(2px);
+}
+
+.dex-pp-modal__dialog {
+  position: relative;
+  width: min(900px, calc(100vw - 16px));
+  max-height: calc(100dvh - 16px);
+  display: flex;
+  flex-direction: column;
+  background: var(--dex-white);
+  border: var(--dex-border);
+  border-radius: var(--dex-radius-lg);
+  box-shadow: var(--dex-shadow-lg);
+  overflow: hidden;
+}
+
+.dex-pp-modal__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--dex-space-3);
+  padding: var(--dex-space-3) var(--dex-space-5);
+  border-bottom: var(--dex-border);
+  border-top: none;
+  flex-shrink: 0;
+  background: var(--dex-gray-50);
+}
+
+.dex-pp-modal__header-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.dex-pp-modal__title {
+  font-size: var(--dex-text-lg);
+  font-weight: 700;
+  color: var(--dex-text);
+  margin: 0 0 var(--dex-space-1);
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+}
+
+.dex-pp-modal__subtitle {
+  margin: 0;
+  font-size: var(--dex-text-xs);
+  font-weight: 400;
+  color: var(--dex-text-muted);
+  line-height: 1.45;
+  max-width: 56em;
+}
+
+.dex-pp-modal__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: none;
+  border: none;
+  border-radius: var(--dex-radius-sm);
+  cursor: pointer;
+  padding: 0;
+  color: var(--dex-gray-500);
+  font-size: var(--dex-text-lg);
+  line-height: 1;
+  flex-shrink: 0;
+  transition: color var(--dex-transition), background var(--dex-transition);
+}
+
+.dex-pp-modal__close:hover,
+.dex-pp-modal__close:focus {
+  color: var(--dex-text);
+  background: var(--dex-gray-100);
+  outline: none;
+}
+
+.dex-pp-modal__body {
+  padding: var(--dex-space-3) var(--dex-space-5);
+  overflow-y: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+  background: var(--dex-white);
+}
+
+.dex-pp-modal__footer {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--dex-space-2);
+  padding: var(--dex-space-3) var(--dex-space-5);
+  border-top: var(--dex-border);
+  background: var(--dex-gray-50);
+  flex-shrink: 0;
+}
+
+.dex-pp-modal__footer #dex-pp-msg {
+  flex: 1 1 180px;
+  min-width: 0;
+  text-align: right;
+}
+
+/* Save button in modal footer — (0,2,0) beats WP .button-primary (0,1,0) */
+.dex-pp-modal__footer .button-primary {
+  background: var(--dex-red);
+  border-color: var(--dex-red-hover);
+  color: var(--dex-white);
+  box-shadow: 0 1px 3px rgba(227, 30, 37, 0.3);
+}
+
+.dex-pp-modal__footer .button-primary:hover,
+.dex-pp-modal__footer .button-primary:focus {
+  background: var(--dex-red-hover);
+  border-color: var(--dex-red-hover);
+  color: var(--dex-white);
+  box-shadow: 0 2px 8px rgba(227, 30, 37, 0.35);
+}
+
+
+/* ── Modal body: stacked sections ────────────────────────────── */
+
+.dex-pp-modal-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dex-space-3);
+}
+
+.dex-pp-modal-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--dex-space-3) var(--dex-space-4);
+  align-items: stretch;
+}
+
+.dex-pp-modal-grid__col--main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dex-space-3);
+  padding: var(--dex-space-3);
+  background: var(--dex-gray-50);
+  border: var(--dex-border);
+  border-radius: var(--dex-radius);
+  box-shadow: var(--dex-shadow-xs);
+  min-height: 100%;
+  box-sizing: border-box;
+}
+
+.dex-pp-modal-grid__col--size {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  box-sizing: border-box;
+}
+
+.dex-pp-modal-grid__col--size > .dex-pp-modal-section--panel {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.dex-pp-modal-section {
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.dex-pp-modal-section__title {
+  margin: 0 0 var(--dex-space-2);
+  padding: 0 0 var(--dex-space-1);
+  border-bottom: 1px solid var(--dex-gray-200);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--dex-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  line-height: 1.25;
+}
+
+.dex-pp-modal-section__inner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dex-space-2);
+}
+
+.dex-pp-modal-section--panel .dex-pp-modal-section__inner {
+  padding: var(--dex-space-3);
+  background: var(--dex-gray-50);
+  border: var(--dex-border);
+  border-radius: var(--dex-radius);
+  box-shadow: var(--dex-shadow-xs);
+  box-sizing: border-box;
+}
+
+.dex-pp-modal-grid__col--size .dex-pp-modal-section--panel .dex-pp-modal-section__inner {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.dex-pp-modal-section--panel .dex-pp-modal-section__title--in-panel {
+  margin: 0 0 var(--dex-space-2);
+  padding-bottom: var(--dex-space-1);
+  border-bottom: 1px solid var(--dex-gray-200);
+}
+
+.dex-pp-panel-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dex-space-2);
+}
+
+.dex-pp-field-label-block {
+  display: block;
+  font-size: var(--dex-text-sm);
+  font-weight: 600;
+  color: var(--dex-gray-700);
+  margin-bottom: 2px;
+}
+
+.dex-pp-field-hint {
+  margin: 2px 0 0;
+  font-size: var(--dex-text-xs);
+  color: var(--dex-text-muted);
+  line-height: 1.4;
+}
+
+.dex-pp-modal-footnote {
+  margin: var(--dex-space-1) 0 0;
+  font-size: var(--dex-text-xs);
+  color: var(--dex-text-muted);
+  line-height: 1.4;
+  padding: var(--dex-space-1) var(--dex-space-2);
+  background: var(--dex-white);
+  border-radius: var(--dex-radius-sm);
+  border: 1px solid var(--dex-gray-200);
+}
+
+.dex-pp-modal-footnote--inline {
+  margin-top: var(--dex-space-1);
+}
+
+.dex-pp-field--weight-row .dex-pp-weight-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--dex-space-2);
+}
+
+.dex-pp-field--weight-row input.small-text {
+  min-width: 88px;
+}
+
+.dex-pp-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dex-space-1);
+}
+
+.dex-pp-field label,
+.dex-pp-field-label-block {
+  font-size: var(--dex-text-sm);
+  font-weight: 600;
+  color: var(--dex-gray-700);
+}
+
+.dex-pp-field .required {
+  color: var(--dex-red);
+}
+
+/* WP input override inside modal — (0,2,1) */
+.dex-pp-modal__body input[type="text"],
+.dex-pp-modal__body input[type="number"],
+.dex-pp-modal__body textarea {
+  border-color: var(--dex-gray-300);
+  /* border-radius: var(--dex-radius); */
+  font-size: var(--dex-text-base);
+  color: var(--dex-gray-900);
+  transition: border-color var(--dex-transition), box-shadow var(--dex-transition);
+}
+
+.dex-pp-modal__body input[type="text"]:focus,
+.dex-pp-modal__body input[type="number"]:focus,
+.dex-pp-modal__body textarea:focus {
+  border-color: var(--dex-red);
+  box-shadow: 0 0 0 3px rgba(227, 30, 37, 0.1);
+  outline: none;
+}
+
+.dex-pp-modal__body input.regular-text,
+.dex-pp-modal__body textarea.large-text {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+
+/* ── Dimensions row ──────────────────────────────────────────── */
+
+.dex-pp-dims {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: var(--dex-space-2);
+}
+
+.dex-pp-dims input.small-text {
+  width: 72px;
+}
+
+.dex-pp-dim-input-row {
+  display: flex;
+  align-items: center;
+  gap: var(--dex-space-1);
+}
+
+.dex-pp-dim-unit {
+  font-size: var(--dex-text-sm);
+  font-weight: 600;
+  color: var(--dex-text-muted);
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.dex-pp-dim-group {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.dex-pp-dim-label {
+  font-size: var(--dex-text-xs);
+  font-weight: 700;
+  color: var(--dex-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.dex-pp-dim-hint {
+  font-size: var(--dex-text-xs);
+  color: var(--dex-text-muted);
+  font-style: normal;
+}
+
+.dex-pp-dims-sep {
+  font-size: var(--dex-text-base);
+  color: var(--dex-gray-300);
+  padding-bottom: 6px;
+  flex-shrink: 0;
+  font-weight: 300;
+}
+
+/* Tri kolone — jedan red, kompaktno u modalu */
+.dex-pp-dims--grid3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--dex-space-2);
+  align-items: end;
+}
+
+.dex-pp-dim-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.dex-pp-field--dims-compact label.dex-pp-dim-label {
+  font-size: var(--dex-text-xs);
+  font-weight: 700;
+  color: var(--dex-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: default;
+}
+
+.dex-pp-dims--grid3 .dex-pp-dim-input-row input.small-text {
+  width: 100%;
+  max-width: 96px;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.dex-pp-weight-g {
+  font-size: var(--dex-text-xs);
+  color: var(--dex-text-muted);
+  min-height: 1em;
+  font-variant-numeric: tabular-nums;
+}
+
+.dex-pp-modal__body .dex-pp-form-note {
+  font-size: var(--dex-text-sm);
+  font-weight: 600;
+  color: var(--dex-gray-700);
+  margin: 0;
+  line-height: 1.5;
+  padding: var(--dex-space-2) var(--dex-space-3);
+  background: var(--dex-amber-light);
+  border: var(--dex-border);
+  border-radius: var(--dex-radius);
+  box-shadow: var(--dex-shadow-xs);
+}
+
+
 /* ── Sidebar banner ──────────────────────────────────────────── */
+
 .dex-pp-sidebar-banner {
   display: block;
   width: 100%;
-  border-radius: 10px 10px 0 0;
+  border-radius: var(--dex-radius) var(--dex-radius) 0 0;
+  flex-shrink: 0;
 }
 
-/* ── Sidebar rules card ──────────────────────────────────────── */
+
+/* ── Sidebar rules (koristi .dex-card sa spoljašnjeg div-a) ───── */
+
 .dex-pp-sidebar-rules {
-  background: #fff;
-  border: 1px solid var(--dex-gray-200);
-  border-radius: 10px;
-  overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0,0,0,.06);
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  width: 100%;
 }
 
-/* Tab bar */
+/* Rules tab bar */
 .dex-pp-rules-tab-bar {
   display: flex;
   border-bottom: var(--dex-border);
   background: var(--dex-gray-50);
+  flex-shrink: 0;
 }
 
 .dex-pp-rules-tab-btn {
   flex: 1;
-  padding: 10px var(--dex-space-3);
+  padding: var(--dex-space-2) var(--dex-space-3);
   background: none;
   border: none;
   border-bottom: 2px solid transparent;
   margin-bottom: -1px;
   cursor: pointer;
-  font-size: 10px;
+  font-size: var(--dex-text-xs);
   font-weight: 700;
-  color: var(--dex-gray-500);
+  color: var(--dex-text-muted);
   text-transform: uppercase;
-  letter-spacing: .06em;
+  letter-spacing: 0.06em;
   transition: color var(--dex-transition), border-color var(--dex-transition), background var(--dex-transition);
   text-align: center;
   white-space: nowrap;
+  font-family: var(--dex-font);
 }
 
-.dex-pp-rules-tab-btn:hover { color: var(--dex-gray-900); }
+.dex-pp-rules-tab-btn:hover {
+  color: var(--dex-text);
+}
 
 .dex-pp-rules-tab-btn.is-active {
-  color: var(--dex-primary);
-  border-bottom-color: var(--dex-primary);
-  background: #fff;
+  color: var(--dex-red);
+  border-bottom-color: var(--dex-red);
+  background: var(--dex-white);
 }
 
 .dex-pp-rules-tab-panel {
   padding: var(--dex-space-4);
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
-.dex-pp-rules-tab-panel[hidden] { display: none; }
+.dex-pp-rules-tab-panel[hidden] {
+  display: none;
+}
 
-/* Rules list */
+/* Rules dt/dd grid */
 .dex-pp-rules-list {
   display: grid;
   grid-template-columns: auto 1fr;
   column-gap: var(--dex-space-3);
-  row-gap: 6px;
+  row-gap: var(--dex-space-1);
   margin: 0 0 var(--dex-space-3);
 }
 
 .dex-pp-rules-list dt {
   font-size: 9px;
   font-weight: 700;
-  color: var(--dex-gray-500);
+  color: var(--dex-text-muted);
   text-transform: uppercase;
-  letter-spacing: .06em;
+  letter-spacing: 0.06em;
   white-space: nowrap;
   padding-top: 1px;
 }
@@ -683,23 +909,72 @@ body.dex-pp-modal-open { overflow: hidden; }
 
 .dex-pp-rules-note {
   font-size: var(--dex-text-xs);
-  color: var(--dex-gray-500);
+  color: var(--dex-text-muted);
   margin: var(--dex-space-2) 0 0;
   line-height: 1.55;
-  padding: 8px 10px;
+  padding: var(--dex-space-2) var(--dex-space-3);
   background: var(--dex-gray-50);
   border-radius: var(--dex-radius-sm);
   border-left: 2px solid var(--dex-gray-200);
 }
 
+
 /* ── Responsive ──────────────────────────────────────────────── */
+
 @media (max-width: 1200px) {
-  .dex-pp-layout  { flex-direction: column; }
-  .dex-pp-sidebar { width: 100%; }
+  .dex-pp-layout {
+    flex-direction: column;
+  }
+
+  .dex-pp-sidebar {
+    width: 100%;
+  }
 }
 
 @media (max-width: 782px) {
-  .dex-pp-form-grid { grid-template-columns: 1fr; }
-  .dex-pp-field--full { grid-column: auto; }
-  .dex-pp-header { flex-wrap: wrap; gap: 12px; }
+  .dex-pp-modal__dialog {
+    width: min(900px, calc(100vw - 12px));
+    max-height: calc(100dvh - 12px);
+  }
+
+  .dex-pp-modal-grid {
+    grid-template-columns: 1fr;
+    gap: var(--dex-space-3);
+  }
+
+  .dex-pp-modal__header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .dex-pp-modal__close {
+    align-self: flex-end;
+    margin-top: calc(-1 * var(--dex-space-2));
+  }
+
+  .dex-pp-dims {
+    justify-content: flex-start;
+  }
+
+  .dex-pp-dims--grid3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .dex-pp-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .dex-pp-dims--grid3 {
+    grid-template-columns: 1fr;
+  }
+
+  .dex-pp-dims--grid3 .dex-pp-dim-input-row input.small-text {
+    max-width: none;
+  }
+
+  .dex-pp-grid {
+    grid-template-columns: 1fr;
+  }
 }
