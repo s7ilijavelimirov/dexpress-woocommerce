@@ -42,6 +42,7 @@ use S7codedesign\DExpress\Presentation\Frontend\Checkout\CheckoutFields;
 use S7codedesign\DExpress\Presentation\Frontend\Checkout\PackageShopCustomerFlow;
 use S7codedesign\DExpress\Presentation\Frontend\Checkout\PackageShopInfoPanel;
 use S7codedesign\DExpress\Presentation\Frontend\Checkout\CheckoutValidator;
+use S7codedesign\DExpress\Presentation\Frontend\Shipping\DexpressShippingGate;
 use S7codedesign\DExpress\Presentation\Frontend\Tracking\MyAccountTrackingTab;
 use S7codedesign\DExpress\Presentation\Hooks\HposCompatDeclarer;
 use S7codedesign\DExpress\Presentation\Rest\WebhookController;
@@ -130,13 +131,18 @@ final class Plugin
 
     private function registerFrontendHooks(): void
     {
-        // AJAX handlers for autocomplete — must register unconditionally (fired via admin-ajax.php)
+        // AJAX autocomplete handlers always register — called via admin-ajax.php with no page/cart context.
         $this->container->get(AutocompleteController::class)->register();
         $this->container->get(PackageShopDispenserController::class)->register();
 
+        // If no D-Express shipping method is enabled in any zone, leave checkout completely untouched.
+        if (!DexpressShippingGate::isActive()) {
+            return;
+        }
+
         $checkoutFields = $this->container->get(CheckoutFields::class);
 
-        // Classic checkout only — closure must not be [$obj,'injectPostedData'] (avoids stale opcode/autoload callbacks).
+        // Classic checkout only — closure avoids stale opcode/autoload callback issues.
         add_filter(
             'woocommerce_checkout_posted_data',
             static function ($posted_data) use ($checkoutFields) {
@@ -150,7 +156,7 @@ final class Plugin
             1,
         );
 
-        // Checkout fields and validation — hooks fire only on frontend (is_checkout guard inside)
+        // All checkout modification, validation, and Package Shop hooks.
         $checkoutFields->register();
         $this->container->get(CheckoutValidator::class)->register();
         $this->container->get(PackageShopInfoPanel::class)->register();

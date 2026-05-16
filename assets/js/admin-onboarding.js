@@ -40,11 +40,12 @@
         stepDone: { 1: true, 2: false, 3: false, 4: false, 5: false, 6: true },
     };
 
-    // If all three credentials are already saved in DB, treat Step 2 as pre-validated.
+    // If username+password are already saved in DB, treat Step 2 as pre-validated.
+    // clientIdInDb is NOT required — admin may be returning just to add their Client ID.
+    // The connection was tested when username+password were first saved; no reason to re-test.
     (function () {
         var saved = ob.credentialsSaved || {};
-        var snap = ob.settingsSnapshot || {};
-        if (saved.username && saved.password && snap.clientIdInDb) {
+        if (saved.username && saved.password) {
             state.connectionTested     = true;
             state.credentialsPersisted = true;
             $('#dex-ob-panel-2 .dex-ob-next').prop('disabled', false);
@@ -841,6 +842,7 @@
         var $result  = $('#dex-ob-complete-result');
         var $saving  = $('#dex-ob-finish-saving');
         var $saved   = $('#dex-ob-finish-saved');
+        var clientId = $('#dex-ob-api-client-id').val().trim();
 
         clearResult($result);
         $result.attr('hidden', true);
@@ -852,8 +854,9 @@
         $btn.prop('disabled', true);
 
         $.post(ob.ajaxUrl, {
-            action: 'dexpress_onboarding_complete',
-            nonce:  ob.nonces.complete,
+            action:    'dexpress_onboarding_complete',
+            nonce:     ob.nonces.complete,
+            client_id: clientId,
         })
         .done(function (response) {
             $saving.attr('hidden', true);

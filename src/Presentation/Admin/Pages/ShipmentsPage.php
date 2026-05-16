@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace S7codedesign\DExpress\Presentation\Admin\Pages;
 
+use S7codedesign\DExpress\Infrastructure\Options\OptionsRepository;
 use S7codedesign\DExpress\Infrastructure\Persistence\WpdbPackageProfileRepository;
 use S7codedesign\DExpress\Infrastructure\Persistence\WpdbSenderLocationRepository;
 
@@ -13,6 +14,7 @@ final class ShipmentsPage
         private readonly \wpdb $wpdb,
         private readonly WpdbPackageProfileRepository $profiles,
         private readonly WpdbSenderLocationRepository $senderLocations,
+        private readonly OptionsRepository $options,
     ) {}
 
     public function render(): void
@@ -21,44 +23,49 @@ final class ShipmentsPage
             wp_die(esc_html__('Nemate dozvolu.', 'dexpress-woocommerce'));
         }
 
-        $orders    = $this->getPendingOrders();
-        $profiles  = $this->profiles->findAll();
-        $locations = $this->senderLocations->findAll();
+        $orders          = $this->getPendingOrders();
+        $pendingShipments = $this->getPendingShipments();
+        $profiles         = $this->profiles->findAll();
+        $locations        = $this->senderLocations->findAll();
+
+        $pendingIds = array_column($pendingShipments, 'shipment_id');
+        $pendingBulkPrintUrl = !empty($pendingIds)
+            ? add_query_arg([
+                'page'         => 'dexpress-label',
+                'shipment_ids' => implode(',', $pendingIds),
+                'nonce'        => wp_create_nonce('dexpress_bulk_print'),
+            ], admin_url('admin.php'))
+            : '';
 
         wp_localize_script('dex-shipments', 'dexShipments', [
-            'ajaxUrl'        => admin_url('admin-ajax.php'),
-            'labelBaseUrl'   => admin_url('admin.php'),
-            'nonce'          => wp_create_nonce('dexpress_bulk_save_shipment'),
-            'sendNonce'      => wp_create_nonce('dexpress_bulk_send_shipment'),
-            'bulkPrintNonce' => wp_create_nonce('dexpress_bulk_print'),
+            'ajaxUrl'              => admin_url('admin-ajax.php'),
+            'labelBaseUrl'         => admin_url('admin.php'),
+            'nonce'                => wp_create_nonce('dexpress_bulk_save_shipment'),
+            'sendNonce'            => wp_create_nonce('dexpress_bulk_send_shipment'),
+            'bulkPrintNonce'       => wp_create_nonce('dexpress_bulk_print'),
+            'pendingBulkPrintUrl'  => $pendingBulkPrintUrl,
+            'defaultSelfDropOff'   => $this->options->getBool('shipment.default_self_drop_off') ? '1' : '0',
             'i18n'           => [
-                'saving'       => __('Kreiranje...', 'dexpress-woocommerce'),
-                'sending'      => __('Slanje...', 'dexpress-woocommerce'),
-                'saved'        => __('Kreirano', 'dexpress-woocommerce'),
-                'sent'         => __('Poslato', 'dexpress-woocommerce'),
-                'error'        => __('Greška', 'dexpress-woocommerce'),
-                'print'        => __('Štampaj', 'dexpress-woocommerce'),
-                'printAll'     => __('Štampaj sve etikete', 'dexpress-woocommerce'),
-                'sendAll'      => __('Pošalji D-Expressu', 'dexpress-woocommerce'),
-                'locationReq'  => __('Izaberite lokaciju pošiljaoca.', 'dexpress-woocommerce'),
-                'contentReq'   => __('Unesite sadržaj paketa.', 'dexpress-woocommerce'),
-                'weightReq'    => __('Masa mora biti veća od 0 za sve izabrane narudžbine.', 'dexpress-woocommerce'),
-                'noSelection'  => __('Izaberite bar jednu narudžbinu.', 'dexpress-woocommerce'),
-                'confirmSend'  => __('Pošaljite pošiljke D-Expressu? Ova akcija je nepovratna.', 'dexpress-woocommerce'),
-                'allDone'      => __('Sve pošiljke su kreirane.', 'dexpress-woocommerce'),
-                'partialDone'  => __('Neke pošiljke nisu mogle biti kreirane.', 'dexpress-woocommerce'),
-                'allSent'      => __('Sve pošiljke su poslate D-Expressu.', 'dexpress-woocommerce'),
-                'partialSent'  => __('Neke pošiljke nisu mogle biti poslate.', 'dexpress-woocommerce'),
-                'copyTracking' => __('Kopiraj kodove', 'dexpress-woocommerce'),
-                'copied'       => __('Kopirano!', 'dexpress-woocommerce'),
-                'orderNum'     => __('Narudžbina', 'dexpress-woocommerce'),
-                'customer'     => __('Kupac', 'dexpress-woocommerce'),
-                'tracking'     => __('Kod pošiljke', 'dexpress-woocommerce'),
-                'status'       => __('Status', 'dexpress-woocommerce'),
-                'actions'      => __('Akcije', 'dexpress-woocommerce'),
-                'sentCount'    => __('poslato', 'dexpress-woocommerce'),
-                'errorCount'   => __('greška', 'dexpress-woocommerce'),
-                'createdCount' => __('kreirano', 'dexpress-woocommerce'),
+                'saving'        => __('Kreiranje...', 'dexpress-woocommerce'),
+                'sending'       => __('Slanje...', 'dexpress-woocommerce'),
+                'saved'         => __('Kreirano', 'dexpress-woocommerce'),
+                'sent'          => __('Poslato', 'dexpress-woocommerce'),
+                'error'         => __('Greška', 'dexpress-woocommerce'),
+                'print'         => __('Štampaj', 'dexpress-woocommerce'),
+                'printAll'      => __('Štampaj sve etikete', 'dexpress-woocommerce'),
+                'sendAll'       => __('Pošalji D-Expressu', 'dexpress-woocommerce'),
+                'locationReq'   => __('Izaberite lokaciju pošiljaoca.', 'dexpress-woocommerce'),
+                'noSelection'   => __('Izaberite bar jednu narudžbinu.', 'dexpress-woocommerce'),
+                'confirmSend'   => __('Pošaljite pošiljke D-Expressu? Ova akcija je nepovratna.', 'dexpress-woocommerce'),
+                'allDone'       => __('Sve pošiljke su kreirane.', 'dexpress-woocommerce'),
+                'allSent'       => __('Sve pošiljke su poslate D-Expressu.', 'dexpress-woocommerce'),
+                'copyTracking'  => __('Kopiraj kodove', 'dexpress-woocommerce'),
+                'copied'        => __('Kopirano!', 'dexpress-woocommerce'),
+                'sentCount'     => __('poslato', 'dexpress-woocommerce'),
+                'errorCount'    => __('greška', 'dexpress-woocommerce'),
+                'createdCount'  => __('kreirano', 'dexpress-woocommerce'),
+                'confirmPendingSend' => __('Poslati sve čekajuće pošiljke D-Expressu? Ova akcija je nepovratna.', 'dexpress-woocommerce'),
+                'pendingAllSent'    => __('Sve pošiljke su poslate D-Expressu.', 'dexpress-woocommerce'),
             ],
         ]);
 
@@ -67,16 +74,30 @@ final class ShipmentsPage
         ?>
         <div class="wrap dex-shipments-wrap">
 
-            <div class="dex-page-header">
-                <div class="dex-page-header__left">
+            <div class="dex-page-header dex-page-header--shipments">
+                <div class="dex-page-header__brand">
+                    <img src="<?= esc_url(DEXPRESS_PLUGIN_URL . 'assets/images/Dexpress-logo.jpg') ?>"
+                         alt="D Express" class="dex-page-header__logo">
+                </div>
+                <div class="dex-page-header__intro">
                     <h1 class="dex-page-header__title"><?= esc_html__('Pošiljke', 'dexpress-woocommerce') ?></h1>
                     <p class="dex-page-header__subtitle">
                         <?= esc_html__('Kreirajte D-Express pošiljke za narudžbine na čekanju', 'dexpress-woocommerce') ?>
                     </p>
                 </div>
+                <?php if (!empty($orders)): ?>
+                <div class="dex-page-header__badge">
+                    <span class="dashicons dashicons-cart" aria-hidden="true"></span>
+                    <?= esc_html(sprintf(
+                        /* translators: %d: number of pending orders */
+                        _n('%d narudžbina', '%d narudžbine', count($orders), 'dexpress-woocommerce'),
+                        count($orders),
+                    )) ?>
+                </div>
+                <?php endif; ?>
             </div>
 
-            <?php if (empty($locations)): ?>
+<?php if (empty($locations)): ?>
             <div class="dex-notice dex-notice--warning" style="margin-bottom:var(--dex-space-5);">
                 <?= sprintf(
                     /* translators: %s: link to sender locations settings */
@@ -86,153 +107,253 @@ final class ShipmentsPage
             </div>
             <?php endif; ?>
 
+            <!-- ═══ PENDING SEND CARD ════════════════════════════════════ -->
+            <?php if (!empty($pendingShipments)): ?>
+            <div class="dex-card dex-pending-card" id="dex-pending-card">
+
+                <div class="dex-pending-card__header">
+                    <div class="dex-pending-card__hd-icon" aria-hidden="true">
+                        <span class="dashicons dashicons-upload"></span>
+                    </div>
+                    <div class="dex-pending-card__hd-text">
+                        <h2 class="dex-pending-card__title">
+                            <?= esc_html__('Čekaju slanje D-Expressu', 'dexpress-woocommerce') ?>
+                            <span class="dex-pending-card__count" id="dex-pending-count"><?= count($pendingShipments) ?></span>
+                        </h2>
+                        <p class="dex-pending-card__sub">
+                            <?= esc_html__('Pošiljke su spakovane i etikete su odštampane. Kada ste spremni, pošaljite ih D-Expressu.', 'dexpress-woocommerce') ?>
+                        </p>
+                    </div>
+                </div>
+
+                <div class="dex-pending-table-wrap">
+                    <table class="dex-pending-table">
+                        <thead>
+                            <tr>
+                                <th><?= esc_html__('Narudžbina', 'dexpress-woocommerce') ?></th>
+                                <th><?= esc_html__('Kupac', 'dexpress-woocommerce') ?></th>
+                                <th><?= esc_html__('Kod pošiljke', 'dexpress-woocommerce') ?></th>
+                                <th><?= esc_html__('Spakovano', 'dexpress-woocommerce') ?></th>
+                                <th><?= esc_html__('Etiketa', 'dexpress-woocommerce') ?></th>
+                                <th><?= esc_html__('Status', 'dexpress-woocommerce') ?></th>
+                            </tr>
+                        </thead>
+                        <tbody id="dex-pending-tbody">
+                            <?php foreach ($pendingShipments as $ps): ?>
+                            <tr class="dex-prow" id="dex-prow-<?= (int) $ps['shipment_id'] ?>"
+                                data-shipment-id="<?= (int) $ps['shipment_id'] ?>">
+                                <td>
+                                    <?php if ($ps['edit_url'] !== ''): ?>
+                                    <a href="<?= esc_url((string) $ps['edit_url']) ?>" target="_blank"
+                                       class="dex-prow__order">#<?= esc_html((string) $ps['order_number']) ?></a>
+                                    <?php else: ?>
+                                    <span class="dex-prow__order">#<?= esc_html((string) $ps['order_number']) ?></span>
+                                    <?php endif; ?>
+                                </td>
+                                <td class="dex-prow__customer"><?= esc_html((string) $ps['customer']) ?></td>
+                                <td class="dex-prow__track"><?= esc_html((string) $ps['tracking_code']) ?></td>
+                                <td class="dex-prow__date"><?= esc_html((string) $ps['created_at']) ?></td>
+                                <td>
+                                    <a href="<?= esc_url((string) $ps['label_url']) ?>" target="_blank"
+                                       class="dex-btn dex-btn--xs dex-btn--outline">
+                                        <span class="dashicons dashicons-printer" aria-hidden="true"></span>
+                                        <?= esc_html__('Štampaj', 'dexpress-woocommerce') ?>
+                                    </a>
+                                </td>
+                                <td class="dex-prow__status">
+                                    <span class="dex-badge dex-badge--neutral"><?= esc_html__('Čeka slanje', 'dexpress-woocommerce') ?></span>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="dex-pending-card__footer">
+                    <div class="dex-pending-card__progress" id="dex-pending-progress" hidden>
+                        <div class="dex-progress-bar">
+                            <div class="dex-progress-bar__fill" id="dex-pending-fill" style="width:0%"></div>
+                        </div>
+                        <span class="dex-progress-text" id="dex-pending-progress-text">0 / 0</span>
+                    </div>
+                    <div class="dex-pending-card__actions">
+                        <?php if ($pendingBulkPrintUrl !== ''): ?>
+                        <a href="<?= esc_url($pendingBulkPrintUrl) ?>" target="_blank"
+                           class="dex-btn dex-btn--outline" id="dex-pending-print-btn">
+                            <span class="dashicons dashicons-printer" aria-hidden="true"></span>
+                            <?= esc_html__('Štampaj sve etikete', 'dexpress-woocommerce') ?>
+                        </a>
+                        <?php endif; ?>
+                        <button type="button" class="dex-btn dex-btn--primary" id="dex-pending-send-btn">
+                            <span class="dashicons dashicons-upload" aria-hidden="true"></span>
+                            <?= esc_html(sprintf(
+                                /* translators: %d: number of pending shipments */
+                                __('Pošalji D-Expressu (%d)', 'dexpress-woocommerce'),
+                                count($pendingShipments),
+                            )) ?>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+            <?php endif; ?>
+
             <!-- ═══ CONFIG CARD ═══════════════════════════════════════════ -->
             <div class="dex-card dex-shipments-config" id="dex-config-card">
                 <div class="dex-shipments-config__header">
-                    <h2 class="dex-shipments-config__title">
-                        <?= esc_html__('Konfiguracija pošiljke', 'dexpress-woocommerce') ?>
-                    </h2>
-                    <p class="dex-shipments-config__subtitle">
-                        <?= esc_html__('Važi za sve izabrane narudžbine — možete prilagoditi po redu ispod.', 'dexpress-woocommerce') ?>
-                    </p>
-                </div>
-
-                <?php if (!empty($profiles)): ?>
-                <div class="dex-shipments-config__profiles">
-                    <span class="dex-config-profiles-label">
-                        <?= esc_html__('Profili paketa:', 'dexpress-woocommerce') ?>
-                    </span>
-                    <div class="dex-config-profiles-grid">
-                        <?php foreach ($profiles as $p):
-                            $dimXCm = $p['dim_x'] !== null ? round((float) $p['dim_x'] / 10, 1) : '';
-                            $dimYCm = $p['dim_y'] !== null ? round((float) $p['dim_y'] / 10, 1) : '';
-                            $dimZCm = $p['dim_z'] !== null ? round((float) $p['dim_z'] / 10, 1) : '';
-                        ?>
-                        <button type="button"
-                                class="dex-profile-btn<?= !empty($p['is_default']) ? ' dex-profile-btn--active' : '' ?>"
-                                data-weight-g="<?= (int) $p['weight_grams'] ?>"
-                                data-dim-x="<?= esc_attr((string) $dimXCm) ?>"
-                                data-dim-y="<?= esc_attr((string) $dimYCm) ?>"
-                                data-dim-z="<?= esc_attr((string) $dimZCm) ?>"
-                                data-content="<?= esc_attr((string) ($p['default_content'] ?? '')) ?>">
-                            <span class="dex-profile-btn__name"><?= esc_html((string) $p['name']) ?></span>
-                            <span class="dex-profile-btn__meta">
-                                <?php if ((int) $p['weight_grams'] > 0): ?>
-                                <?= esc_html(number_format((int) $p['weight_grams'] / 1000, 2, ',', '.') . ' kg') ?>
-                                <?php endif; ?>
-                                <?php if ($dimXCm !== '' && $dimYCm !== '' && $dimZCm !== ''): ?>
-                                · <?= esc_html($dimXCm . '×' . $dimYCm . '×' . $dimZCm . ' cm') ?>
-                                <?php endif; ?>
-                            </span>
-                        </button>
-                        <?php endforeach; ?>
+                    <div class="dex-shipments-config__hd-icon" aria-hidden="true">
+                        <span class="dashicons dashicons-archive"></span>
+                    </div>
+                    <div class="dex-shipments-config__hd-text">
+                        <h2 class="dex-shipments-config__title">
+                            <?= esc_html__('Konfiguracija pošiljke', 'dexpress-woocommerce') ?>
+                        </h2>
+                        <p class="dex-shipments-config__subtitle">
+                            <?= esc_html__('Podrazumevane vrednosti za sve narudžbine. Masu i dimenzije možete prilagoditi po redu ispod.', 'dexpress-woocommerce') ?>
+                        </p>
                     </div>
                 </div>
-                <?php endif; ?>
 
-                <div class="dex-config-form">
-                    <div class="dex-config-grid">
+                <div class="dex-shipments-config__body">
 
-                        <div class="dex-field">
-                            <label class="dex-field__label" for="dex-cfg-location">
-                                <?= esc_html__('Pošiljalac', 'dexpress-woocommerce') ?>
-                                <span class="dex-field__req" aria-hidden="true">*</span>
-                            </label>
-                            <select id="dex-cfg-location" class="dex-select">
-                                <option value="">— <?= esc_html__('izaberite', 'dexpress-woocommerce') ?> —</option>
-                                <?php foreach ($locations as $loc): ?>
-                                <option value="<?= (int) $loc['id'] ?>"<?= !empty($loc['is_default']) ? ' selected' : '' ?>>
-                                    <?= esc_html((string) $loc['name']) ?>
-                                    <?php if ((string) ($loc['town_name'] ?? '') !== ''): ?>
-                                    — <?= esc_html((string) $loc['town_name']) ?>
+                    <?php if (!empty($profiles)): ?>
+                    <div class="dex-shipments-config__left">
+                        <span class="dex-config-profiles-label">
+                            <span class="dashicons dashicons-screenoptions" aria-hidden="true"></span>
+                            <?= esc_html__('Profili paketa', 'dexpress-woocommerce') ?>
+                        </span>
+                        <div class="dex-config-profiles-grid">
+                            <?php foreach ($profiles as $p):
+                                $dimXCm = $p['dim_x'] !== null ? round((float) $p['dim_x'] / 10, 1) : '';
+                                $dimYCm = $p['dim_y'] !== null ? round((float) $p['dim_y'] / 10, 1) : '';
+                                $dimZCm = $p['dim_z'] !== null ? round((float) $p['dim_z'] / 10, 1) : '';
+                            ?>
+                            <button type="button"
+                                    class="dex-profile-btn<?= !empty($p['is_default']) ? ' dex-profile-btn--active' : '' ?>"
+                                    data-profile-id="<?= (int) $p['id'] ?>"
+                                    data-weight-g="<?= (int) $p['weight_grams'] ?>"
+                                    data-dim-x="<?= esc_attr((string) $dimXCm) ?>"
+                                    data-dim-y="<?= esc_attr((string) $dimYCm) ?>"
+                                    data-dim-z="<?= esc_attr((string) $dimZCm) ?>"
+                                    data-content="<?= esc_attr((string) ($p['default_content'] ?? '')) ?>">
+                                <span class="dex-profile-btn__name"><?= esc_html((string) $p['name']) ?></span>
+                                <span class="dex-profile-btn__meta">
+                                    <?php if ((int) $p['weight_grams'] > 0): ?>
+                                    <?= esc_html(number_format((int) $p['weight_grams'] / 1000, 2, ',', '.') . ' kg') ?>
                                     <?php endif; ?>
-                                </option>
-                                <?php endforeach; ?>
-                            </select>
+                                    <?php if ($dimXCm !== '' && $dimYCm !== '' && $dimZCm !== ''): ?>
+                                    · <?= esc_html($dimXCm . '×' . $dimYCm . '×' . $dimZCm . ' cm') ?>
+                                    <?php endif; ?>
+                                </span>
+                            </button>
+                            <?php endforeach; ?>
                         </div>
+                    </div>
+                    <?php endif; ?>
 
-                        <div class="dex-field">
-                            <label class="dex-field__label" for="dex-cfg-delivery">
-                                <?= esc_html__('Vrsta dostave', 'dexpress-woocommerce') ?>
-                            </label>
-                            <select id="dex-cfg-delivery" class="dex-select">
-                                <option value="2" selected><?= esc_html__('Standardna dostava', 'dexpress-woocommerce') ?></option>
-                                <option value="1"><?= esc_html__('Hitno (isti dan)', 'dexpress-woocommerce') ?></option>
-                            </select>
-                        </div>
+                    <div class="dex-shipments-config__right<?= empty($profiles) ? ' dex-shipments-config__right--full' : '' ?>">
+                        <div class="dex-config-form">
+                            <div class="dex-config-section">
+                            <div class="dex-config-grid">
 
-                        <div class="dex-field">
-                            <label class="dex-field__label" for="dex-cfg-payment">
-                                <?= esc_html__('Naplata dostave', 'dexpress-woocommerce') ?>
-                            </label>
-                            <select id="dex-cfg-payment" class="dex-select">
-                                <option value="2" selected><?= esc_html__('Faktura', 'dexpress-woocommerce') ?></option>
-                                <option value="1"><?= esc_html__('Gotovina', 'dexpress-woocommerce') ?></option>
-                            </select>
-                        </div>
+                                <div class="dex-field">
+                                    <label class="dex-field__label" for="dex-cfg-location">
+                                        <span class="dashicons dashicons-location" aria-hidden="true"></span>
+                                        <?= esc_html__('Odakle šaljemo', 'dexpress-woocommerce') ?>
+                                        <span class="dex-field__req" aria-hidden="true">*</span>
+                                    </label>
+                                    <select id="dex-cfg-location" class="dex-select">
+                                        <option value="">— <?= esc_html__('izaberite', 'dexpress-woocommerce') ?> —</option>
+                                        <?php foreach ($locations as $loc): ?>
+                                        <option value="<?= (int) $loc['id'] ?>"<?= !empty($loc['is_default']) ? ' selected' : '' ?>>
+                                            <?= esc_html((string) $loc['name']) ?>
+                                            <?php if ((string) ($loc['town_name'] ?? '') !== ''): ?>
+                                            — <?= esc_html((string) $loc['town_name']) ?>
+                                            <?php endif; ?>
+                                        </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
 
-                        <div class="dex-field">
-                            <label class="dex-field__label" for="dex-cfg-returndoc">
-                                <?= esc_html__('Povratna dokumentacija', 'dexpress-woocommerce') ?>
-                            </label>
-                            <select id="dex-cfg-returndoc" class="dex-select">
-                                <option value="0" selected><?= esc_html__('Bez povraćaja', 'dexpress-woocommerce') ?></option>
-                                <option value="1"><?= esc_html__('Povraćaj dokumenata', 'dexpress-woocommerce') ?></option>
-                                <option value="3"><?= esc_html__('Potvrda o isporuci (POD)', 'dexpress-woocommerce') ?></option>
-                            </select>
-                        </div>
+                                <div class="dex-field">
+                                    <label class="dex-field__label" for="dex-cfg-weight">
+                                        <span class="dashicons dashicons-image-flip-vertical" aria-hidden="true"></span>
+                                        <?= esc_html__('Masa (kg)', 'dexpress-woocommerce') ?>
+                                    </label>
+                                    <input type="number" id="dex-cfg-weight" class="dex-input dex-input--number"
+                                           step="0.01" min="0" placeholder="0.00">
+                                    <span class="dex-field__hint"><?= esc_html__('Masa ambalaže, sabira se sa artiklima.', 'dexpress-woocommerce') ?></span>
+                                </div>
 
-                        <div class="dex-field dex-field--span2">
-                            <label class="dex-field__label" for="dex-cfg-content">
-                                <?= esc_html__('Sadržaj paketa', 'dexpress-woocommerce') ?>
-                                <span class="dex-field__req" aria-hidden="true">*</span>
-                            </label>
-                            <input type="text" id="dex-cfg-content" class="dex-input" maxlength="50"
-                                   placeholder="<?= esc_attr__('npr. Odeća, Elektronika, Kozmetika...', 'dexpress-woocommerce') ?>">
-                        </div>
+                                <div class="dex-field">
+                                    <label class="dex-field__label">
+                                        <span class="dashicons dashicons-editor-expand" aria-hidden="true"></span>
+                                        <?= esc_html__('Dimenzije D×Š×V (cm)', 'dexpress-woocommerce') ?>
+                                    </label>
+                                    <div class="dex-dims-row">
+                                        <input type="number" id="dex-cfg-dim-x" class="dex-input dex-input--dim" step="0.1" min="0" placeholder="D">
+                                        <span class="dex-dims-sep">×</span>
+                                        <input type="number" id="dex-cfg-dim-y" class="dex-input dex-input--dim" step="0.1" min="0" placeholder="Š">
+                                        <span class="dex-dims-sep">×</span>
+                                        <input type="number" id="dex-cfg-dim-z" class="dex-input dex-input--dim" step="0.1" min="0" placeholder="V">
+                                    </div>
+                                    <span class="dex-field__hint"><?= esc_html__('Spoljašnje dimenzije ambalaže.', 'dexpress-woocommerce') ?></span>
+                                </div>
 
-                        <div class="dex-field dex-field--span2">
-                            <label class="dex-field__label" for="dex-cfg-note">
-                                <?= esc_html__('Napomena', 'dexpress-woocommerce') ?>
-                            </label>
-                            <input type="text" id="dex-cfg-note" class="dex-input" maxlength="150"
-                                   placeholder="<?= esc_attr__('opciono', 'dexpress-woocommerce') ?>">
-                        </div>
+                                <div class="dex-field">
+                                    <label class="dex-field__label" for="dex-cfg-content">
+                                        <span class="dashicons dashicons-tag" aria-hidden="true"></span>
+                                        <?= esc_html__('Sadržaj paketa', 'dexpress-woocommerce') ?>
+                                        <span class="dex-field__req" aria-hidden="true">*</span>
+                                    </label>
+                                    <input type="text" id="dex-cfg-content" class="dex-input" maxlength="50"
+                                           placeholder="<?= esc_attr__('npr. Odeća, Elektronika...', 'dexpress-woocommerce') ?>">
+                                </div>
 
-                        <div class="dex-field">
-                            <label class="dex-field__label" for="dex-cfg-weight">
-                                <?= esc_html__('Masa (kg)', 'dexpress-woocommerce') ?>
-                            </label>
-                            <input type="number" id="dex-cfg-weight" class="dex-input dex-input--number"
-                                   step="0.01" min="0.01" placeholder="0.50">
-                        </div>
+                                <div class="dex-field">
+                                    <label class="dex-field__label" for="dex-cfg-note">
+                                        <span class="dashicons dashicons-edit" aria-hidden="true"></span>
+                                        <?= esc_html__('Napomena', 'dexpress-woocommerce') ?>
+                                    </label>
+                                    <input type="text" id="dex-cfg-note" class="dex-input" maxlength="150"
+                                           placeholder="<?= esc_attr__('opciono', 'dexpress-woocommerce') ?>">
+                                </div>
 
-                        <div class="dex-field">
-                            <label class="dex-field__label">
-                                <?= esc_html__('Dimenzije D×Š×V (cm)', 'dexpress-woocommerce') ?>
-                            </label>
-                            <div class="dex-dims-row">
-                                <input type="number" id="dex-cfg-dim-x" class="dex-input dex-input--dim" step="0.1" min="0" placeholder="D">
-                                <span class="dex-dims-sep">×</span>
-                                <input type="number" id="dex-cfg-dim-y" class="dex-input dex-input--dim" step="0.1" min="0" placeholder="Š">
-                                <span class="dex-dims-sep">×</span>
-                                <input type="number" id="dex-cfg-dim-z" class="dex-input dex-input--dim" step="0.1" min="0" placeholder="V">
+                                <div class="dex-field">
+                                    <span class="dex-field__label">
+                                        <?= esc_html__('Način predaje', 'dexpress-woocommerce') ?>
+                                    </span>
+                                    <div class="dex-dm">
+                                        <label class="dex-dm__opt" for="dex-dm-courier">
+                                            <input type="radio" id="dex-dm-courier" name="dex_delivery_mode"
+                                                   class="dex-dm__input" value="0"
+                                                   <?= !$this->options->getBool('shipment.default_self_drop_off') ? 'checked' : '' ?>>
+                                            <span class="dex-dm__card">
+                                                <span class="dex-dm__icon dashicons dashicons-location" aria-hidden="true"></span>
+                                                <span class="dex-dm__title"><?= esc_html__('Kurir dolazi', 'dexpress-woocommerce') ?></span>
+                                                <span class="dex-dm__sub"><?= esc_html__('na moju adresu', 'dexpress-woocommerce') ?></span>
+                                            </span>
+                                        </label>
+                                        <label class="dex-dm__opt" for="dex-cfg-self-drop-off">
+                                            <input type="radio" id="dex-cfg-self-drop-off" name="dex_delivery_mode"
+                                                   class="dex-dm__input" value="1"
+                                                   <?= $this->options->getBool('shipment.default_self_drop_off') ? 'checked' : '' ?>>
+                                            <span class="dex-dm__card">
+                                                <span class="dex-dm__icon dashicons dashicons-store" aria-hidden="true"></span>
+                                                <span class="dex-dm__title"><?= esc_html__('Sam donosim', 'dexpress-woocommerce') ?></span>
+                                                <span class="dex-dm__sub"><?= esc_html__('u D-Express', 'dexpress-woocommerce') ?></span>
+                                            </span>
+                                        </label>
+                                    </div>
+                                </div>
+
                             </div>
-                        </div>
+                            </div><!-- /.dex-config-section -->
 
-                        <div class="dex-field dex-field--checkbox-row">
-                            <label class="dex-checkbox-label">
-                                <input type="checkbox" id="dex-cfg-selfdrop">
-                                <span><?= esc_html__('Samopredaja', 'dexpress-woocommerce') ?></span>
-                            </label>
-                            <span class="dex-field__hint">
-                                <?= esc_html__('Pošiljalac sam donosi pošiljku u depo', 'dexpress-woocommerce') ?>
-                            </span>
+                            <div class="dex-config-errors" id="dex-config-errors" hidden></div>
                         </div>
-
                     </div>
 
-                    <div class="dex-config-errors" id="dex-config-errors" hidden></div>
                 </div>
             </div>
 
@@ -253,16 +374,15 @@ final class ShipmentsPage
             <div class="dex-card dex-shipments-orders" id="dex-orders-card">
 
                 <div class="dex-orders-header">
-                    <label class="dex-select-all-label">
-                        <input type="checkbox" id="dex-select-all">
-                        <span id="dex-selected-label">
-                            <?= esc_html(sprintf(
-                                /* translators: %d: number of orders */
-                                __('Narudžbine za slanje (%d)', 'dexpress-woocommerce'),
-                                count($orders),
-                            )) ?>
-                        </span>
-                    </label>
+                    <div class="dex-orders-header__left">
+                        <label class="dex-select-all-label">
+                            <input type="checkbox" id="dex-select-all">
+                        </label>
+                        <div class="dex-orders-header__meta">
+                            <span class="dex-orders-header__title"><?= esc_html__('Narudžbine za slanje', 'dexpress-woocommerce') ?></span>
+                            <span class="dex-orders-header__count" id="dex-selected-label"><?= count($orders) ?></span>
+                        </div>
+                    </div>
 
                     <div class="dex-filter-tabs" id="dex-filter-tabs">
                         <button type="button" class="dex-filter-tab dex-filter-tab--active" data-filter="all">
@@ -271,12 +391,14 @@ final class ShipmentsPage
                         </button>
                         <?php if ($codCount > 0): ?>
                         <button type="button" class="dex-filter-tab" data-filter="cod">
+                            <span class="dex-filter-tab__dot dex-filter-tab__dot--cod"></span>
                             <?= esc_html__('Pouzećem', 'dexpress-woocommerce') ?>
                             <span class="dex-filter-tab__count"><?= $codCount ?></span>
                         </button>
                         <?php endif; ?>
                         <?php if ($shopCount > 0): ?>
                         <button type="button" class="dex-filter-tab" data-filter="shop">
+                            <span class="dex-filter-tab__dot dex-filter-tab__dot--shop"></span>
                             <?= esc_html__('Paket Shop', 'dexpress-woocommerce') ?>
                             <span class="dex-filter-tab__count"><?= $shopCount ?></span>
                         </button>
@@ -284,71 +406,86 @@ final class ShipmentsPage
                     </div>
                 </div>
 
-                <div class="dex-orders-list" id="dex-orders-list">
+                <div class="dex-orders-grid" id="dex-orders-grid">
                     <?php foreach ($orders as $o): ?>
-                    <div class="dex-order-row<?= $o['is_shop'] ? ' dex-order-row--shop' : '' ?>"
+                    <div class="dex-order-card<?= $o['is_shop'] ? ' dex-order-card--shop' : '' ?>"
                          data-id="<?= (int) $o['id'] ?>"
+                         data-number="<?= esc_attr((string) $o['number']) ?>"
+                         data-customer="<?= esc_attr($o['customer']) ?>"
                          data-cod="<?= $o['payment_method'] === 'cod' ? '1' : '0' ?>"
                          data-shop="<?= $o['is_shop'] ? '1' : '0' ?>"
                          data-product-weight-kg="<?= esc_attr($o['weight_g'] > 0 ? number_format($o['weight_g'] / 1000, 3, '.', '') : '0') ?>"
                          data-content-suggestion="<?= esc_attr($o['content_suggestion']) ?>">
 
-                        <div class="dex-order-row__check">
-                            <input type="checkbox" class="dex-order-cb" value="<?= (int) $o['id'] ?>">
-                        </div>
-
-                        <div class="dex-order-row__body">
-
-                            <div class="dex-order-row__info">
-                                <div class="dex-order-row__head">
+                        <!-- ── Naglavak kartice ───────────────────────────────────── -->
+                        <div class="dex-order-card__header">
+                            <label class="dex-order-card__check-wrap">
+                                <input type="checkbox" class="dex-order-cb" value="<?= (int) $o['id'] ?>">
+                            </label>
+                            <div class="dex-order-card__hinfo">
+                                <div class="dex-order-card__num-row">
                                     <a href="<?= esc_url((string) $o['edit_url']) ?>"
-                                       class="dex-order-row__number"
+                                       class="dex-order-card__number"
                                        target="_blank">#<?= esc_html((string) $o['number']) ?></a>
-                                    <span class="dex-order-row__customer"><?= esc_html((string) $o['customer']) ?></span>
-                                    <div class="dex-order-row__badges">
-                                        <?php if ($o['payment_method'] === 'cod'): ?>
-                                        <span class="dex-badge dex-badge--warning"><?= esc_html__('Pouzećem', 'dexpress-woocommerce') ?></span>
-                                        <?php elseif ($o['is_paid']): ?>
-                                        <span class="dex-badge dex-badge--success"><?= esc_html__('Plaćeno', 'dexpress-woocommerce') ?></span>
-                                        <?php endif; ?>
-                                        <?php if ($o['is_shop']): ?>
-                                        <span class="dex-badge dex-badge--info"><?= esc_html__('Paket Shop', 'dexpress-woocommerce') ?></span>
-                                        <span class="dex-badge dex-badge--muted"><?= esc_html__('Bez povraćaja', 'dexpress-woocommerce') ?></span>
-                                        <?php endif; ?>
-                                    </div>
-                                </div>
-
-                                <div class="dex-order-row__meta">
-                                    <?php if ($o['shipping_address'] !== ''): ?>
-                                    <span class="dex-order-meta-item">
-                                        <span class="dex-order-meta-label"><?= esc_html__('Adresa:', 'dexpress-woocommerce') ?></span>
-                                        <?= esc_html((string) $o['shipping_address']) ?>
-                                    </span>
-                                    <?php endif; ?>
-                                    <span class="dex-order-meta-item dex-order-meta-item--total">
-                                        <?= esc_html((string) $o['order_total']) ?>
-                                    </span>
-                                    <?php if (!empty($o['items'])): ?>
-                                    <span class="dex-order-meta-item dex-order-meta-item--items">
-                                        <?php foreach ($o['items'] as $idx => $item): ?>
-                                        <?php if ($idx > 0): ?>, <?php endif; ?>
-                                        <?php if ($item['qty'] > 0): ?><?= (int) $item['qty'] ?>× <?php endif; ?><?= esc_html((string) $item['name']) ?>
-                                        <?php endforeach; ?>
-                                    </span>
+                                    <?php if ($o['is_shop']): ?>
+                                    <span class="dex-order-card__type-badge dex-order-card__type-badge--shop">Paket Shop</span>
                                     <?php endif; ?>
                                 </div>
                             </div>
+                        </div>
 
-                            <div class="dex-order-row__fields">
+                        <!-- ── Primalac (adresa) ──────────────────────────────────── -->
+                        <div class="dex-order-card__recipient">
+                            <div class="dex-order-card__customer"><?= esc_html((string) $o['customer']) ?></div>
+                            <?php if ($o['shipping_address'] !== ''): ?>
+                            <div class="dex-order-card__address">
+                                <span class="dashicons dashicons-location" aria-hidden="true"></span><?= esc_html((string) $o['shipping_address']) ?>
+                            </div>
+                            <?php endif; ?>
+                            <?php if ($o['customer_phone'] !== ''): ?>
+                            <div class="dex-order-card__phone">
+                                <span class="dashicons dashicons-smartphone" aria-hidden="true"></span><?= esc_html((string) $o['customer_phone']) ?>
+                            </div>
+                            <?php endif; ?>
+
+                            <div class="dex-order-card__financials">
+                                <?php if ($o['payment_method'] === 'cod'): ?>
+                                <div class="dex-order-card__cod">
+                                    <span class="dex-order-card__cod-label"><?= esc_html__('Otkupnina', 'dexpress-woocommerce') ?></span>
+                                    <span class="dex-order-card__cod-amount"><?= esc_html((string) $o['order_total']) ?></span>
+                                </div>
+                                <?php else: ?>
+                                <div class="dex-order-card__paid">
+                                    <span class="dashicons dashicons-yes-alt" aria-hidden="true"></span>
+                                    <?= esc_html__('Plaćeno online', 'dexpress-woocommerce') ?>
+                                    <span class="dex-order-card__paid-amount"><?= esc_html((string) $o['order_total']) ?></span>
+                                </div>
+                                <?php endif; ?>
+                            </div>
+
+                            <?php if (!empty($o['items'])): ?>
+                            <div class="dex-order-card__items">
+                                <?php foreach ($o['items'] as $idx => $item): ?>
+                                <?php if ($idx > 0): ?>, <?php endif; ?>
+                                <?php if ($item['qty'] > 0): ?><?= (int) $item['qty'] ?>× <?php endif; ?><?= esc_html((string) $item['name']) ?>
+                                <?php endforeach; ?>
+                            </div>
+                            <?php endif; ?>
+                        </div>
+
+                        <!-- ── Polja za unos ──────────────────────────────────────── -->
+                        <div class="dex-order-card__fields">
+                            <div class="dex-card-valerr" hidden></div>
+                            <div class="dex-order-card__fields-row">
                                 <div class="dex-row-fg">
                                     <label class="dex-row-fg__label"><?= esc_html__('Masa (kg)', 'dexpress-woocommerce') ?></label>
                                     <input type="number"
                                            class="dex-input dex-input--number dex-row-weight"
-                                           step="0.01" min="0.01"
+                                           step="0.01" min="0"
                                            value="<?= $o['weight_g'] > 0 ? esc_attr(number_format($o['weight_g'] / 1000, 2, '.', '')) : '' ?>"
                                            placeholder="0.50">
                                 </div>
-                                <div class="dex-row-fg dex-row-fg--dims">
+                                <div class="dex-row-fg">
                                     <label class="dex-row-fg__label"><?= esc_html__('D×Š×V (cm)', 'dexpress-woocommerce') ?></label>
                                     <div class="dex-dims-row">
                                         <input type="number" class="dex-input dex-input--dim dex-row-dim-x" step="0.1" min="0" placeholder="D">
@@ -358,24 +495,24 @@ final class ShipmentsPage
                                         <input type="number" class="dex-input dex-input--dim dex-row-dim-z" step="0.1" min="0" placeholder="V">
                                     </div>
                                 </div>
-                                <div class="dex-row-fg dex-row-fg--content">
-                                    <label class="dex-row-fg__label"><?= esc_html__('Sadržaj', 'dexpress-woocommerce') ?></label>
-                                    <input type="text" class="dex-input dex-row-content" maxlength="50"
-                                           value="<?= esc_attr($o['content_suggestion']) ?>"
-                                           placeholder="<?= esc_attr__('Sadržaj paketa', 'dexpress-woocommerce') ?>">
-                                </div>
-                                <div class="dex-row-fg dex-row-fg--note">
-                                    <label class="dex-row-fg__label"><?= esc_html__('Napomena', 'dexpress-woocommerce') ?></label>
-                                    <input type="text" class="dex-input dex-row-note" maxlength="150"
-                                           placeholder="<?= esc_attr__('opciono', 'dexpress-woocommerce') ?>">
-                                </div>
                                 <div class="dex-row-fg dex-row-fg--reset">
                                     <button type="button" class="dex-row-reset"
                                             title="<?= esc_attr__('Resetuj na podrazumevane vrednosti', 'dexpress-woocommerce') ?>">↺</button>
                                 </div>
                             </div>
-
+                            <div class="dex-row-fg dex-row-fg--content">
+                                <label class="dex-row-fg__label"><?= esc_html__('Sadržaj', 'dexpress-woocommerce') ?></label>
+                                <input type="text" class="dex-input dex-row-content" maxlength="50"
+                                       value="<?= esc_attr($o['content_suggestion']) ?>"
+                                       placeholder="<?= esc_attr__('Sadržaj paketa', 'dexpress-woocommerce') ?>">
+                            </div>
+                            <div class="dex-row-fg dex-row-fg--note">
+                                <label class="dex-row-fg__label"><?= esc_html__('Napomena', 'dexpress-woocommerce') ?></label>
+                                <input type="text" class="dex-input dex-row-note" maxlength="150"
+                                       placeholder="<?= esc_attr__('opciono', 'dexpress-woocommerce') ?>">
+                            </div>
                         </div>
+
                     </div>
                     <?php endforeach; ?>
                 </div>
@@ -387,16 +524,98 @@ final class ShipmentsPage
                     <?= esc_html__('Izaberite narudžbine za kreiranje pošiljki', 'dexpress-woocommerce') ?>
                 </span>
                 <button type="button" class="dex-btn dex-btn--primary" id="dex-create-btn" disabled>
-                    <?= esc_html__('Kreiraj pošiljke', 'dexpress-woocommerce') ?>
+                    <?= esc_html__('Pregledaj →', 'dexpress-woocommerce') ?>
                 </button>
             </div>
             <?php endif; ?>
 
-            <!-- ═══ RESULTS SECTION (hidden initially) ═══════════════════ -->
+            <!-- ═══ PREVIEW SECTION (step 2) ══════════════════════════════ -->
+            <div class="dex-card dex-shipments-preview" id="dex-preview-section" hidden>
+
+                <div class="dex-preview-header">
+                    <div class="dex-preview-header__text">
+                        <h2 class="dex-preview-header__title" id="dex-preview-title">
+                            <?= esc_html__('Pregled pošiljki', 'dexpress-woocommerce') ?>
+                        </h2>
+                        <p class="dex-preview-header__sub">
+                            <?= esc_html__('Proverite podatke. Nakon pakovanja i štampanja etiketa, šaljete D-Expressu.', 'dexpress-woocommerce') ?>
+                        </p>
+                    </div>
+                    <div class="dex-preview-header__steps">
+                        <span class="dex-step dex-step--done">
+                            <span class="dex-step__num">1</span>
+                            <?= esc_html__('Odabir', 'dexpress-woocommerce') ?>
+                        </span>
+                        <span class="dex-step dex-step--active">
+                            <span class="dex-step__num">2</span>
+                            <?= esc_html__('Pregled', 'dexpress-woocommerce') ?>
+                        </span>
+                        <span class="dex-step">
+                            <span class="dex-step__num">3</span>
+                            <?= esc_html__('Pakuj &amp; Štampaj', 'dexpress-woocommerce') ?>
+                        </span>
+                        <span class="dex-step">
+                            <span class="dex-step__num">4</span>
+                            <?= esc_html__('Pošalji', 'dexpress-woocommerce') ?>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="dex-preview-table-wrap">
+                    <table class="dex-preview-table">
+                        <thead>
+                            <tr>
+                                <th><?= esc_html__('Narudžbina', 'dexpress-woocommerce') ?></th>
+                                <th><?= esc_html__('Kupac', 'dexpress-woocommerce') ?></th>
+                                <th><?= esc_html__('Masa', 'dexpress-woocommerce') ?></th>
+                                <th><?= esc_html__('Dimenzije (cm)', 'dexpress-woocommerce') ?></th>
+                                <th><?= esc_html__('Sadržaj', 'dexpress-woocommerce') ?></th>
+                                <th><?= esc_html__('Predaja', 'dexpress-woocommerce') ?></th>
+                                <th><?= esc_html__('Plaćanje', 'dexpress-woocommerce') ?></th>
+                            </tr>
+                        </thead>
+                        <tbody id="dex-preview-tbody"></tbody>
+                    </table>
+                </div>
+
+                <div class="dex-preview-footer">
+                    <button type="button" class="dex-btn dex-btn--ghost" id="dex-preview-back-btn">
+                        <span class="dashicons dashicons-arrow-left-alt" aria-hidden="true"></span>
+                        <?= esc_html__('Izmeni', 'dexpress-woocommerce') ?>
+                    </button>
+                    <button type="button" class="dex-btn dex-btn--primary" id="dex-proceed-btn">
+                        <?= esc_html__('Pakuj i štampaj', 'dexpress-woocommerce') ?>
+                    </button>
+                </div>
+
+            </div>
+
+            <!-- ═══ RESULTS SECTION (step 3+4) ═══════════════════════════ -->
             <div class="dex-card dex-shipments-results" id="dex-results-section" hidden>
 
                 <div class="dex-results-header">
-                    <h2 class="dex-results-header__title" id="dex-results-title"></h2>
+                    <div class="dex-results-header__text">
+                        <h2 class="dex-results-header__title" id="dex-results-title"></h2>
+                    </div>
+                    <div class="dex-preview-header__steps" id="dex-results-steps">
+                        <span class="dex-step dex-step--done">
+                            <span class="dex-step__num">1</span>
+                            <?= esc_html__('Odabir', 'dexpress-woocommerce') ?>
+                        </span>
+                        <span class="dex-step dex-step--done">
+                            <span class="dex-step__num">2</span>
+                            <?= esc_html__('Pregled', 'dexpress-woocommerce') ?>
+                        </span>
+                        <span class="dex-step dex-step--active" id="dex-step-3">
+                            <span class="dex-step__num">3</span>
+                            <?= esc_html__('Pakuj &amp; Štampaj', 'dexpress-woocommerce') ?>
+                        </span>
+                        <span class="dex-step" id="dex-step-4">
+                            <span class="dex-step__num">4</span>
+                            <?= esc_html__('Pošalji', 'dexpress-woocommerce') ?>
+                        </span>
+                    </div>
+                    <ul class="dex-results-errs" id="dex-results-errs" hidden></ul>
                 </div>
 
                 <div class="dex-results-progress" id="dex-results-progress">
@@ -486,7 +705,7 @@ final class ShipmentsPage
 
         $wcOrders = wc_get_orders([
             'include' => array_map('intval', $orderIds),
-            'status'  => ['processing'],
+            'status'  => ['processing', 'on-hold'],
             'limit'   => -1,
             'orderby' => 'date',
             'order'   => 'DESC',
@@ -636,6 +855,105 @@ final class ShipmentsPage
                 'items'              => $items,
                 'weight_g'           => $weightG,
                 'content_suggestion' => $contentSuggestion,
+            ];
+        }
+
+        return $result;
+    }
+
+    /**
+     * Shipments saved to DB (pending_send) but not yet sent to the D-Express API.
+     * Used to build the persistent "Čekaju slanje" card on page load.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function getPendingShipments(): array
+    {
+        $shipmentsTable = $this->wpdb->prefix . 'dexpress_shipments';
+
+        $packagesTable = $this->wpdb->prefix . 'dexpress_packages';
+        $ordersTable   = $this->wpdb->prefix . 'wc_orders';
+        $useHpos       = class_exists(\Automattic\WooCommerce\Utilities\OrderUtil::class)
+            && \Automattic\WooCommerce\Utilities\OrderUtil::custom_orders_table_usage_is_enabled();
+
+        if ($useHpos) {
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+            $rows = $this->wpdb->get_results(
+                "SELECT s.id, s.order_id, s.created_at,
+                        (SELECT MIN(pk.code) FROM `{$packagesTable}` pk WHERE pk.shipment_id = s.id) AS tracking_code
+                 FROM `{$shipmentsTable}` s
+                 INNER JOIN `{$ordersTable}` o ON o.id = s.order_id
+                 WHERE s.send_status = 'pending_send' AND s.deleted_at IS NULL
+                   AND o.status IN ('wc-processing','wc-on-hold')
+                 ORDER BY s.created_at ASC
+                 LIMIT 200",
+                ARRAY_A,
+            );
+        } else {
+            $postTable = $this->wpdb->prefix . 'posts';
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+            $rows = $this->wpdb->get_results(
+                "SELECT s.id, s.order_id, s.created_at,
+                        (SELECT MIN(pk.code) FROM `{$packagesTable}` pk WHERE pk.shipment_id = s.id) AS tracking_code
+                 FROM `{$shipmentsTable}` s
+                 INNER JOIN `{$postTable}` p ON p.ID = s.order_id
+                 WHERE s.send_status = 'pending_send' AND s.deleted_at IS NULL
+                   AND p.post_status IN ('wc-processing','wc-on-hold')
+                 ORDER BY s.created_at ASC
+                 LIMIT 200",
+                ARRAY_A,
+            );
+        }
+
+        if (empty($rows)) {
+            return [];
+        }
+
+        $orderIds = array_unique(array_map(static fn($r) => (int) $r['order_id'], $rows));
+
+        $wcOrders = wc_get_orders(['include' => $orderIds, 'limit' => -1]);
+
+        $orderMap = [];
+        foreach ($wcOrders as $order) {
+            $orderMap[$order->get_id()] = $order;
+        }
+
+        $hpos = class_exists(\Automattic\WooCommerce\Utilities\OrderUtil::class)
+            && \Automattic\WooCommerce\Utilities\OrderUtil::custom_orders_table_usage_is_enabled();
+
+        $result = [];
+        foreach ($rows as $row) {
+            $shipmentId = (int) $row['id'];
+            $orderId    = (int) $row['order_id'];
+            $order      = $orderMap[$orderId] ?? null;
+
+            $customer = '';
+            $editUrl  = '';
+            if ($order !== null) {
+                $fn       = (string) $order->get_billing_first_name();
+                $ln       = (string) $order->get_billing_last_name();
+                $customer = trim("{$fn} {$ln}") ?: (string) $order->get_billing_company();
+                $editUrl  = $hpos
+                    ? admin_url('admin.php?page=wc-orders&action=edit&id=' . $orderId)
+                    : admin_url('post.php?post=' . $orderId . '&action=edit');
+            }
+
+            $ts        = !empty($row['created_at']) ? strtotime((string) $row['created_at']) : 0;
+            $createdAt = $ts > 0 ? (string) wp_date('d.m. H:i', $ts) : '';
+
+            $result[] = [
+                'shipment_id'   => $shipmentId,
+                'order_id'      => $orderId,
+                'order_number'  => $order ? (string) $order->get_order_number() : (string) $orderId,
+                'customer'      => $customer,
+                'tracking_code' => (string) ($row['tracking_code'] ?? ''),
+                'created_at'    => $createdAt,
+                'edit_url'      => $editUrl,
+                'label_url'     => add_query_arg([
+                    'page'        => 'dexpress-label',
+                    'shipment_id' => $shipmentId,
+                    'nonce'       => wp_create_nonce('dexpress_print_label_' . $shipmentId),
+                ], admin_url('admin.php')),
             ];
         }
 

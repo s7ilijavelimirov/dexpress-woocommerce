@@ -114,14 +114,11 @@ final class PrintLabelController
 
     $shipmentId = (int) ($_GET['shipment_id'] ?? 0);
     $nonce      = sanitize_text_field($_GET['nonce'] ?? '');
-    $layoutRaw  = (string) ($_GET['layout'] ?? '2');
-    // Backward compatibility: old "6-up" layout maps to the new 4-up A4 grid.
-    if ($layoutRaw === '6') {
-      $layoutRaw = '4';
-    }
-    $perSheet = in_array($layoutRaw, ['1', '2', '4'], true)
-      ? (int) $layoutRaw
-      : 2;
+    $layoutRaw = (string) ($_GET['layout'] ?? '2');
+    // Backward compat: old 1-up and 6-up URLs fall back to sensible defaults.
+    if ($layoutRaw === '1') { $layoutRaw = '2'; }
+    if ($layoutRaw === '6') { $layoutRaw = '4'; }
+    $perSheet = in_array($layoutRaw, ['2', '4'], true) ? (int) $layoutRaw : 2;
 
     if ($shipmentId <= 0 || !wp_verify_nonce($nonce, 'dexpress_print_label_' . $shipmentId)) {
       wp_die(__('Nevažeći zahtev.', 'dexpress-woocommerce'), '', ['response' => 403]);
@@ -170,7 +167,6 @@ final class PrintLabelController
       sCityLine: $d['sCityLine'],
       sPhone: $d['sPhone'],
       perSheet: $perSheet,
-      urlLayout1: add_query_arg('layout', '1', $basePrintUrl),
       urlLayout2: add_query_arg('layout', '2', $basePrintUrl),
       urlLayout4: add_query_arg('layout', '4', $basePrintUrl),
       compact: $d['compact'],
@@ -345,7 +341,7 @@ final class PrintLabelController
 
     $compact = $perSheet >= 4;
     $bw      = $perSheet >= 4 ? 1 : 2;
-    $bh      = $perSheet === 1 ? 70 : ($perSheet === 2 ? 58 : 42);
+    $bh      = $perSheet === 2 ? 58 : 42;
 
     $packageLabels = [];
     foreach ($packages as $pkg) {
@@ -407,12 +403,7 @@ final class PrintLabelController
   {
     $perSheet   = (int) $d['perSheet'];
     $compact    = (bool) $d['compact'];
-    $layoutClass = match ($perSheet) {
-      1       => 'sheet--1',
-      4       => 'sheet--4',
-      6       => 'sheet--6',
-      default => 'sheet--2',
-    };
+    $layoutClass = $perSheet === 4 ? 'sheet--4' : 'sheet--2';
     $innerClass = $compact ? 'label-card label-card--compact' : 'label-card';
 
     /** @var list<array{code:string,svg:string,ordinal:int,massKg:string,contentNote:string}> $packageLabels */
@@ -563,7 +554,6 @@ final class PrintLabelController
     string $sCityLine,
     string $sPhone,
     int $perSheet,
-    string $urlLayout1,
     string $urlLayout2,
     string $urlLayout4,
     bool $compact,
@@ -582,11 +572,15 @@ final class PrintLabelController
     <body>
 
       <div class="toolbar no-print">
-        <button type="button" onclick="window.print()"><?php esc_html_e('Štampaj', 'dexpress-woocommerce'); ?></button>
-        <button type="button" class="secondary" onclick="window.close()"><?php esc_html_e('Zatvori', 'dexpress-woocommerce'); ?></button>
-        <a href="<?php echo esc_url($urlLayout1); ?>" class="<?php echo $perSheet === 1 ? 'active-layout' : ''; ?>"><?php esc_html_e('A4 — 1 nalepnica', 'dexpress-woocommerce'); ?></a>
-        <a href="<?php echo esc_url($urlLayout2); ?>" class="<?php echo $perSheet === 2 ? 'active-layout' : ''; ?>"><?php esc_html_e('A4 — 2 nalepnice', 'dexpress-woocommerce'); ?></a>
-        <a href="<?php echo esc_url($urlLayout4); ?>" class="secondary <?php echo $perSheet === 4 ? 'active-layout' : ''; ?>"><?php esc_html_e('A4 — 4 nalepnice', 'dexpress-woocommerce'); ?></a>
+        <div class="toolbar__brand">
+          <img src="<?php echo esc_url(DEXPRESS_PLUGIN_URL . 'assets/images/Dexpress-logo.jpg'); ?>" alt="D Express" class="toolbar__logo">
+        </div>
+        <div class="toolbar__actions">
+          <button type="button" class="tlb-btn tlb-btn--primary" onclick="window.print()"><?php esc_html_e('Štampaj', 'dexpress-woocommerce'); ?></button>
+          <a href="<?php echo esc_url($urlLayout2); ?>" class="tlb-btn<?php echo $perSheet === 2 ? ' tlb-btn--active' : ''; ?>"><?php esc_html_e('2 nalepnice', 'dexpress-woocommerce'); ?></a>
+          <a href="<?php echo esc_url($urlLayout4); ?>" class="tlb-btn<?php echo $perSheet === 4 ? ' tlb-btn--active' : ''; ?>"><?php esc_html_e('4 nalepnice', 'dexpress-woocommerce'); ?></a>
+          <button type="button" class="tlb-btn tlb-btn--ghost" onclick="window.close()"><?php esc_html_e('Zatvori', 'dexpress-woocommerce'); ?></button>
+        </div>
       </div>
 
       <?php
@@ -651,7 +645,9 @@ final class PrintLabelController
     }
 
     $layoutRaw = (string) ($_GET['layout'] ?? '2');
-    $perSheet  = in_array($layoutRaw, ['1', '2', '4', '6'], true) ? (int) $layoutRaw : 2;
+    if ($layoutRaw === '1') { $layoutRaw = '2'; }
+    if ($layoutRaw === '6') { $layoutRaw = '4'; }
+    $perSheet  = in_array($layoutRaw, ['2', '4'], true) ? (int) $layoutRaw : 2;
 
     $shipmentsData = [];
     foreach ($shipmentIds as $sid) {
@@ -678,10 +674,8 @@ final class PrintLabelController
       'nonce'        => $nonce,
     ], admin_url('admin.php'));
 
-    $urlL1 = add_query_arg('layout', '1', $baseUrl);
     $urlL2 = add_query_arg('layout', '2', $baseUrl);
     $urlL4 = add_query_arg('layout', '4', $baseUrl);
-    $urlL6 = add_query_arg('layout', '6', $baseUrl);
     ?>
     <!DOCTYPE html>
     <html lang="sr">
@@ -695,7 +689,7 @@ final class PrintLabelController
           var qs = new URLSearchParams(window.location.search);
           if (!qs.get('layout')) {
             var stored = localStorage.getItem('dexpressBulkPrintLayout');
-            if (stored && ['1', '2', '4', '6'].indexOf(stored) !== -1) {
+            if (stored && ['2', '4'].indexOf(stored) !== -1) {
               qs.set('layout', stored);
               window.location.replace(window.location.pathname + '?' + qs.toString());
             }
@@ -712,12 +706,15 @@ final class PrintLabelController
     <body>
 
       <div class="toolbar no-print">
-        <button type="button" onclick="window.print()"><?php esc_html_e('Štampaj', 'dexpress-woocommerce'); ?></button>
-        <button type="button" class="secondary" onclick="window.close()"><?php esc_html_e('Zatvori', 'dexpress-woocommerce'); ?></button>
-        <a href="<?php echo esc_url($urlL1); ?>" class="bulk-layout-btn <?php echo $perSheet === 1 ? 'active-layout' : ''; ?>" data-layout="1"><?php esc_html_e('1 nalepnica', 'dexpress-woocommerce'); ?></a>
-        <a href="<?php echo esc_url($urlL2); ?>" class="bulk-layout-btn <?php echo $perSheet === 2 ? 'active-layout' : ''; ?>" data-layout="2"><?php esc_html_e('2 nalepnice', 'dexpress-woocommerce'); ?></a>
-        <a href="<?php echo esc_url($urlL4); ?>" class="bulk-layout-btn <?php echo $perSheet === 4 ? 'active-layout' : ''; ?>" data-layout="4"><?php esc_html_e('4 nalepnice', 'dexpress-woocommerce'); ?></a>
-        <a href="<?php echo esc_url($urlL6); ?>" class="bulk-layout-btn secondary <?php echo $perSheet === 6 ? 'active-layout' : ''; ?>" data-layout="6"><?php esc_html_e('6 nalepnica', 'dexpress-woocommerce'); ?></a>
+        <div class="toolbar__brand">
+          <img src="<?php echo esc_url(DEXPRESS_PLUGIN_URL . 'assets/images/Dexpress-logo.jpg'); ?>" alt="D Express" class="toolbar__logo">
+        </div>
+        <div class="toolbar__actions">
+          <button type="button" class="tlb-btn tlb-btn--primary" onclick="window.print()"><?php esc_html_e('Štampaj', 'dexpress-woocommerce'); ?></button>
+          <a href="<?php echo esc_url($urlL2); ?>" class="tlb-btn bulk-layout-btn<?php echo $perSheet === 2 ? ' tlb-btn--active' : ''; ?>" data-layout="2"><?php esc_html_e('2 nalepnice', 'dexpress-woocommerce'); ?></a>
+          <a href="<?php echo esc_url($urlL4); ?>" class="tlb-btn bulk-layout-btn<?php echo $perSheet === 4 ? ' tlb-btn--active' : ''; ?>" data-layout="4"><?php esc_html_e('4 nalepnice', 'dexpress-woocommerce'); ?></a>
+          <button type="button" class="tlb-btn tlb-btn--ghost" onclick="window.close()"><?php esc_html_e('Zatvori', 'dexpress-woocommerce'); ?></button>
+        </div>
       </div>
 
       <?php
@@ -741,348 +738,242 @@ final class PrintLabelController
   {
     ?>
       <style>
-        * {
-          box-sizing: border-box;
-          margin: 0;
-          padding: 0;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
           font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-          background: #e8e8e8;
+          background: #f0f0f1;
           color: #111;
         }
 
-        .toolbar.no-print {
-          padding: 12px;
-          background: #1d2327;
-          color: #fff;
-          text-align: center;
+        /* ── Toolbar ─────────────────────────────────────────────── */
+        .toolbar {
           display: flex;
-          flex-wrap: wrap;
-          gap: 10px;
-          justify-content: center;
           align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          padding: 10px 20px;
+          background: #fff;
+          border-bottom: 1px solid #dcdcde;
+          box-shadow: 0 1px 4px rgba(0,0,0,.08);
+          position: sticky;
+          top: 0;
+          z-index: 10;
         }
 
-        .toolbar.no-print a,
-        .toolbar.no-print button {
-          color: #fff;
-          background: #2271b1;
-          border: none;
-          padding: 8px 14px;
-          cursor: pointer;
+        .toolbar__brand { display: flex; align-items: center; flex-shrink: 0; }
+        .toolbar__logo  { height: 30px; width: auto; display: block; }
+        .toolbar__actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+        .tlb-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          padding: 7px 14px;
           font-size: 13px;
+          font-weight: 600;
+          font-family: inherit;
+          border-radius: 3px;
+          cursor: pointer;
           text-decoration: none;
-          display: inline-block;
+          border: 1.5px solid #dcdcde;
+          background: #fff;
+          color: #2c3338;
+          line-height: 1;
+          white-space: nowrap;
+          transition: border-color .12s, background .12s, color .12s;
         }
+        .tlb-btn:hover { border-color: #8c8f94; color: #1d2327; }
 
-        .toolbar.no-print a.secondary,
-        .toolbar.no-print button.secondary {
-          background: #50575e;
+        .tlb-btn--primary {
+          background: #e31e25;
+          border-color: #e31e25;
+          color: #fff;
         }
+        .tlb-btn--primary:hover { background: #c0161c; border-color: #c0161c; color: #fff; }
 
-        .toolbar.no-print .active-layout {
-          outline: 2px solid #fff;
+        .tlb-btn--active {
+          background: #1d2327;
+          border-color: #1d2327;
+          color: #fff;
         }
+        .tlb-btn--active:hover { background: #2c3338; border-color: #2c3338; color: #fff; }
 
+        .tlb-btn--ghost { border-color: transparent; color: #646970; background: transparent; }
+        .tlb-btn--ghost:hover { border-color: #dcdcde; color: #2c3338; background: #fff; }
+
+        /* ── Sheet wrapper ───────────────────────────────────────── */
         .sheet {
           width: 210mm;
-          margin: 0 auto;
+          margin: 8mm auto;
           background: #fff;
-          padding: 6mm;
+          padding: 5mm;
           display: grid;
-          gap: 0;
+          gap: 2mm;
+          box-shadow: 0 2px 8px rgba(0,0,0,.12);
         }
 
-        .sheet--1 {
-          grid-template-columns: 1fr;
-          grid-template-rows: 1fr;
-        }
+        .sheet--2 { grid-template-columns: 1fr;      grid-template-rows: 1fr 1fr; }
+        .sheet--4 { grid-template-columns: 1fr 1fr;  grid-template-rows: 1fr 1fr; }
 
-        .sheet--2 {
-          grid-template-columns: 1fr 1fr;
-          grid-template-rows: 1fr;
-        }
-
-        .sheet--4 {
-          grid-template-columns: 1fr 1fr;
-          grid-template-rows: 1fr 1fr;
-        }
-
-        .sheet--6 {
-          grid-template-columns: 1fr 1fr;
-          grid-template-rows: 1fr 1fr 1fr;
-        }
-
-        .sheet--6 .label-card:nth-child(odd) {
-          border-right: 1pt dotted #555;
-        }
-
-        .sheet--6 .label-card:nth-child(-n+4) {
-          border-bottom: 1pt dotted #555;
-        }
-
+        /* ── Label card ──────────────────────────────────────────── */
         .label-card {
-          border: 0.8pt solid #111;
-          padding: 3.2mm;
+          border: 0.7pt solid #222;
+          padding: 3mm;
           display: flex;
           flex-direction: column;
-          page-break-inside: avoid;
           background: #fff;
-          position: relative;
+          overflow: hidden;
         }
 
-        .sheet--2 .label-card:nth-child(odd),
-        .sheet--4 .label-card:nth-child(odd) {
-          border-right: 1pt dotted #555;
-        }
-
-        .sheet--4 .label-card:nth-child(-n+2) {
-          border-bottom: 1pt dotted #555;
-        }
-
+        /* ── Zones ───────────────────────────────────────────────── */
         .zone {
-          border-bottom: 0.6pt solid #444;
-          padding: 1.2mm 0;
+          border-bottom: 0.5pt solid #555;
+          padding: 1mm 0;
         }
-
-        .zone:last-of-type {
-          border-bottom: none;
-        }
+        .zone:last-of-type { border-bottom: none; }
 
         .zone-0 {
           text-align: center;
-          font-size: 8.2pt;
+          font-size: 7.5pt;
           font-weight: 600;
           letter-spacing: 0.01em;
           padding-top: 0;
-          padding-bottom: 1.1mm;
+          padding-bottom: 0.8mm;
         }
 
         .zone-1 {
           display: flex;
           justify-content: space-between;
           align-items: flex-start;
-          gap: 4mm;
+          gap: 3mm;
         }
 
-        .carrier-block {
-          flex: 1;
-          min-width: 0;
-        }
+        .carrier-block { flex: 1; min-width: 0; }
 
-        .sender-block {
-          font-size: 8pt;
-          line-height: 1.3;
-        }
+        .sender-block { font-size: 7.5pt; line-height: 1.3; }
 
         .pkg-counter {
-          font-size: 26pt;
+          font-size: 24pt;
           font-weight: 800;
           line-height: 1;
           letter-spacing: 0.02em;
           flex-shrink: 0;
           text-align: right;
-          min-width: 34mm;
+          min-width: 30mm;
           align-self: flex-start;
         }
 
         .zone-3 {
           text-align: center;
-          padding-top: 1.5mm;
-          padding-bottom: 1.5mm;
+          padding-top: 1mm;
+          padding-bottom: 1mm;
         }
 
-        .barcode-wrap {
-          width: 100%;
-          text-align: center;
-        }
-
+        .barcode-wrap { width: 100%; text-align: center; }
         .barcode-wrap svg {
-          width: 90%;
-          max-width: 90%;
+          width: 88%;
+          max-width: 88%;
           height: auto;
           display: block;
           margin: 0 auto;
         }
 
-        .zone-4 {
-          text-align: center;
-        }
-
+        .zone-4 { text-align: center; }
         .tracking-code {
-          font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-          font-size: 18pt;
+          font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace;
+          font-size: 16pt;
           font-weight: 700;
-          letter-spacing: 0.08em;
+          letter-spacing: 0.07em;
           line-height: 1.1;
         }
 
-        .zone-5 .recipient-label {
-          font-size: 9pt;
-          font-weight: 700;
-          margin-bottom: 0.8mm;
-        }
-
-        .zone-5 .recipient-primary {
-          font-size: 19pt;
-          font-weight: 800;
-          line-height: 1.1;
-          margin-bottom: 0.8mm;
-        }
-
-        .zone-5 .recipient-line {
-          font-size: 11.5pt;
-          font-weight: 600;
-          line-height: 1.2;
-        }
-
-        .zone-5 .recipient-phone {
-          margin-top: 0.8mm;
-          font-size: 10.5pt;
-          font-weight: 700;
-        }
+        .zone-5 .recipient-label  { font-size: 8pt; font-weight: 700; margin-bottom: 0.6mm; }
+        .zone-5 .recipient-primary { font-size: 18pt; font-weight: 800; line-height: 1.1; margin-bottom: 0.6mm; }
+        .zone-5 .recipient-line    { font-size: 11pt; font-weight: 600; line-height: 1.2; }
+        .zone-5 .recipient-phone   { margin-top: 0.6mm; font-size: 10pt; font-weight: 700; }
 
         .package-shop-badge {
-          margin-top: 1.1mm;
+          margin-top: 0.8mm;
           display: inline-block;
-          border: 0.7pt solid #333;
-          padding: 0.6mm 1.8mm;
-          font-size: 8.4pt;
+          border: 0.6pt solid #333;
+          padding: 0.5mm 1.5mm;
+          font-size: 8pt;
           font-weight: 800;
           letter-spacing: 0.02em;
         }
 
-        .recipient-secondary {
-          margin-top: 1mm;
-          font-size: 8.2pt;
-          color: #333;
-        }
+        .recipient-secondary { margin-top: 0.8mm; font-size: 7.5pt; color: #333; }
 
-        .zone-6 {
-          padding-top: 1.5mm;
-        }
-
+        .zone-6 { padding-top: 1mm; }
         .info-grid {
           display: grid;
           grid-template-columns: 1fr 1fr;
-          gap: 1.1mm 3.8mm;
-          font-size: 8.4pt;
+          gap: 0.9mm 3mm;
+          font-size: 7.8pt;
           line-height: 1.3;
         }
-
-        .info-cell.full {
-          grid-column: 1 / -1;
-        }
-
-        .info-label {
-          font-weight: 700;
-          margin-bottom: 0.4mm;
-        }
-
-        .info-value {
-          word-break: break-word;
-        }
+        .info-cell.full { grid-column: 1 / -1; }
+        .info-label     { font-weight: 700; margin-bottom: 0.3mm; }
+        .info-value     { word-break: break-word; }
 
         .zone-7 {
           border-bottom: none;
           margin-top: auto;
           text-align: center;
-          font-size: 7pt;
-          color: #333;
-          padding-top: 1.8mm;
+          font-size: 6.5pt;
+          color: #555;
+          padding-top: 1mm;
         }
 
-        .label-card--compact .pkg-counter {
-          font-size: 18pt;
-          min-width: 22mm;
-        }
+        /* ── Compact mode (4-up) ─────────────────────────────────── */
+        .label-card--compact .pkg-counter        { font-size: 16pt; min-width: 20mm; }
+        .label-card--compact .tracking-code      { font-size: 10.5pt; }
+        .label-card--compact .zone-5 .recipient-primary { font-size: 11.5pt; }
+        .label-card--compact .zone-5 .recipient-line    { font-size: 8pt; }
+        .label-card--compact .zone-5 .recipient-phone   { font-size: 7.8pt; }
+        .label-card--compact .zone-0             { font-size: 6.2pt; }
+        .label-card--compact .sender-block       { font-size: 6.2pt; }
+        .label-card--compact .info-grid          { font-size: 6.2pt; }
+        .label-card--compact .package-shop-badge { font-size: 6.5pt; }
+        .label-card--compact .recipient-secondary { font-size: 6.2pt; }
+        .label-card--compact .zone-7             { font-size: 5.5pt; }
 
-        .label-card--compact .tracking-code {
-          font-size: 12pt;
-        }
-
-        .label-card--compact .zone-5 .recipient-primary {
-          font-size: 12pt;
-        }
-
-        .label-card--compact .zone-5 .recipient-line {
-          font-size: 8.7pt;
-        }
-
-        .label-card--compact .zone-5 .recipient-phone {
-          font-size: 8.4pt;
-        }
-
-        .label-card--compact .zone-0 {
-          font-size: 6.8pt;
-        }
-
-        .label-card--compact .sender-block {
-          font-size: 6.8pt;
-        }
-
-        .label-card--compact .info-grid {
-          font-size: 6.8pt;
-        }
-
-        .label-card--compact .package-shop-badge {
-          font-size: 7pt;
-        }
-
-        .label-card--compact .recipient-secondary {
-          font-size: 6.8pt;
-        }
-
-        .label-card--compact .zone-7 {
-          font-size: 6pt;
-        }
-
+        /* ── Print ───────────────────────────────────────────────── */
         @media print {
-          body {
-            background: #fff;
-          }
+          body { background: #fff; }
+          .no-print { display: none !important; }
 
-          .no-print {
-            display: none !important;
-          }
+          @page { size: A4 portrait; margin: 0; }
 
           .sheet {
             margin: 0;
             padding: 4mm;
+            gap: 2mm;
             width: 210mm;
-            min-height: 297mm;
+            height: 297mm;
+            box-shadow: none;
             page-break-after: always;
+            overflow: hidden;
+          }
+          .sheet:last-child { page-break-after: auto; }
+
+          /* 2-up: (297 − 8mm padding − 2mm gap) / 2 = 143.5mm per card */
+          .sheet--2 {
+            grid-template-columns: 1fr;
+            grid-template-rows: 143mm 143mm;
           }
 
-          .sheet:last-child {
-            page-break-after: auto;
+          /* 4-up: columns = (210 − 8 − 2) / 2 = 100mm, rows same 143mm */
+          .sheet--4 {
+            grid-template-columns: 100mm 100mm;
+            grid-template-rows: 143mm 143mm;
           }
 
           .label-card {
+            overflow: hidden;
+            break-inside: avoid;
             page-break-inside: avoid;
-          }
-
-          .sheet--1 .label-card {
-            min-height: calc(297mm - 8mm);
-          }
-
-          .sheet--2 .label-card {
-            min-height: calc(297mm - 8mm);
-          }
-
-          .sheet--4 .label-card {
-            min-height: calc((297mm - 8mm) / 2);
-          }
-
-          .sheet--6 .label-card {
-            min-height: calc((297mm - 8mm) / 3);
-          }
-
-          @page {
-            size: A4 portrait;
-            margin: 0;
           }
         }
       </style>

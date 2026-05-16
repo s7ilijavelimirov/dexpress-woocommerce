@@ -397,11 +397,14 @@ $rangeEndDisplay   = ($reRaw !== null && $reRaw !== '' && (int) $reRaw > 0) ? (s
                                     </option>
                                 <?php endforeach; ?>
                             </select>
+                            <p class="description">
+                                <?php esc_html_e('Standardna dostava — sledeći radni dan. Hitno — isti dan (samo određena područja, može biti skuplje). Preporučujemo Standardnu dostavu za sve normalne narudžbine.', 'dexpress-woocommerce'); ?>
+                            </p>
                         </td>
                     </tr>
                     <tr>
                         <th scope="row">
-                            <label for="default_payment_type"><?php esc_html_e('Način plaćanja kurira', 'dexpress-woocommerce'); ?></label>
+                            <label for="default_payment_type"><?php esc_html_e('Način plaćanja usluge kurira', 'dexpress-woocommerce'); ?></label>
                         </th>
                         <td>
                             <select id="default_payment_type" name="default_payment_type">
@@ -415,6 +418,9 @@ $rangeEndDisplay   = ($reRaw !== null && $reRaw !== '' && (int) $reRaw > 0) ? (s
                                     </option>
                                 <?php endforeach; ?>
                             </select>
+                            <p class="description">
+                                <?php esc_html_e('Ko plaća troškove dostave D-Expressu. Faktura — D-Express vam šalje fakturu mesečno (uobičajeno za poslovne korisnike). Gotovina — kurir naplaćuje pri preuzimanju paketa. Gotovo uvek koristite Faktura.', 'dexpress-woocommerce'); ?>
+                            </p>
                         </td>
                     </tr>
                     <tr>
@@ -433,6 +439,27 @@ $rangeEndDisplay   = ($reRaw !== null && $reRaw !== '' && (int) $reRaw > 0) ? (s
                                     </option>
                                 <?php endforeach; ?>
                             </select>
+                            <p class="description">
+                                <?php esc_html_e('Bez povraćaja — ništa se ne vraća (standard za webshop). Povraćaj dokumenata — kurir donosi potpisane dokumente nazad (npr. ugovori, fakture). POD (Proof of Delivery) — zvanična potvrda o isporuci sa potpisom primaoca. Za online prodaju gotovo uvek koristite Bez povraćaja.', 'dexpress-woocommerce'); ?>
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <?php esc_html_e('Način predaje paketa', 'dexpress-woocommerce'); ?>
+                        </th>
+                        <td>
+                            <label for="default_self_drop_off">
+                                <input type="checkbox"
+                                       id="default_self_drop_off"
+                                       name="default_self_drop_off"
+                                       value="1"
+                                       <?php checked($options->getBool('shipment.default_self_drop_off')); ?>>
+                                <?php esc_html_e('Sam donosim pakete u D-Express (Self Drop-off)', 'dexpress-woocommerce'); ?>
+                            </label>
+                            <p class="description">
+                                <?php esc_html_e('Označite ako sami donosite pakete u D-Express paket shop ili depo — kurir neće dolaziti po preuzimanje. Ostavite isključeno ako želite da kurir dolazi po pakete na vašu adresu.', 'dexpress-woocommerce'); ?>
+                            </p>
                         </td>
                     </tr>
                 </table>

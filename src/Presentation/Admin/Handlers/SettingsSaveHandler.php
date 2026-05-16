@@ -78,9 +78,10 @@ final class SettingsSaveHandler
             return 'Numerički opseg mora imati pozitivne vrednosti za „Od“ i „Do“.';
         }
 
-        $defaultDl   = (int) ($_POST['default_delivery_type'] ?? 2);
-        $defaultPay  = (int) ($_POST['default_payment_type'] ?? 2);
-        $defaultRet  = (int) ($_POST['default_return_doc'] ?? 0);
+        $defaultDl      = (int) ($_POST['default_delivery_type'] ?? 2);
+        $defaultPay     = (int) ($_POST['default_payment_type'] ?? 2);
+        $defaultRet     = (int) ($_POST['default_return_doc'] ?? 0);
+        $defaultSelfDrop = isset($_POST['default_self_drop_off']) ? '1' : '0';
 
         if (!in_array($environment, ['test', 'production'], true)) {
             $environment = 'test';
@@ -109,6 +110,7 @@ final class SettingsSaveHandler
         $this->options->set('shipment.default_delivery_type', (string) $defaultDl);
         $this->options->set('shipment.default_payment_type', (string) $defaultPay);
         $this->options->set('shipment.default_return_doc', (string) $defaultRet);
+        $this->options->set('shipment.default_self_drop_off', $defaultSelfDrop);
 
         // Only update the password if the user typed a new one.
         // If the field is left blank, the existing encrypted password is kept.

@@ -91,6 +91,8 @@ final class AdminServiceProvider implements ServiceProvider
             BulkShipmentController::class,
             static fn (Container $c) => new BulkShipmentController(
                 $c->get(CreateShipmentService::class),
+                $c->get(OptionsRepository::class),
+                $c->get(Logger::class),
             ),
         );
 
@@ -126,6 +128,7 @@ final class AdminServiceProvider implements ServiceProvider
                     $wpdb,
                     $c->get(WpdbPackageProfileRepository::class),
                     $c->get(WpdbSenderLocationRepository::class),
+                    $c->get(OptionsRepository::class),
                 );
             },
         );

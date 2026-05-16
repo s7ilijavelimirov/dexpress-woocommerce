@@ -232,9 +232,31 @@ Plugin header (`dexpress-woocommerce.php`) is locked at **2.0.1** until a public
 
 ---
 
+## [2.7.0] — 2026-05-15
+
+### Added
+- **Checkout gate** (`src/Presentation/Frontend/Shipping/DexpressShippingGate.php`) — New class with static `isActive()` method. Direct `wpdb` query on `woocommerce_shipping_zone_methods`; no caching, no WC class dependency, safe at `plugins_loaded`. If no D-Express shipping method is enabled in any zone, the entire checkout layer (fields, validators, Package Shop modal, tracking tab) is skipped entirely — default WooCommerce checkout is untouched. Works for both classic shortcode and block checkout.
+- **Bulk wizard preview step** (`assets/js/admin-bulk-shipment.js`) — Step 2 "Pregled" added between order selection and AJAX creation. On "Pregledaj →" click, JS snapshots all order state into a frozen array, hides config+orders card, and renders a preview table (Narudžbina, Kupac, Masa, Dimenzije, Sadržaj, Predaja, Plaćanje) with delivery/payment badges. "← Izmeni" returns to config without data loss; "Pakuj i štampaj" proceeds with creation. Wizard is now 4 steps: Odabir → Pregled → Pakuj & Štampaj → Pošalji.
+- **Pending shipments card** (`src/Presentation/Admin/Pages/ShipmentsPage.php`) — Server-side card rendered on every Pošiljke page load when `pending_send` shipments exist. HPOS-aware JOIN on `wc_orders`/`wp_posts` filtered to `wc-processing` and `wc-on-hold` orders only. Shows TT tracking code (from `wp_dexpress_packages.code` subquery), customer name, individual label links, bulk print URL. "Pošalji D-Expressu (N)" button + progress bar drives sequential AJAX send. State is persistent across sessions and page navigation — survives without relying on JS in-memory state.
+- **`default_self_drop_off` setting** (`templates/admin/tab-api.php`, `src/Presentation/Admin/Handlers/SettingsSaveHandler.php`) — New checkbox on the Shipment settings tab to set the default delivery mode (kurir dolazi vs. sam donosim). Stored as `shipment.default_self_drop_off` in `dexpress_settings`. `BulkShipmentController` and `ShipmentsPage` read from this option; JS `self_drop_off` POST param overrides when explicitly set.
+- **Page header on Pošiljke** (`src/Presentation/Admin/Pages/ShipmentsPage.php`) — `dex-page-header--shipments` variant: logo | title+subtitle | pending-order count badge. CSS defined in `assets/css/admin.css`.
+
+### Changed
+- **`BulkShipmentController` settings-driven defaults** — `delivery_type`, `payment_type`, `return_doc` now read from `OptionsRepository` instead of POST body. The bulk AJAX caller no longer needs to pass these values; they come from the admin's saved settings. `self_drop_off` falls back to `shipment.default_self_drop_off` if not present in POST. Removed the `weight_kg = 0` validation guard (calculated weight from product data is always used if no explicit override).
+- **Label toolbar redesign** (`src/Presentation/Admin/Label/PrintLabelController.php`) — Added D-Express logo to toolbar left. Buttons reorganised into two groups: brand left, actions right. 1-up layout removed (old `?layout=1` URLs redirect to 2-up). Remaining layouts: 2-up (default) and 4-up. `urlLayout1` parameter removed from `printSheets()` signature.
+
+### Fixed
+- **"Kod pošiljke" showing order reference** (`ShipmentsPage::getPendingShipments()`) — Previous query aliased `reference_id` (order number e.g. "988") as `tracking_code`. Now uses a correlated subquery `(SELECT MIN(pk.code) FROM dexpress_packages pk WHERE pk.shipment_id = s.id)` to fetch the real TT code (e.g. "TT0000000014").
+- **Onboarding client_id UX** (`assets/js/admin-onboarding.js`) — Auto-init condition changed from `saved.username && saved.password && snap.clientIdInDb` to `saved.username && saved.password`. Admins returning to the wizard with credentials already saved (but no Client ID yet) can now enter their Client ID and click "Sačuvaj i nastavi" without being forced to retest the connection.
+- **Onboarding `handleComplete()` always sends client_id** (`assets/js/admin-onboarding.js`) — Reads `#dex-ob-api-client-id` value immediately before firing the complete AJAX call, so `client_id` is always populated regardless of whether the admin clicked "Testiraj konekciju". Resolves the 2.4.0 tech debt item.
+
+### Known Issues
+- No automated test suite exists (`tests/` directory is empty). All testing has been manual against a local WordPress + WooCommerce install. PHPUnit is declared as a dev dependency in `composer.json`.
+- `OnboardingPage::renderPanel6()` — Client ID warning is a PHP-time check. If admin enters Client ID during the same session and saves, the JS `syncClientIdWarningOnStep6()` hides the warning dynamically. But on hard reload before Step 6, the PHP-rendered warning may briefly flash if clientId wasn't in DB at page-load time.
+
+---
+
 ## Unreleased
 
 ### Known Issues
-- `admin-onboarding.js`: `state.credentials.client_id` populated only on test-connection click. If admin fills the field but skips test-connection, `client_id` is `''` in JS state when completing the wizard. Server-side save is correct as long as they click "Testiraj konekciju" first.
-- No automated test suite exists (`tests/` directory is empty). All testing has been manual against a local WordPress + WooCommerce install. PHPUnit is declared as a dev dependency in `composer.json`.
 - `MyAccountTrackingTab` uses the same status display model as standard orders — there is no Package Shop-specific tracking view (e.g. "ready for pickup at location X"). Tracking display for Package Shop orders is functionally correct but not contextually tailored.

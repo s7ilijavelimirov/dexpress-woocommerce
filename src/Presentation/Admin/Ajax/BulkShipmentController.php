@@ -9,6 +9,8 @@ use S7codedesign\DExpress\Application\Shipment\CreateShipmentService;
 use S7codedesign\DExpress\Domain\Shipment\DeliveryType;
 use S7codedesign\DExpress\Domain\Shipment\PaymentType;
 use S7codedesign\DExpress\Domain\Shipment\ReturnDoc;
+use S7codedesign\DExpress\Infrastructure\Logging\Logger;
+use S7codedesign\DExpress\Infrastructure\Options\OptionsRepository;
 
 /**
  * AJAX handler za grupno kreiranje pošiljaka.
@@ -22,6 +24,8 @@ final class BulkShipmentController
 {
     public function __construct(
         private readonly CreateShipmentService $createShipment,
+        private readonly OptionsRepository $options,
+        private readonly Logger $logger,
     ) {}
 
     public function register(): void
@@ -44,10 +48,12 @@ final class BulkShipmentController
 
         $orderId          = absint($_POST['order_id'] ?? 0);
         $senderLocationId = absint($_POST['sender_location_id'] ?? 0);
-        $deliveryTypeInt  = (int) ($_POST['delivery_type'] ?? 2);
-        $paymentTypeInt   = (int) ($_POST['payment_type'] ?? 2);
-        $returnDocInt     = (int) ($_POST['return_doc'] ?? 0);
-        $selfDropOff      = !empty($_POST['self_drop_off']) && $_POST['self_drop_off'] === '1';
+        $deliveryTypeInt  = $this->options->getInt('shipment.default_delivery_type', DeliveryType::Regular->value);
+        $paymentTypeInt   = $this->options->getInt('shipment.default_payment_type', PaymentType::Invoice->value);
+        $returnDocInt     = $this->options->getInt('shipment.default_return_doc', ReturnDoc::None->value);
+        $selfDropOff      = isset($_POST['self_drop_off'])
+            ? ($_POST['self_drop_off'] === '1')
+            : $this->options->getBool('shipment.default_self_drop_off');
         $content          = sanitize_text_field($_POST['content'] ?? '');
         $note             = sanitize_text_field($_POST['note'] ?? '');
         $weightKg         = (float) str_replace(',', '.', $_POST['weight_kg'] ?? '0');
@@ -69,10 +75,6 @@ final class BulkShipmentController
 
         if ($content === '') {
             wp_send_json_error(['message' => __('Sadržaj pošiljke je obavezan.', 'dexpress-woocommerce')], 422);
-        }
-
-        if ($weightGrams <= 0) {
-            wp_send_json_error(['message' => __('Masa mora biti veća od 0.', 'dexpress-woocommerce')], 422);
         }
 
         $deliveryType = DeliveryType::tryFrom($deliveryTypeInt) ?? DeliveryType::Regular;
@@ -114,6 +116,7 @@ final class BulkShipmentController
                 ),
             ]);
         } catch (\Throwable $e) {
+            $this->logger->error('[BULK SAVE] Order ' . $orderId . ': ' . $e->getMessage());
             wp_send_json_error([
                 'message'  => $e->getMessage(),
                 'order_id' => $orderId,
@@ -146,6 +149,7 @@ final class BulkShipmentController
                 'tracking_code' => $result->trackingCode(),
             ]);
         } catch (\Throwable $e) {
+            $this->logger->error('[BULK SEND] Shipment ' . $shipmentId . ': ' . $e->getMessage());
             wp_send_json_error([
                 'message'     => $e->getMessage(),
                 'shipment_id' => $shipmentId,

@@ -224,3 +224,58 @@ Custom WooCommerce emails:
 - License/SaaS system (planned: Laravel license server + plugin key validation)
 - `viewpayments` automatic sync (manual only by design)
 - Tracking display specific to Package Shop (uses same status model as standard)
+
+---
+
+## Current Status
+
+### Completed Phases
+
+- **2.0.0** — Full DDD architecture: Domain/Application/Infrastructure/Presentation layers, IoC container, 16 DB tables, all šifarnici sync, webhook, label printing, single-shipment metabox, settings, diagnostics, checkout fields.
+- **2.1.0** — Package Shop checkout modal (Google Maps, diacritic search, filter tabs, mobile drawer), `DispenserBrowserRepository`, hidden order meta fields.
+- **2.2.0** — Package Shop shipping method, `PackageShopInfoMetabox`, paketomat constraints validation, two-step save/send flow, three-state metabox machine (`pending_send` / `sent`), Package Shop label variant.
+- **2.3.0** — Onboarding wizard (6 steps), bulk shipment wizard (originally 3-step), `BulkShipmentController`, package profiles page + modal + repository, COD payments page (Otkupnine), orders bulk-action redirect, delivery status column on orders list.
+- **2.3.1** — Code audit: removed dead hooks, dead `$_bucket` param, dead `label()` method, removed stale milestone comments. Codebase declared clean.
+- **2.4.0** — Fixed onboarding redirect on first activation; unified bulk label printing via `renderMultiple()` (removed `renderBulk()`); fixed `buildLabelUrl()` nonce bug (server now returns `label_url`); fixed empty tablenav top on shipments list; added `CClientID` field to onboarding Step 2.
+- **2.5.0** — `ShipmentsPage` expanded with phone, shipping address, payment method, delivery type columns; HPOS-aware edit URLs; package profile dropdown in header. Package profiles page fully redesigned (card grid, centered modal, sidebar rules panel). Bulk back-button changed to point to Pošiljke page.
+- **2.6.0** — Bulk wizard refactored to 4 steps (Podešavanja → Pregled → Štampa → Slanje); print-before-send enforced in JS; weight field made optional (batch override); Step 2 table merged to 6 columns; error row visibility fixed; CSS specificity bugs fixed.
+- **2.7.0** — `DexpressShippingGate` checkout guard (skips all frontend hooks if no D-Express method enabled); bulk wizard Pregled step (snapshot preview before creation); persistent "Čekaju slanje" card on Pošiljke page (server-rendered, AJAX send); `BulkShipmentController` reads delivery/payment/return type defaults from options (removed hardcoded POST params); `shipment.default_self_drop_off` setting added; onboarding client_id fix (reads field value at completion time, pre-validates Step 2 without requiring clientIdInDb); label toolbar redesigned (logo, 2-up/4-up only, removed 1-up).
+
+### Currently In Progress
+
+- **CSS design system migration** (`DESIGN.md` spec finalized 2026-05-13): `admin-design-system.css` to be merged into `admin.css`; all `dexpress-` class prefixes renamed to `dex-`; `admin-shipments.css` to be deleted (empty file); Google Fonts import to be removed from `admin-diagnostics.css`; `!important` overrides to be replaced with proper specificity; inline styles in PHP templates to be replaced with component classes.
+
+### Broken / Pending
+
+- `admin-shipments.css` — empty file that should be deleted; its `enqueueAdminAssets()` registration in `AdminMenu.php` removed at the same time (per `DESIGN.md`).
+- `OnboardingPage::renderPanel6()` — Client ID warning is a PHP-time check; if admin enters Client ID during the same session and saves, `syncClientIdWarningOnStep6()` in JS hides it dynamically. But on hard reload before Step 6, the PHP-rendered warning may briefly flash if clientId wasn't in DB at page-load time. Low priority — conservative false positive, not dangerous.
+- No automated test suite — `tests/` directory is empty. PHPUnit is declared in `composer.json` but no test files exist.
+
+---
+
+## Active Tasks
+
+Unfinished items from `docs/DEV-LOG.md`, ordered by version:
+
+- **`profile_id` pre-selection in bulk wizard** (`src/Presentation/Admin/Pages/BulkShipmentPage.php`) — `ShipmentsPage` passes `profile_id` as a URL query param when redirecting to the bulk page, but `BulkShipmentPage` ignores it. A JS one-liner on page load (`if (urlParam('profile_id')) { applyProfile(id) }`) would complete the wire-up. [2.5.0 tech debt]
+- **Checkout-time paketomat dimension validation** (`src/Application/Shipment/CreateShipmentService.php`, `src/Presentation/Frontend/Checkout/CheckoutValidator.php`) — Dimension limits (470×440×440mm) enforced at shipment creation but not at checkout. A customer can place an order with oversized items; the failure surfaces only when the admin creates the shipment. Requires reliable product dimension data at checkout. [2.2.0 tech debt]
+- **CSS design system migration** (`assets/css/`) — Full spec in `DESIGN.md`. Tasks: merge `admin-design-system.css` into `admin.css`; rename all `dexpress-` classes to `dex-`; delete `admin-shipments.css`; remove Google Fonts `@import` from `admin-diagnostics.css`; eliminate `!important` overrides; remove inline styles from PHP templates. JS selectors in `admin-settings.js` and `admin-metabox.js` must be updated in the same pass as the class renames.
+- **Package Shop tracking view** (`src/Presentation/Frontend/MyAccount/MyAccountTrackingTab.php`) — Package Shop orders use the same status display as standard orders; there is no contextually tailored view (e.g. "ready for pickup at location X"). [Unreleased / known issue]
+
+---
+
+## Do Not Touch
+
+These modules are complete, audited, and stable. Do not modify unless there is a specific bug to fix.
+
+- **Domain layer** (`src/Domain/`) — All value objects (`PhoneNumber`, `StreetNumber`, `PackageCode`, `Money`, `Grams`), enums (`DeliveryType`, `PaymentType`, `PaymentBy`, `ReturnDoc`, `StatusEmailBucket`), `ShipmentRepository` interface, domain events (`ShipmentCreated`, `StatusUpdated`). Audited clean in 2.3.1.
+- **Application services** (`src/Application/`) — `CreateShipmentService` (save/send two-step flow), `ShipmentStatusIngestionService`, `EmailNotificationSubscriber`, `SimulationService`, all 8 `Sync*Service` classes. Audited clean in 2.3.1.
+- **Infrastructure layer** (`src/Infrastructure/`) — `DExpressApiClient`, `EncryptedString`, `Code128` barcode generator, `WpCronScheduler`, `Logger`, `OptionsRepository`, `DatabaseInstaller`, `ShipmentCodeAllocator`, `DispenserBrowserRepository` (read-only by design — do not add write operations).
+- **REST webhook** (`src/Presentation/Rest/WebhookController.php`) — IP allowlist, async dispatch via Action Scheduler, webhook log. Stable.
+- **Label printing** (`src/Presentation/Admin/Label/PrintLabelController.php`) — `buildLabelData()` / `printSheets()` / `renderMultiple()` architecture settled in 2.4.0. `renderBulk()` was removed; do not reintroduce it. 1-up layout removed in 2.7.0 (2-up and 4-up only). Toolbar redesigned in 2.7.0 (logo + grouped action buttons).
+- **Package Shop checkout flow** (`src/Presentation/Frontend/Checkout/PackageShopCustomerFlow.php`, `assets/js/package-shop-checkout.js`, `assets/css/package-shop-checkout.css`) — Google Maps modal, diacritic search, filter tabs, mobile drawer. Completed in 2.1.0.
+- **Paketomat constraints** (`src/Application/Shipment/CreateShipmentService.php::validatePackageShopShipmentConstraints()`) — Encodes hard D-Express API limits. Do not relax without API documentation change.
+- **`BuyOutAccount` required-when-COD** (`src/Infrastructure/Api/DExpressApiClient.php`) — API returns HTTP 400 if BuyOut > 0 and field is absent, despite docs marking it optional. This is intentional and must not be removed.
+- **COD payments page** (`src/Presentation/Admin/Pages/PaymentsPage.php`) — Manual-only sync by design; D-Express `viewpayments` has no "fetch all" endpoint.
+- **Email system** (`src/Presentation/Email/`, `src/Application/Email/`) — Package Shop ready-for-pickup email with duplicate guard. Stable.
+- **Šifarnici sync services** — Towns, streets, municipalities, centres, shops, dispensers, locations, status codes. Cron schedules wired; do not modify frequency without confirming D-Express data update cadence.
