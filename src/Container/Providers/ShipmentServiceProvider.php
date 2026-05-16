@@ -18,7 +18,6 @@ use S7codedesign\DExpress\Infrastructure\Persistence\AddressSearchRepository;
 use S7codedesign\DExpress\Infrastructure\Persistence\TransactionRunner;
 use S7codedesign\DExpress\Infrastructure\Persistence\WpdbPackageItemRepository;
 use S7codedesign\DExpress\Infrastructure\Persistence\WpdbPackageRepository;
-use S7codedesign\DExpress\Infrastructure\Persistence\WpdbShipmentItemRepository;
 use S7codedesign\DExpress\Infrastructure\Persistence\WpdbSenderLocationRepository;
 use S7codedesign\DExpress\Infrastructure\Persistence\WpdbShipmentRepository;
 use S7codedesign\DExpress\Presentation\Admin\Ajax\ShipmentWorkflowController;
@@ -69,14 +68,6 @@ final class ShipmentServiceProvider implements ServiceProvider
         );
 
         $container->singleton(
-            WpdbShipmentItemRepository::class,
-            static function (): WpdbShipmentItemRepository {
-                global $wpdb;
-                return new WpdbShipmentItemRepository($wpdb);
-            },
-        );
-
-        $container->singleton(
             WpdbShipmentRepository::class,
             static function (Container $c): WpdbShipmentRepository {
                 global $wpdb;
@@ -119,7 +110,6 @@ final class ShipmentServiceProvider implements ServiceProvider
                 $c->get(OrderRecipientResolver::class),
                 $c->get(WpdbPackageRepository::class),
                 $c->get(WpdbPackageItemRepository::class),
-                $c->get(WpdbShipmentItemRepository::class),
                 $c->get(Logger::class),
                 $c->get(RecipientAddressCheckService::class),
                 $c->get(ShipmentCodeAllocator::class),

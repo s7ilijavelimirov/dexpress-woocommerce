@@ -21,7 +21,6 @@ use S7codedesign\DExpress\Infrastructure\Persistence\TransactionRunner;
 use S7codedesign\DExpress\Infrastructure\Persistence\WpdbPackageItemRepository;
 use S7codedesign\DExpress\Infrastructure\Persistence\WpdbPackageRepository;
 use S7codedesign\DExpress\Infrastructure\Persistence\WpdbSenderLocationRepository;
-use S7codedesign\DExpress\Infrastructure\Persistence\WpdbShipmentItemRepository;
 use S7codedesign\DExpress\Application\Address\RecipientAddressCheckService;
 
 final class CreateShipmentService
@@ -43,7 +42,6 @@ final class CreateShipmentService
         private readonly OrderRecipientResolver       $recipientResolver,
         private readonly WpdbPackageRepository        $packageRepo,
         private readonly WpdbPackageItemRepository     $packageItemRepo,
-        private readonly WpdbShipmentItemRepository  $shipmentItemRepo,
         private readonly Logger                       $logger,
         private readonly RecipientAddressCheckService $addressCheck,
         private readonly ShipmentCodeAllocator        $codeAllocator,
@@ -506,8 +504,6 @@ final class CreateShipmentService
                     $this->packageItemRepo->insert($pkgId, $oid, $qty);
                 }
             }
-
-            $this->shipmentItemRepo->replaceAggregatedFromPackageItems($sid);
         });
     }
 

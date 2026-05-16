@@ -99,8 +99,7 @@ final class WpdbShipmentRepository implements ShipmentRepository
      */
     public function deleteById(int $id): void
     {
-        $packageItemsTable  = $this->wpdb->prefix . 'dexpress_package_items';
-        $shipmentItemsTable = $this->wpdb->prefix . 'dexpress_shipment_items';
+        $packageItemsTable = $this->wpdb->prefix . 'dexpress_package_items';
 
         // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
         $this->wpdb->query(
@@ -111,8 +110,6 @@ final class WpdbShipmentRepository implements ShipmentRepository
                 $id,
             ),
         );
-
-        $this->wpdb->delete($shipmentItemsTable, ['shipment_id' => $id], ['%d']);
 
         // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
         $this->wpdb->query(

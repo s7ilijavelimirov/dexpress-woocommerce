@@ -8,7 +8,7 @@ final class DatabaseInstaller
 {
     public const DB_VERSION_OPTION = 'dexpress_db_version';
 
-    public const DB_VERSION = '2.4.0';
+    public const DB_VERSION = '2.8.0';
 
     public function __construct(private readonly \wpdb $wpdb)
     {
@@ -184,7 +184,6 @@ final class DatabaseInstaller
         // Drop in reverse dependency order (children before parents).
         $tables = [
             'dexpress_package_items',
-            'dexpress_shipment_items',
             'dexpress_shipment_statuses',
             'dexpress_packages',
             'dexpress_shipments',
@@ -245,7 +244,6 @@ final class DatabaseInstaller
             $this->packages($p, $charset),
             $this->packageItems($p, $charset),
             $this->shipmentStatuses($p, $charset),
-            $this->shipmentItems($p, $charset),
             $this->webhookLogs($p, $charset),
             $this->payments($p, $charset),
             $this->packageProfiles($p, $charset),
@@ -526,22 +524,6 @@ final class DatabaseInstaller
   KEY shipment_id (shipment_id),
   KEY shipment_occurred (shipment_id, occurred_at),
   KEY webhook_log_id (webhook_log_id)
-) $charset;";
-    }
-
-    private function shipmentItems(string $p, string $charset): string
-    {
-        return "CREATE TABLE IF NOT EXISTS {$p}dexpress_shipment_items (
-  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  shipment_id BIGINT UNSIGNED NOT NULL,
-  order_item_id BIGINT UNSIGNED NOT NULL,
-  quantity SMALLINT UNSIGNED NOT NULL DEFAULT 1,
-  created_at DATETIME NOT NULL,
-  updated_at DATETIME NOT NULL,
-  PRIMARY KEY  (id),
-  UNIQUE KEY shipment_order_item (shipment_id, order_item_id),
-  KEY shipment_id (shipment_id),
-  KEY order_item_id (order_item_id)
 ) $charset;";
     }
 

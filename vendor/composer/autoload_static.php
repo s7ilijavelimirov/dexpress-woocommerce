@@ -107,7 +107,6 @@ class ComposerStaticInit4339687698de02e14a77275d7c4d6164
         'S7codedesign\\DExpress\\Infrastructure\\Persistence\\WpdbPackageRepository' => __DIR__ . '/../..' . '/src/Infrastructure/Persistence/WpdbPackageRepository.php',
         'S7codedesign\\DExpress\\Infrastructure\\Persistence\\WpdbPaymentRepository' => __DIR__ . '/../..' . '/src/Infrastructure/Persistence/WpdbPaymentRepository.php',
         'S7codedesign\\DExpress\\Infrastructure\\Persistence\\WpdbSenderLocationRepository' => __DIR__ . '/../..' . '/src/Infrastructure/Persistence/WpdbSenderLocationRepository.php',
-        'S7codedesign\\DExpress\\Infrastructure\\Persistence\\WpdbShipmentItemRepository' => __DIR__ . '/../..' . '/src/Infrastructure/Persistence/WpdbShipmentItemRepository.php',
         'S7codedesign\\DExpress\\Infrastructure\\Persistence\\WpdbShipmentRepository' => __DIR__ . '/../..' . '/src/Infrastructure/Persistence/WpdbShipmentRepository.php',
         'S7codedesign\\DExpress\\Infrastructure\\Persistence\\WpdbShipmentStatusRepository' => __DIR__ . '/../..' . '/src/Infrastructure/Persistence/WpdbShipmentStatusRepository.php',
         'S7codedesign\\DExpress\\Infrastructure\\Persistence\\WpdbStreetRepository' => __DIR__ . '/../..' . '/src/Infrastructure/Persistence/WpdbStreetRepository.php',

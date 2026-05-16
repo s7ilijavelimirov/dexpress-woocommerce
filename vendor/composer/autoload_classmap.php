@@ -92,7 +92,6 @@ return array(
     'S7codedesign\\DExpress\\Infrastructure\\Persistence\\WpdbPackageRepository' => $baseDir . '/src/Infrastructure/Persistence/WpdbPackageRepository.php',
     'S7codedesign\\DExpress\\Infrastructure\\Persistence\\WpdbPaymentRepository' => $baseDir . '/src/Infrastructure/Persistence/WpdbPaymentRepository.php',
     'S7codedesign\\DExpress\\Infrastructure\\Persistence\\WpdbSenderLocationRepository' => $baseDir . '/src/Infrastructure/Persistence/WpdbSenderLocationRepository.php',
-    'S7codedesign\\DExpress\\Infrastructure\\Persistence\\WpdbShipmentItemRepository' => $baseDir . '/src/Infrastructure/Persistence/WpdbShipmentItemRepository.php',
     'S7codedesign\\DExpress\\Infrastructure\\Persistence\\WpdbShipmentRepository' => $baseDir . '/src/Infrastructure/Persistence/WpdbShipmentRepository.php',
     'S7codedesign\\DExpress\\Infrastructure\\Persistence\\WpdbShipmentStatusRepository' => $baseDir . '/src/Infrastructure/Persistence/WpdbShipmentStatusRepository.php',
     'S7codedesign\\DExpress\\Infrastructure\\Persistence\\WpdbStreetRepository' => $baseDir . '/src/Infrastructure/Persistence/WpdbStreetRepository.php',
