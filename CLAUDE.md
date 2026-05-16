@@ -9,7 +9,7 @@ WordPress plugin integrating WooCommerce with D Express (Serbian courier service
 - **Plugin version:** 2.0.1
 - **PHP:** 8.1+ (strict types throughout)
 - **Requires:** WordPress 6.3+, WooCommerce 8.0+
-- **Markets:** Serbia (DACH + ex-YU region clients)
+- **Markets:** Serbia
 - **Status:** Active development, test environment, pre-production
 
 ## Commands
