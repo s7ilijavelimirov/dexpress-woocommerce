@@ -50,7 +50,7 @@ final class SimulationService
 
     public function isActive(): bool
     {
-        return $this->options->getString('api.environment', 'test') === 'test'
+        return $this->resolveMode() === 'dry_run'
             && (bool) $this->options->get('simulation.enabled', false);
     }
 
@@ -61,7 +61,7 @@ final class SimulationService
         }
 
         $shipment = $event->shipment;
-        if ($shipment->apiResponse() !== 'TEST' || $shipment->id() === null) {
+        if (!in_array($shipment->apiResponse(), ['TEST', 'DRYRUN'], true) || $shipment->id() === null) {
             return;
         }
 
@@ -85,7 +85,7 @@ final class SimulationService
 
     public function injectSimulationWebhookLog(int $shipmentId, mixed $sid): void
     {
-        if ($this->options->getString('api.environment', 'test') !== 'test' || !$this->isActive()) {
+        if (!$this->isActive()) {
             return;
         }
 
@@ -95,7 +95,7 @@ final class SimulationService
         }
 
         $shipment = $this->shipments->findById($shipmentId);
-        if ($shipment === null || $shipment->apiResponse() !== 'TEST' || $shipment->id() === null) {
+        if ($shipment === null || !in_array($shipment->apiResponse(), ['TEST', 'DRYRUN'], true) || $shipment->id() === null) {
             return;
         }
 
@@ -218,5 +218,14 @@ final class SimulationService
             __('nakon %d s od kreiranja pošiljke', 'dexpress-woocommerce'),
             $offsetSeconds,
         );
+    }
+
+    private function resolveMode(): string
+    {
+        $mode = $this->options->getString('api.mode', '');
+        if ($mode !== '') {
+            return $mode;
+        }
+        return $this->options->getString('api.environment', 'test') === 'production' ? 'live' : 'dry_run';
     }
 }

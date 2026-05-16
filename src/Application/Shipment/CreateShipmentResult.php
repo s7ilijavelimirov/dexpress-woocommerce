@@ -28,10 +28,11 @@ final class CreateShipmentResult
         ));
     }
 
-    /**
-     * True when the API accepted the request in test mode ("TEST" response).
-     * The shipment is persisted but no real courier job was created.
-     */
+    public function isDryRun(): bool
+    {
+        return $this->shipment->apiResponse() === 'DRYRUN';
+    }
+
     public function isTestMode(): bool
     {
         return $this->shipment->apiResponse() === 'TEST';

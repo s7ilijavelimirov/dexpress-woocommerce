@@ -143,7 +143,8 @@ defined('ABSPATH') || exit;
                                    id="dex-loc-street-name"
                                    class="regular-text"
                                    autocomplete="new-password"
-                                   placeholder="<?php esc_attr_e('Počnite kucati naziv ulice...', 'dexpress-woocommerce'); ?>">
+                                   disabled
+                                   placeholder="<?php esc_attr_e('Prvo izaberite grad...', 'dexpress-woocommerce'); ?>">
                             <span class="spinner dex-ac-spinner" id="dex-street-spinner"></span>
                             <input type="hidden" id="dex-loc-street-id" value="">
                             <div id="dex-street-suggestions" class="dex-dropdown" role="listbox"></div>
@@ -185,11 +186,11 @@ defined('ABSPATH') || exit;
                     </td>
                 </tr>
                 <tr>
-                    <th><label for="dex-loc-bank-account"><?php esc_html_e('Tekući račun (za otkupninu)', 'dexpress-woocommerce'); ?></label></th>
+                    <th><label for="dex-loc-bank-account"><?php esc_html_e('Tekući račun (za otkupninu)', 'dexpress-woocommerce'); ?> <span class="dex-field__required">*</span></label></th>
                     <td>
                         <input type="text" id="dex-loc-bank-account" class="regular-text"
                                placeholder="<?php esc_attr_e('npr. 160-123456789-01', 'dexpress-woocommerce'); ?>">
-                        <p class="description"><?php esc_html_e('Neobavezno. Popunite samo ako ova lokacija prima otkupninu na poseban račun.', 'dexpress-woocommerce'); ?></p>
+                        <p class="description"><?php esc_html_e('Račun na koji D Express uplaćuje otkupninu za ovu lokaciju.', 'dexpress-woocommerce'); ?></p>
                     </td>
                 </tr>
             </table>

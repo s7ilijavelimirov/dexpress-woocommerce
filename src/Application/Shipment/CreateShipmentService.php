@@ -425,18 +425,24 @@ final class CreateShipmentService
             $bankAccount,
         );
 
-        $configuredEnv = $this->options->getString('api.environment', 'test') === 'production' ? 'PRODUCTION' : 'TEST';
-        $this->logger->info($this->formatCreateShipmentLog($shipment->orderId, $configuredEnv, $payload));
+        $mode = $this->resolveMode();
+        $this->logger->info($this->formatCreateShipmentLog($shipment->orderId, strtoupper($mode), $payload));
 
-        try {
-            $apiResponse = $this->apiClient->addShipment($payload);
-        } catch (\Throwable $e) {
-            $this->logger->error(implode("\n", [
-                '[ERROR - CREATE SHIPMENT]',
-                'Order: ' . $shipment->orderId,
-                'Message: ' . $e->getMessage(),
-            ]));
-            throw new \RuntimeException('Pošiljka nije poslata D Express API-ju. ' . $e->getMessage());
+        if ($mode === 'dry_run') {
+            $apiResponse = 'DRYRUN';
+        } else {
+            try {
+                $apiResponse = $this->apiClient->addShipment($payload);
+            } catch (\Throwable $e) {
+                $this->logger->error(implode("\n", [
+                    '[ERROR - CREATE SHIPMENT]',
+                    'Order: ' . $shipment->orderId,
+                    'Message: ' . $e->getMessage(),
+                ]));
+                throw new \RuntimeException('Pošiljka nije poslata D Express API-ju. ' . $e->getMessage());
+            }
+            $this->options->set('api.last_response', $apiResponse);
+            $this->options->save();
         }
 
         $shipment = $shipment->withApiResponse(
@@ -955,5 +961,14 @@ final class CreateShipmentService
     {
         $this->logger->warning('[PACKAGE SHOP CONSTRAINT] ' . $message, ['order_id' => $orderId]);
         throw new \RuntimeException($message);
+    }
+
+    private function resolveMode(): string
+    {
+        $mode = $this->options->getString('api.mode', '');
+        if ($mode !== '') {
+            return $mode;
+        }
+        return $this->options->getString('api.environment', 'test') === 'production' ? 'live' : 'dry_run';
     }
 }

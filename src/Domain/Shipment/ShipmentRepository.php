@@ -50,6 +50,18 @@ interface ShipmentRepository
      */
     public function maxAllocatedNumericForPrefix(string $prefix): ?int;
 
+    /**
+     * Count of package codes currently allocated within the given range (active — not freed by deletion).
+     * More accurate than MAX-based approximation when gaps exist from deleted pending_send shipments.
+     */
+    public function countAllocatedCodesInRange(string $prefix, int $rangeStart, int $rangeEnd): int;
+
+    /**
+     * First numeric suffix in the given range that is not currently allocated.
+     * Returns null when the range is fully exhausted.
+     */
+    public function firstFreeNumericInRange(string $prefix, int $rangeStart, int $rangeEnd): ?int;
+
     public function updateStatusPresentation(int $id, StatusEmailBucket $bucket, int $currentSid, string $labelSnapshot): void;
 
     public function getSendStatus(int $id): string;

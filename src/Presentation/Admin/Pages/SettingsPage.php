@@ -55,15 +55,27 @@ final class SettingsPage
             $activeTab = 'api';
         }
 
+        $visibleTabs = self::TABS;
+
         $notice = $this->getNotice();
 
-        $envValue = $this->options->getString('api.environment', 'test');
-        $envLabel = $envValue === 'production'
-            ? esc_html__('Produkcija', 'dexpress-woocommerce')
-            : esc_html__('Test mode', 'dexpress-woocommerce');
-        $envClass = $envValue === 'production'
-            ? 'dex-settings-header__env--production'
-            : 'dex-settings-header__env--test';
+        $modeRaw      = $this->options->getString('api.mode', '');
+        $mode         = $modeRaw !== '' ? $modeRaw : ($this->options->getString('api.environment', 'test') === 'production' ? 'live' : 'dry_run');
+        $lastResponse = $this->options->getString('api.last_response', '');
+
+        if ($mode === 'dry_run') {
+            $envLabel = esc_html__('Probni rad', 'dexpress-woocommerce');
+            $envClass = 'dex-settings-header__env--dryrun';
+        } elseif ($lastResponse === 'OK') {
+            $envLabel = esc_html__('Produkcija', 'dexpress-woocommerce');
+            $envClass = 'dex-settings-header__env--production';
+        } elseif ($lastResponse === 'TEST') {
+            $envLabel = esc_html__('Live · Test', 'dexpress-woocommerce');
+            $envClass = 'dex-settings-header__env--test';
+        } else {
+            $envLabel = esc_html__('Live', 'dexpress-woocommerce');
+            $envClass = 'dex-settings-header__env--test';
+        }
 
         echo '<div class="wrap dex-settings-wrap">';
 
@@ -95,7 +107,7 @@ final class SettingsPage
         }
 
         echo '<div class="dex-tabs">';
-        foreach (self::TABS as $slug => $label) {
+        foreach ($visibleTabs as $slug => $label) {
             $url    = add_query_arg(['page' => self::PAGE_SLUG, 'tab' => $slug], admin_url('admin.php'));
             $active = $activeTab === $slug ? ' is-active' : '';
             $icon = isset(self::TAB_ICONS[$slug])
@@ -153,6 +165,7 @@ final class SettingsPage
         $shipment_code_range_status = $tab === 'api' ? $this->shipmentCodeRangeStatusForTemplate() : null;
         /** @var array{quick: list<array<string, mixed>>, real: list<array<string, mixed>>, flow_labels: list<string>}|null $simulation_timeline */
         $simulation_timeline = $tab === 'simulation' ? $this->simulationTimelineForTemplate() : null;
+        $api_mode = $options->getString('api.mode', '') ?: ($options->getString('api.environment', 'test') === 'production' ? 'live' : 'dry_run');
 
         require $template;
     }
@@ -170,7 +183,7 @@ final class SettingsPage
      *   used?: int,
      *   remaining?: int,
      *   usage_percent?: float,
-     *   max_numeric?: int|null
+     *   next_free?: int|null
      * }
      */
     private function shipmentCodeRangeStatusForTemplate(): array
@@ -196,14 +209,13 @@ final class SettingsPage
             return ['valid' => false];
         }
 
-        $maxNumeric = $this->shipments->maxAllocatedNumericForPrefix($prefix);
-        $rawUsed    = $maxNumeric === null ? 0 : max(0, $maxNumeric - $rangeStart + 1);
-        $used       = min($rawUsed, $total);
-        $remaining  = max(0, $total - $rawUsed);
-        $usagePct   = $total > 0 ? min(100.0, ($rawUsed / $total) * 100.0) : 0.0;
+        $used      = $this->shipments->countAllocatedCodesInRange($prefix, $rangeStart, $rangeEnd);
+        $remaining = max(0, $total - $used);
+        $usagePct  = $total > 0 ? min(100.0, ($used / $total) * 100.0) : 0.0;
+        $nextFree  = $this->shipments->firstFreeNumericInRange($prefix, $rangeStart, $rangeEnd);
 
         $tier = 'normal';
-        if ($rawUsed >= $total || $remaining <= 0) {
+        if ($nextFree === null || $remaining <= 0) {
             $tier = 'exhausted';
         } elseif ($usagePct > 95.0) {
             $tier = 'critical';
@@ -212,16 +224,16 @@ final class SettingsPage
         }
 
         return [
-            'valid'          => true,
-            'tier'           => $tier,
-            'prefix'         => $prefix,
-            'range_start'    => $rangeStart,
-            'range_end'      => $rangeEnd,
-            'total'          => $total,
-            'used'           => $rawUsed,
-            'remaining'      => $remaining,
-            'usage_percent'  => $usagePct,
-            'max_numeric'    => $maxNumeric,
+            'valid'         => true,
+            'tier'          => $tier,
+            'prefix'        => $prefix,
+            'range_start'   => $rangeStart,
+            'range_end'     => $rangeEnd,
+            'total'         => $total,
+            'used'          => $used,
+            'remaining'     => $remaining,
+            'usage_percent' => $usagePct,
+            'next_free'     => $nextFree,
         ];
     }
 

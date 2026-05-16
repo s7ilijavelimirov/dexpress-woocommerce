@@ -65,7 +65,7 @@ final class SettingsSaveHandler
         $username    = sanitize_text_field($_POST['api_username'] ?? '');
         $rawPassword = $_POST['api_password'] ?? '';
         $clientId    = sanitize_text_field($_POST['api_client_id'] ?? '');
-        $environment = sanitize_key($_POST['api_environment'] ?? 'test');
+        $environment = sanitize_key($_POST['api_mode'] ?? 'dry_run');
         $prefixNorm   = ShipmentCodeAllocator::normalizeShipmentPrefix(sanitize_text_field($_POST['shipment_prefix'] ?? ''));
         $prefixError  = ShipmentCodeAllocator::shipmentPrefixValidationError($prefixNorm);
         if ($prefixError !== null) {
@@ -83,8 +83,8 @@ final class SettingsSaveHandler
         $defaultRet     = (int) ($_POST['default_return_doc'] ?? 0);
         $defaultSelfDrop = isset($_POST['default_self_drop_off']) ? '1' : '0';
 
-        if (!in_array($environment, ['test', 'production'], true)) {
-            $environment = 'test';
+        if (!in_array($environment, ['dry_run', 'live'], true)) {
+            $environment = 'dry_run';
         }
 
         if (!in_array($defaultDl, [1, 2], true)) {
@@ -103,7 +103,7 @@ final class SettingsSaveHandler
 
         $this->options->set('api.username', $username);
         $this->options->set('api.client_id', $clientId);
-        $this->options->set('api.environment', $environment);
+        $this->options->set('api.mode', $environment);
         $this->options->set('shipment.prefix', $prefixNorm);
         $this->options->set('shipment.range_start', $rangeStart);
         $this->options->set('shipment.range_end', $rangeEnd);
@@ -182,7 +182,8 @@ final class SettingsSaveHandler
 
     private function saveSimulationTab(): ?string
     {
-        $enabled      = isset($_POST['simulation_enabled']);
+        $mode    = $this->options->getString('api.mode', '') ?: ($this->options->getString('api.environment', 'test') === 'production' ? 'live' : 'dry_run');
+        $enabled = $mode !== 'live' && isset($_POST['simulation_enabled']);
         $quickTimeline = isset($_POST['simulation_quick_timeline']);
 
         $this->options->set('simulation.enabled', $enabled);

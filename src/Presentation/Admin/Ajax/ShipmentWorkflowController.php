@@ -28,6 +28,7 @@ final class ShipmentWorkflowController
     {
         add_action('wp_ajax_dexpress_save_shipment_local', [$this, 'saveLocal']);
         add_action('wp_ajax_dexpress_send_saved_shipment', [$this, 'sendSaved']);
+        add_action('wp_ajax_dexpress_delete_pending_shipment', [$this, 'deletePending']);
     }
 
     public function saveLocal(): void
@@ -93,7 +94,7 @@ final class ShipmentWorkflowController
 
         $shipmentId = (int) $result->shipment->id();
         wp_send_json_success([
-            'message' => __('Nalepnica je kreirana lokalno. Pošiljka čeka slanje u D-Express.', 'dexpress-woocommerce'),
+            'message' => __('Pošiljka je kreirana. Odštampajte nalepnicu i zalepite je na paket.', 'dexpress-woocommerce'),
             'shipment_id' => $shipmentId,
             'tracking_code' => $result->trackingCode(),
             'tracking_codes' => $result->allPackageCodes(),
@@ -128,15 +129,58 @@ final class ShipmentWorkflowController
             return;
         }
 
+        if ($result->isDryRun()) {
+            $msg = __('Pošiljka je snimljena u probnom radu — nije poslata D-Expressu.', 'dexpress-woocommerce');
+        } elseif ($result->isTestMode()) {
+            $msg = __('Pošiljka je poslata u test modu.', 'dexpress-woocommerce');
+        } else {
+            $msg = __('Pošiljka je uspešno poslata u D-Express.', 'dexpress-woocommerce');
+        }
+
         wp_send_json_success([
-            'message' => $result->isTestMode()
-                ? __('Pošiljka je poslata u TEST modu.', 'dexpress-woocommerce')
-                : __('Pošiljka je uspešno poslata u D-Express.', 'dexpress-woocommerce'),
+            'message' => $msg,
             'shipment_id' => $shipmentId,
             'tracking_code' => $result->trackingCode(),
             'tracking_codes' => $result->allPackageCodes(),
             'label_url' => $this->buildLabelUrl($shipmentId),
         ]);
+    }
+
+    public function deletePending(): void
+    {
+        check_ajax_referer('dexpress_delete_pending_shipment', 'nonce');
+        if (!current_user_can('manage_woocommerce')) {
+            wp_send_json_error(['message' => 'Nedovoljna prava.'], 403);
+            return;
+        }
+
+        $shipmentId = (int) ($_POST['shipment_id'] ?? 0);
+        if ($shipmentId <= 0) {
+            wp_send_json_error(['message' => __('Pošiljka nije validna.', 'dexpress-woocommerce')]);
+            return;
+        }
+
+        $status = $this->shipments->getSendStatus($shipmentId);
+        if ($status !== 'pending_send') {
+            wp_send_json_error(['message' => __('Može se obrisati samo pošiljka koja čeka slanje.', 'dexpress-woocommerce')]);
+            return;
+        }
+
+        global $wpdb;
+        $piTable  = $wpdb->prefix . 'dexpress_package_items';
+        $pkgTable = $wpdb->prefix . 'dexpress_packages';
+        $sTable   = $wpdb->prefix . 'dexpress_shipments';
+
+        // Cascade delete: items → packages → shipment
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        $wpdb->query($wpdb->prepare(
+            "DELETE pi FROM `{$piTable}` pi INNER JOIN `{$pkgTable}` p ON p.id = pi.package_id WHERE p.shipment_id = %d",
+            $shipmentId,
+        ));
+        $wpdb->delete($pkgTable, ['shipment_id' => $shipmentId], ['%d']); // phpcs:ignore
+        $wpdb->delete($sTable, ['id' => $shipmentId], ['%d']); // phpcs:ignore
+
+        wp_send_json_success(['message' => __('Pošiljka je obrisana.', 'dexpress-woocommerce')]);
     }
 
     /**
@@ -225,31 +269,18 @@ final class ShipmentWorkflowController
      */
     private function validatePackageLineAllocations(WC_Order $order, array $packages): ?string
     {
-        $allowedQty = [];
+        $allowedItems = [];
         foreach ($order->get_items() as $item) {
             if ($item instanceof WC_Order_Item_Product) {
-                $allowedQty[$item->get_id()] = (int) $item->get_quantity();
+                $allowedItems[$item->get_id()] = true;
             }
         }
 
-        $totals = [];
         foreach ($packages as $pkg) {
             foreach ($pkg['items'] as $row) {
-                $oid = $row['order_item_id'];
-                $qty = $row['qty'];
-                if (!isset($allowedQty[$oid])) {
+                if (!isset($allowedItems[$row['order_item_id']])) {
                     return __('Jedna ili više stavki ne pripadaju ovoj narudžbini.', 'dexpress-woocommerce');
                 }
-                $totals[$oid] = ($totals[$oid] ?? 0) + $qty;
-            }
-        }
-
-        foreach ($allowedQty as $oid => $max) {
-            if (($totals[$oid] ?? 0) > $max) {
-                return sprintf(
-                    __('Ukupna raspodeljena količina premašuje poručenu za jednu stavku (max %d).', 'dexpress-woocommerce'),
-                    $max,
-                );
             }
         }
 

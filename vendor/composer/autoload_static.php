@@ -125,7 +125,6 @@ class ComposerStaticInit4339687698de02e14a77275d7c4d6164
         'S7codedesign\\DExpress\\Presentation\\Admin\\Label\\PrintLabelController' => __DIR__ . '/../..' . '/src/Presentation/Admin/Label/PrintLabelController.php',
         'S7codedesign\\DExpress\\Presentation\\Admin\\Menu\\AdminMenu' => __DIR__ . '/../..' . '/src/Presentation/Admin/Menu/AdminMenu.php',
         'S7codedesign\\DExpress\\Presentation\\Admin\\Metabox\\OrderShipmentMetabox' => __DIR__ . '/../..' . '/src/Presentation/Admin/Metabox/OrderShipmentMetabox.php',
-        'S7codedesign\\DExpress\\Presentation\\Admin\\Metabox\\PackageShopInfoMetabox' => __DIR__ . '/../..' . '/src/Presentation/Admin/Metabox/PackageShopInfoMetabox.php',
         'S7codedesign\\DExpress\\Presentation\\Admin\\Pages\\DashboardPage' => __DIR__ . '/../..' . '/src/Presentation/Admin/Pages/DashboardPage.php',
         'S7codedesign\\DExpress\\Presentation\\Admin\\Pages\\DiagnosticsPage' => __DIR__ . '/../..' . '/src/Presentation/Admin/Pages/DiagnosticsPage.php',
         'S7codedesign\\DExpress\\Presentation\\Admin\\Pages\\OnboardingPage' => __DIR__ . '/../..' . '/src/Presentation/Admin/Pages/OnboardingPage.php',

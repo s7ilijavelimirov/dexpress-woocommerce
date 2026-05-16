@@ -14,7 +14,8 @@ defined('ABSPATH') || exit;
 use S7codedesign\DExpress\Application\Shipment\ShipmentCodeAllocator;
 
 $range_status = is_array($shipment_code_range_status ?? null) ? $shipment_code_range_status : ['valid' => false];
-$currentEnv   = $options->getString('api.environment', 'test');
+$modeRaw    = $options->getString('api.mode', '');
+$currentEnv = $modeRaw !== '' ? $modeRaw : ($options->getString('api.environment', 'test') === 'production' ? 'live' : 'dry_run');
 $prefixInput  = ShipmentCodeAllocator::normalizeShipmentPrefix($options->getString('shipment.prefix', ''));
 if (strlen($prefixInput) !== 2) {
     $prefixInput = '';
@@ -135,7 +136,7 @@ $rangeEndDisplay   = ($reRaw !== null && $reRaw !== '' && (int) $reRaw > 0) ? (s
             </div>
             <div class="dex-card__body">
                 <p class="dex-settings-section__lead">
-                    <?php esc_html_e('Dvoslovni prefiks i numerički opseg koje vam je dodelio D Express (npr. TT sa 1–99 za test). Ispod pratite iskorišćenost.', 'dexpress-woocommerce'); ?>
+                    <?php esc_html_e('D Express vam dodeljuje dvoslovni prefiks i numerički opseg — svaki paket dobija jedinstveni kod iz tog opsega. Kad se opseg popuni, pozovite D Express da vam prošire „Do" na veći broj.', 'dexpress-woocommerce'); ?>
                 </p>
 
                 <div class="dex-settings-fields">
@@ -155,7 +156,7 @@ $rangeEndDisplay   = ($reRaw !== null && $reRaw !== '' && (int) $reRaw > 0) ? (s
                             spellcheck="false"
                             required
                             value="<?php echo esc_attr($prefixInput); ?>">
-                        <p class="dex-field__hint"><?php esc_html_e('2 velika slova koja vam je dodelio D Express (npr. TT za test).', 'dexpress-woocommerce'); ?></p>
+                        <p class="dex-field__hint"><?php esc_html_e('2 velika slova koja vam je dodelio D Express (npr. TT za test, ili ZS, AB… za produkciju).', 'dexpress-woocommerce'); ?></p>
                     </div>
 
                     <div class="dex-field">
@@ -181,10 +182,48 @@ $rangeEndDisplay   = ($reRaw !== null && $reRaw !== '' && (int) $reRaw > 0) ? (s
                                     value="<?php echo esc_attr($rangeEndDisplay); ?>">
                             </div>
                         </div>
-                        <p class="dex-field__hint"><?php esc_html_e('Numerički opseg koji vam je dodelio D Express. Za testno: 1–99.', 'dexpress-woocommerce'); ?></p>
+                        <p class="dex-field__hint"><?php esc_html_e('Opseg koji vam je dodelio D Express. Primer: Od 7520 Do 8020 = 501 kod. Kad ponestane, D Express povećava „Do".', 'dexpress-woocommerce'); ?></p>
                     </div>
 
                 </div>
+
+                <?php /* Live preview — updates via JS as user types */ ?>
+                <div id="dex-code-preview" class="dex-code-preview<?php echo ($prefixInput !== '' && $rangeStartDisplay !== '' && $rangeEndDisplay !== '') ? '' : ' is-hidden'; ?>">
+                    <span class="dex-code-preview__label"><?php esc_html_e('Primer koda:', 'dexpress-woocommerce'); ?></span>
+                    <code id="dex-code-preview-first" class="dex-code-preview__code"></code>
+                    <span class="dex-code-preview__sep">→</span>
+                    <code id="dex-code-preview-last" class="dex-code-preview__code"></code>
+                    <span class="dex-code-preview__total" id="dex-code-preview-total"></span>
+                </div>
+
+                <script>
+                (function () {
+                    function pad(n) {
+                        var s = String(Math.max(0, n));
+                        while (s.length < 10) { s = '0' + s; }
+                        return s;
+                    }
+                    function update() {
+                        var pfx   = (document.getElementById('shipment_prefix').value || '').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 2);
+                        var start = parseInt(document.getElementById('shipment_range_start').value, 10);
+                        var end   = parseInt(document.getElementById('shipment_range_end').value, 10);
+                        var wrap  = document.getElementById('dex-code-preview');
+                        if (!wrap) { return; }
+                        if (pfx.length !== 2 || isNaN(start) || isNaN(end) || start < 1 || end < start) {
+                            wrap.classList.add('is-hidden'); return;
+                        }
+                        wrap.classList.remove('is-hidden');
+                        document.getElementById('dex-code-preview-first').textContent = pfx + pad(start);
+                        document.getElementById('dex-code-preview-last').textContent  = pfx + pad(end);
+                        document.getElementById('dex-code-preview-total').textContent = '(' + (end - start + 1) + ' <?php echo esc_js(__('kodova', 'dexpress-woocommerce')); ?>)';
+                    }
+                    ['shipment_prefix', 'shipment_range_start', 'shipment_range_end'].forEach(function (id) {
+                        var el = document.getElementById(id);
+                        if (el) { el.addEventListener('input', update); }
+                    });
+                    update();
+                }());
+                </script>
 
                 <?php if (!empty($range_status['valid'])) : ?>
                     <?php
@@ -193,46 +232,47 @@ $rangeEndDisplay   = ($reRaw !== null && $reRaw !== '' && (int) $reRaw > 0) ? (s
                     $range_end     = (int) ($range_status['range_end'] ?? 0);
                     $total         = (int) ($range_status['total'] ?? 0);
                     $used          = (int) ($range_status['used'] ?? 0);
+                    $remaining     = (int) ($range_status['remaining'] ?? 0);
                     $usage_percent = (float) ($range_status['usage_percent'] ?? 0.0);
                     $prefix_disp   = (string) ($range_status['prefix'] ?? '');
+                    $next_free     = isset($range_status['next_free']) ? (int) $range_status['next_free'] : null;
 
-                    $used_display      = min($used, $total);
-                    $remaining_display = max(0, $total - $used_display);
-                    $is_exhausted      = $tier === 'exhausted';
-                    $show_usage_warn   = !$is_exhausted && $usage_percent >= 80.0;
+                    $is_exhausted    = $tier === 'exhausted';
+                    $show_usage_warn = !$is_exhausted && $usage_percent >= 80.0;
+                    $meter_w         = (string) min(100.0, max(0.0, $usage_percent));
+                    $meter_class     = $is_exhausted ? ' is-exhausted' : ($show_usage_warn ? ' is-warning' : '');
+
+                    $next_code_display = $next_free !== null
+                        ? ($prefix_disp . str_pad((string) $next_free, 10, '0', STR_PAD_LEFT))
+                        : null;
 
                     $mailto_subject = rawurlencode(__('Zahtev za proširenje opsega kodova pošiljki', 'dexpress-woocommerce'));
-                    $mailto_body    = rawurlencode(
-                        sprintf(
-                            /* translators: 1: prefix, 2: range start, 3: range end, 4: usage percent */
-                            __(
-                                "Zdravo,\n\nPotreban nam je prošireni numerički opseg za D Express kodove pošiljki.\n" .
-                                    "Trenutni prefiks: %1\$s\nPodešen opseg: %2\$s – %3\$s\nPribližna iskorišćenost: %4\$s%%\n\nHvala.",
-                                'dexpress-woocommerce'
-                            ),
-                            $prefix_disp,
-                            (string) $range_start,
-                            (string) $range_end,
-                            (string) round($usage_percent, 1)
-                        ),
-                    );
+                    $mailto_body    = rawurlencode(sprintf(
+                        /* translators: 1: prefix, 2: range start, 3: range end, 4: usage percent */
+                        __("Zdravo,\n\nPotreban nam je prošireni numerički opseg za D Express kodove pošiljki.\nTrenutni prefiks: %1\$s\nPodešen opseg: %2\$s – %3\$s\nIskorišćenost: %4\$s%%\n\nHvala.", 'dexpress-woocommerce'),
+                        $prefix_disp, (string) $range_start, (string) $range_end, (string) round($usage_percent, 1)
+                    ));
                     $mailto_href = 'mailto:support@dexpress.rs?subject=' . $mailto_subject . '&body=' . $mailto_body;
-                    $meter_w     = (string) min(100.0, max(0.0, $usage_percent));
-                    $meter_class = $is_exhausted ? ' is-exhausted' : ($show_usage_warn ? ' is-warning' : '');
                     ?>
                     <div class="dex-shipment-range-monitor">
+
+                        <?php if ($next_code_display !== null) : ?>
+                        <div class="dex-next-code-row">
+                            <span class="dex-next-code-row__label"><?php esc_html_e('Sledeći slobodni kod:', 'dexpress-woocommerce'); ?></span>
+                            <code class="dex-next-code-row__code"><?php echo esc_html($next_code_display); ?></code>
+                        </div>
+                        <?php endif; ?>
+
                         <p class="dex-usage-count">
                             <?php
                             printf(
-                                /* translators: 1: used count, 2: total capacity */
-                                esc_html__('%1$s / %2$s iskorišćeno', 'dexpress-woocommerce'),
-                                esc_html((string) $used_display),
+                                /* translators: 1: used, 2: total */
+                                esc_html__('%1$s / %2$s kodova iskorišćeno', 'dexpress-woocommerce'),
+                                '<strong>' . esc_html((string) $used) . '</strong>',
                                 esc_html((string) $total)
                             );
                             ?>
-                            <span class="description">
-                                (<?php echo esc_html(number_format_i18n($usage_percent, 1)); ?>%)
-                            </span>
+                            <span class="description">(<?php echo esc_html(number_format_i18n($usage_percent, 1)); ?>%)</span>
                         </p>
 
                         <div class="dex-usage-meter<?php echo esc_attr($meter_class); ?>" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="<?php echo esc_attr($meter_w); ?>">
@@ -240,99 +280,87 @@ $rangeEndDisplay   = ($reRaw !== null && $reRaw !== '' && (int) $reRaw > 0) ? (s
                         </div>
 
                         <p class="dex-usage-remaining">
-                            <strong><?php esc_html_e('Preostali kodovi', 'dexpress-woocommerce'); ?>:</strong>
-                            <?php echo esc_html((string) $remaining_display); ?>
-                        </p>
-
-                        <p class="description">
-                            <?php
-                            echo esc_html(
-                                sprintf(
-                                    /* translators: 1: prefix letters, 2: range start, 3: range end */
-                                    __('Aktivni prefiks %1$s · numerički opseg %2$s–%3$s', 'dexpress-woocommerce'),
-                                    $prefix_disp,
-                                    (string) $range_start,
-                                    (string) $range_end
-                                )
-                            );
-                            ?>
+                            <strong><?php esc_html_e('Slobodnih kodova:', 'dexpress-woocommerce'); ?></strong>
+                            <?php echo esc_html((string) $remaining); ?>
+                            <span class="description">(<?php echo esc_html($prefix_disp . ' ' . $range_start . '–' . $range_end); ?>)</span>
                         </p>
 
                         <?php if ($is_exhausted) : ?>
                             <div class="dex-notice dex-notice--error">
                                 <div class="dex-notice__content">
-                                    <p class="dex-notice__title"><?php esc_html_e('Opseg kodova pošiljki je iscrpljen', 'dexpress-woocommerce'); ?></p>
-                                    <p class="dex-notice__body"><?php esc_html_e('Proširite opseg u dogovoru sa D Express ili, kada vam bude dodeljen novi opseg, ažurirajte vrednost „Do" u podešavanjima.', 'dexpress-woocommerce'); ?></p>
+                                    <p class="dex-notice__title"><?php esc_html_e('Opseg kodova je iscrpljen', 'dexpress-woocommerce'); ?></p>
+                                    <p class="dex-notice__body"><?php esc_html_e('Ne možete kreirati nove pošiljke dok ne proširite opseg. Pozovite D Express i tražite da povećaju vrednost „Do". Kada dobijete novi broj, upišite ga ovde i sačuvajte.', 'dexpress-woocommerce'); ?></p>
                                 </div>
                             </div>
                         <?php elseif ($show_usage_warn) : ?>
                             <div class="dex-notice dex-notice--warning">
                                 <div class="dex-notice__content">
-                                    <p class="dex-notice__title"><?php esc_html_e('Ponestaje vam kodova pošiljki', 'dexpress-woocommerce'); ?></p>
-                                    <p class="dex-notice__body"><?php esc_html_e('Zatražite proširenje opsega kod D Express pre potpunog iscrpljenja.', 'dexpress-woocommerce'); ?></p>
+                                    <p class="dex-notice__title"><?php esc_html_e('Ponestaje kodova', 'dexpress-woocommerce'); ?></p>
+                                    <p class="dex-notice__body"><?php esc_html_e('Ostalo vam je manje od 20% opsega. Kontaktirajte D Express na vreme i tražite proširenje „Do" vrednosti pre nego što ostanete bez kodova.', 'dexpress-woocommerce'); ?></p>
                                 </div>
                             </div>
                         <?php else : ?>
                             <p class="description">
-                                <?php esc_html_e('Iskorišćenost je u bezbednom opsegu. Uvek možete povećati „Do" u dogovoru sa D Express ako očekujete rast.', 'dexpress-woocommerce'); ?>
+                                <?php esc_html_e('Iskorišćenost je u bezbednom opsegu.', 'dexpress-woocommerce'); ?>
                             </p>
                         <?php endif; ?>
 
                         <p>
-                            <a class="dex-btn dex-btn--secondary dex-btn--sm"
-                                href="<?php echo esc_url($mailto_href); ?>">
+                            <a class="dex-btn dex-btn--secondary dex-btn--sm" href="<?php echo esc_url($mailto_href); ?>">
                                 <span class="dashicons dashicons-email-alt" aria-hidden="true"></span>
-                                <?php esc_html_e('Zatražite dodatne kodove', 'dexpress-woocommerce'); ?>
+                                <?php esc_html_e('Zatražite proširenje opsega', 'dexpress-woocommerce'); ?>
                             </a>
                         </p>
                     </div>
                 <?php else : ?>
                     <div class="dex-notice dex-notice--info">
                         <div class="dex-notice__content">
-                            <p class="dex-notice__body"><?php esc_html_e('Sačuvajte ispravan dvoslovni prefiks i opseg (Od ≤ Do) da biste videli iskorišćenost i preostale kodove.', 'dexpress-woocommerce'); ?></p>
+                            <p class="dex-notice__body"><?php esc_html_e('Unesite ispravan prefiks i opseg pa sačuvajte da biste videli iskorišćenost i sledeći slobodni kod.', 'dexpress-woocommerce'); ?></p>
                         </div>
                     </div>
                 <?php endif; ?>
             </div>
         </div>
-        <?php /* ─── CARD 3: OKRUŽENJE ─── */ ?>
-        
+        <?php /* ─── CARD 3: MOD RADA ─── */ ?>
+
         <div class="dex-card dex-env-card" id="dex-env-settings-card">
             <div class="dex-card__header">
                 <span class="dashicons dashicons-admin-generic" aria-hidden="true"></span>
-                <h2 class="dex-card__title"><?php esc_html_e('Okruženje', 'dexpress-woocommerce'); ?></h2>
+                <h2 class="dex-card__title"><?php esc_html_e('Mod rada', 'dexpress-woocommerce'); ?></h2>
             </div>
             <div class="dex-card__body">
-                <p class="dex-settings-section__lead dex-env-card__intro"><?php esc_html_e('Test ili produkcija — u testu se pošiljke ne šalju D Express-u.', 'dexpress-woocommerce'); ?></p>
+                <p class="dex-settings-section__lead dex-env-card__intro">
+                    <?php esc_html_e('Izaberite kako plugin komunicira sa D-Expressom.', 'dexpress-woocommerce'); ?>
+                </p>
 
-                <input type="hidden" name="api_environment" id="api_environment_hidden" value="<?php echo esc_attr($currentEnv); ?>">
+                <input type="hidden" name="api_mode" id="api_mode_hidden" value="<?php echo esc_attr($currentEnv); ?>">
 
-                <div class="dex-env-toggle" role="group" aria-label="<?php esc_attr_e('Okruženje', 'dexpress-woocommerce'); ?>">
+                <div class="dex-env-toggle" role="group" aria-label="<?php esc_attr_e('Mod rada', 'dexpress-woocommerce'); ?>">
                     <button type="button"
-                        class="dex-env-option<?php echo $currentEnv === 'test' ? ' is-active' : ''; ?>"
-                        data-value="test"
-                        aria-pressed="<?php echo $currentEnv === 'test' ? 'true' : 'false'; ?>">
+                        class="dex-env-option<?php echo $currentEnv === 'dry_run' ? ' is-active' : ''; ?>"
+                        data-value="dry_run"
+                        aria-pressed="<?php echo $currentEnv === 'dry_run' ? 'true' : 'false'; ?>">
                         <span class="dex-env-option__inner">
-                            <span class="dex-env-option__label"><?php esc_html_e('TEST', 'dexpress-woocommerce'); ?></span>
+                            <span class="dex-env-option__label"><?php esc_html_e('Probni rad', 'dexpress-woocommerce'); ?></span>
                         </span>
                     </button>
                     <button type="button"
-                        class="dex-env-option<?php echo $currentEnv === 'production' ? ' is-active' : ''; ?>"
-                        data-value="production"
-                        aria-pressed="<?php echo $currentEnv === 'production' ? 'true' : 'false'; ?>">
+                        class="dex-env-option<?php echo $currentEnv === 'live' ? ' is-active' : ''; ?>"
+                        data-value="live"
+                        aria-pressed="<?php echo $currentEnv === 'live' ? 'true' : 'false'; ?>">
                         <span class="dex-env-option__inner">
-                            <span class="dex-env-option__label"><?php esc_html_e('LIVE', 'dexpress-woocommerce'); ?></span>
+                            <span class="dex-env-option__label"><?php esc_html_e('Produkcija', 'dexpress-woocommerce'); ?></span>
                         </span>
                     </button>
                 </div>
 
-                <div id="dex-env-status" class="dex-env-status <?php echo $currentEnv === 'production' ? 'is-production' : 'is-test'; ?>">
-                    <?php if ($currentEnv === 'production') : ?>
+                <div id="dex-env-status" class="dex-env-status <?php echo $currentEnv === 'live' ? 'is-production' : 'is-dry-run'; ?>">
+                    <?php if ($currentEnv === 'live') : ?>
                         <span class="dex-env-status__icon" aria-hidden="true">✓</span>
-                        <span class="dex-env-status__text"><?php esc_html_e('Produkcijsko okruženje — pošiljke se šalju D Express-u.', 'dexpress-woocommerce'); ?></span>
+                        <span class="dex-env-status__text"><?php esc_html_e('Produkcija — pošiljke se šalju D-Expressu i troše vaše kodove. Koristite kada ste spremni za rad sa kupcima.', 'dexpress-woocommerce'); ?></span>
                     <?php else : ?>
                         <span class="dex-env-status__icon" aria-hidden="true">ℹ</span>
-                        <span class="dex-env-status__text"><?php esc_html_e('Testno okruženje — isti URL-ovi, test kredencijali, bez stvarnih pošiljki.', 'dexpress-woocommerce'); ?></span>
+                        <span class="dex-env-status__text"><?php esc_html_e('Probni rad — pošiljke se snimaju u sistem, ali se ne šalju D-Expressu i ne troše vaše kodove. Koristite za testiranje i podešavanje.', 'dexpress-woocommerce'); ?></span>
                     <?php endif; ?>
                 </div>
 
@@ -342,8 +370,8 @@ $rangeEndDisplay   = ($reRaw !== null && $reRaw !== '' && (int) $reRaw > 0) ? (s
                         if (!root) {
                             return;
                         }
-                        var msgTest = <?php echo wp_json_encode('<span class="dex-env-status__icon" aria-hidden="true">ℹ</span><span class="dex-env-status__text">' . esc_html__('Testno okruženje — isti URL-ovi, test kredencijali, bez stvarnih pošiljki.', 'dexpress-woocommerce') . '</span>'); ?>;
-                        var msgProd = <?php echo wp_json_encode('<span class="dex-env-status__icon" aria-hidden="true">✓</span><span class="dex-env-status__text">' . esc_html__('Produkcijsko okruženje — pošiljke se šalju D Express-u.', 'dexpress-woocommerce') . '</span>'); ?>;
+                        var msgDryRun = <?php echo wp_json_encode('<span class="dex-env-status__icon" aria-hidden="true">ℹ</span><span class="dex-env-status__text">' . esc_html__('Probni rad — pošiljke se snimaju u sistem, ali se ne šalju D-Expressu i ne troše vaše kodove. Koristite za testiranje i podešavanje.', 'dexpress-woocommerce') . '</span>'); ?>;
+                        var msgLive   = <?php echo wp_json_encode('<span class="dex-env-status__icon" aria-hidden="true">✓</span><span class="dex-env-status__text">' . esc_html__('Produkcija — pošiljke se šalju D-Expressu i troše vaše kodove. Koristite kada ste spremni za rad sa kupcima.', 'dexpress-woocommerce') . '</span>'); ?>;
 
                         root.querySelectorAll('.dex-env-option').forEach(function(btn) {
                             btn.addEventListener('click', function() {
@@ -354,14 +382,14 @@ $rangeEndDisplay   = ($reRaw !== null && $reRaw !== '' && (int) $reRaw > 0) ? (s
                                 });
                                 this.classList.add('is-active');
                                 this.setAttribute('aria-pressed', 'true');
-                                document.getElementById('api_environment_hidden').value = val;
+                                document.getElementById('api_mode_hidden').value = val;
                                 var status = document.getElementById('dex-env-status');
-                                if (val === 'production') {
+                                if (val === 'live') {
                                     status.className = 'dex-env-status is-production';
-                                    status.innerHTML = msgProd;
+                                    status.innerHTML = msgLive;
                                 } else {
-                                    status.className = 'dex-env-status is-test';
-                                    status.innerHTML = msgTest;
+                                    status.className = 'dex-env-status is-dry-run';
+                                    status.innerHTML = msgDryRun;
                                 }
                             });
                         });

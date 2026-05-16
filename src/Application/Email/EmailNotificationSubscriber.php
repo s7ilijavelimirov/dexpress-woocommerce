@@ -445,10 +445,11 @@ final class EmailNotificationSubscriber
             return '';
         }
 
-        $isTestEnv = $this->options->getString('api.environment', 'test') === 'test';
-        $sendReal  = $this->options->getBool('emails.test_send_real_customer', false);
+        $mode        = $this->options->getString('api.mode', '') ?: ($this->options->getString('api.environment', 'test') === 'production' ? 'live' : 'dry_run');
+        $notProd     = $mode === 'dry_run' || $this->options->getString('api.last_response', '') !== 'OK';
+        $sendReal    = $this->options->getBool('emails.test_send_real_customer', false);
 
-        if ($isTestEnv && !$sendReal) {
+        if ($notProd && !$sendReal) {
             return (string) get_option('admin_email');
         }
 

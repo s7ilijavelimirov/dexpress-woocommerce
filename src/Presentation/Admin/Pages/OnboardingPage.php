@@ -183,6 +183,7 @@ final class OnboardingPage
             'shipmentPrefix'     => $prefixNorm,
             'shipmentRangeStart' => $rangeStart,
             'shipmentRangeEnd'   => $rangeEnd,
+            'nextFreeCode'       => $this->codeAllocator->nextFreeCodeInConfiguredRange(),
         ]);
     }
 
@@ -693,7 +694,7 @@ final class OnboardingPage
                     </div>
                     <div class="dex-card__body">
                         <p class="dex-settings-section__lead dex-ob-section-intro">
-                            <?php esc_html_e('Dvoslovni prefiks i numerički opseg koje vam je dodelio D Express (npr. TT sa 1–99 za test).', 'dexpress-woocommerce'); ?>
+                            <?php esc_html_e('D Express vam dodeljuje dvoslovni prefiks i numerički opseg — svaki paket dobija jedinstveni kod iz tog opsega. Kad se opseg popuni, pozovite D Express da vam povećaju vrednost „Do".', 'dexpress-woocommerce'); ?>
                         </p>
                         <table class="form-table dex-ob-form-table" role="presentation">
                             <tbody>
@@ -743,12 +744,26 @@ final class OnboardingPage
                                             </div>
                                         </div>
                                         <p class="description">
-                                            <?php esc_html_e('Numerički opseg koji vam je dodelio D Express. Za testno: 1–99.', 'dexpress-woocommerce'); ?>
+                                            <?php esc_html_e('Opseg koji vam je dodelio D Express (npr. Od 83330 Do 83430 = 101 kod). Kad ponestane, kontaktirajte D Express za povećanje „Do".', 'dexpress-woocommerce'); ?>
                                         </p>
                                     </td>
                                 </tr>
                             </tbody>
                         </table>
+                        <?php
+                        $previewVisible = ($savedPrefix !== '' && $savedRangeStart !== '' && $savedRangeEnd !== '');
+                        ?>
+                        <div id="dex-ob-code-preview" class="dex-code-preview<?php echo $previewVisible ? '' : ' is-hidden'; ?>">
+                            <span class="dex-code-preview__label"><?php esc_html_e('Primer koda:', 'dexpress-woocommerce'); ?></span>
+                            <code id="dex-ob-code-preview-first" class="dex-code-preview__code"></code>
+                            <span class="dex-code-preview__sep" aria-hidden="true">→</span>
+                            <code id="dex-ob-code-preview-last" class="dex-code-preview__code"></code>
+                            <span class="dex-code-preview__total" id="dex-ob-code-preview-total"></span>
+                        </div>
+                        <div id="dex-ob-next-code-row" class="dex-next-code-row" hidden>
+                            <span class="dex-next-code-row__label"><?php esc_html_e('Sledeći slobodni kod:', 'dexpress-woocommerce'); ?></span>
+                            <code class="dex-next-code-row__code" id="dex-ob-next-code"></code>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -855,8 +870,9 @@ final class OnboardingPage
                         <td>
                             <div class="dex-ob-autocomplete-wrap">
                                 <input type="text" id="dex-ob-loc-street-name" class="regular-text"
-                                       placeholder="<?php esc_attr_e('Kucajte ulicu…', 'dexpress-woocommerce'); ?>"
-                                       autocomplete="off">
+                                       placeholder="<?php esc_attr_e('Prvo izaberite grad…', 'dexpress-woocommerce'); ?>"
+                                       autocomplete="off"
+                                       disabled>
                                 <input type="hidden" id="dex-ob-loc-street-id">
                                 <span class="spinner" id="dex-ob-street-spinner"></span>
                                 <div class="dex-dropdown" id="dex-ob-street-suggestions" role="listbox"></div>
@@ -904,11 +920,11 @@ final class OnboardingPage
                     </tr>
                     <tr>
                         <th scope="row">
-                            <label for="dex-ob-loc-bank-account"><?php esc_html_e('Tekući račun za otkupninu', 'dexpress-woocommerce'); ?></label>
+                            <label for="dex-ob-loc-bank-account"><?php esc_html_e('Tekući račun za otkupninu', 'dexpress-woocommerce'); ?> <span class="dex-field__required">*</span></label>
                         </th>
                         <td>
                             <input type="text" id="dex-ob-loc-bank-account" class="regular-text" placeholder="<?php esc_attr_e('npr. 160-123456789-01', 'dexpress-woocommerce'); ?>">
-                            <p class="description"><?php esc_html_e('Samo ako na ovoj adresi primalac otkupnine treba na poseban račun. Inače ostavite prazno.', 'dexpress-woocommerce'); ?></p>
+                            <p class="description"><?php esc_html_e('Račun na koji D Express uplaćuje otkupninu za ovu lokaciju.', 'dexpress-woocommerce'); ?></p>
                         </td>
                     </tr>
                 </tbody>

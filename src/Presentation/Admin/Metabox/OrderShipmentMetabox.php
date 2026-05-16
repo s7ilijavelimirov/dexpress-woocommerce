@@ -52,7 +52,7 @@ final class OrderShipmentMetabox
             __('D-Express Dostava', 'dexpress-woocommerce'),
             [$this, 'render'],
             $screenId,
-            'side',
+            'normal',
             'high',
         );
     }
@@ -73,18 +73,39 @@ final class OrderShipmentMetabox
         $sendStatus = ($latest instanceof Shipment && $latest->id() !== null)
             ? $this->shipments->getSendStatus((int) $latest->id())
             : '';
-        $editShipmentId = absint($_GET['dexpress_edit_shipment'] ?? 0);
-        $isEditingPending = $latest instanceof Shipment
-            && $sendStatus === 'pending_send'
-            && (int) $latest->id() === $editShipmentId;
+        $isPendingSend = $latest instanceof Shipment && $sendStatus === 'pending_send';
+
+        $currencySymbol = html_entity_decode(get_woocommerce_currency_symbol(), ENT_HTML5 | ENT_QUOTES, 'UTF-8');
 
         $orderLineItems = [];
         foreach ($order->get_items() as $item) {
             if ($item instanceof \WC_Order_Item_Product) {
+                $product  = $item->get_product();
+                $imageUrl = '';
+                $category = '';
+                $unitPrice = 0.0;
+                $priceDisplay = '';
+                if ($product instanceof \WC_Product) {
+                    $imgId = (int) $product->get_image_id();
+                    if ($imgId > 0) {
+                        $src = wp_get_attachment_image_src($imgId, [48, 48]);
+                        $imageUrl = $src ? (string) $src[0] : '';
+                    }
+                    $unitPrice    = $item->get_quantity() > 0 ? (float) $item->get_subtotal() / (float) $item->get_quantity() : 0.0;
+                    $priceDisplay = number_format($unitPrice, 2, ',', '.') . ' ' . $currencySymbol;
+                    $terms = get_the_terms($product->get_id(), 'product_cat');
+                    if (is_array($terms) && !empty($terms)) {
+                        $category = (string) ($terms[0]->name ?? '');
+                    }
+                }
                 $orderLineItems[] = [
-                    'id' => $item->get_id(),
-                    'name' => $item->get_name(),
-                    'qty_max' => (int) $item->get_quantity(),
+                    'id'            => $item->get_id(),
+                    'name'          => $item->get_name(),
+                    'qty_max'       => (int) $item->get_quantity(),
+                    'image_url'     => $imageUrl,
+                    'price_display' => $priceDisplay,
+                    'unit_price'    => round($unitPrice, 2),
+                    'category'      => $category,
                 ];
             }
         }
@@ -97,32 +118,52 @@ final class OrderShipmentMetabox
             DEXPRESS_VERSION,
         );
         wp_enqueue_style(
-            'dexpress-admin-metabox',
+            'dex-metabox',
             DEXPRESS_PLUGIN_URL . 'assets/css/admin-metabox.css',
             ['dashicons', 'dex-admin'],
             DEXPRESS_VERSION,
         );
-        wp_enqueue_script('dexpress-metabox', DEXPRESS_PLUGIN_URL . 'assets/js/admin-metabox.js', ['jquery'], DEXPRESS_VERSION, true);
-        wp_localize_script('dexpress-metabox', 'dexpressMetabox', [
-            'ajaxUrl' => admin_url('admin-ajax.php'),
-            'nonceSaveLocal' => wp_create_nonce('dexpress_save_shipment_local'),
-            'nonceSendSaved' => wp_create_nonce('dexpress_send_saved_shipment'),
-            'orderId' => $order->get_id(),
-            'maxPackages' => 30,
-            'orderLineItems' => $orderLineItems,
-            'defaults' => $this->shipmentWizardDefaults($order),
-            'isPackageShop' => DexpressPackageShopShippingMethod::orderUsesDexpressPackageShop($order),
-            'destination' => $this->destinationLine($order),
-            'sendStatus' => $sendStatus,
-            'pendingShipmentId' => ($latest instanceof Shipment && $sendStatus === 'pending_send') ? (int) $latest->id() : 0,
-            'pendingLabelUrl' => ($latest instanceof Shipment && $sendStatus === 'pending_send') ? $this->labelUrlForShipment($latest) : '',
-            'editShipmentId' => $isEditingPending ? (int) $latest->id() : 0,
-            'initialDraft' => $isEditingPending ? $this->buildInitialDraftFromShipment($latest) : null,
+        wp_enqueue_script(
+            'dex-metabox',
+            DEXPRESS_PLUGIN_URL . 'assets/js/admin-metabox.js',
+            ['jquery'],
+            DEXPRESS_VERSION,
+            true,
+        );
+        $isPackageShop = DexpressPackageShopShippingMethod::orderUsesDexpressPackageShop($order);
+        $allLocations  = $this->locations->findAll();
+        wp_localize_script('dex-metabox', 'dexpressMetabox', [
+            'ajaxUrl'           => admin_url('admin-ajax.php'),
+            'nonceSaveLocal'    => wp_create_nonce('dexpress_save_shipment_local'),
+            'nonceSendSaved'    => wp_create_nonce('dexpress_send_saved_shipment'),
+            'orderId'           => $order->get_id(),
+            'orderLineItems'    => $orderLineItems,
+            'defaults'          => $this->wizardDefaults($order),
+            'isPackageShop'     => $isPackageShop,
+            'destination'       => $this->destinationLine($order),
+            'recipient'         => $this->recipientDisplay($order, $isPackageShop),
+            'senderLocations'   => array_values(array_map(
+                static fn (array $l): array => ['id' => (int) $l['id'], 'name' => (string) $l['name']],
+                $allLocations,
+            )),
+            'sendStatus'           => $sendStatus,
+            'pendingShipmentId'    => $isPendingSend ? (int) $latest->id() : 0,
+            'editShipmentId'       => $isPendingSend ? (int) $latest->id() : 0,
+            'initialDraft'         => $isPendingSend ? $this->buildDraftFromShipment($latest) : null,
+            'nonceDeletePending'   => wp_create_nonce('dexpress_delete_pending_shipment'),
+            'currencySymbol'       => $currencySymbol,
+            'orderMeta'            => [
+                'isPaid'             => $order->is_paid(),
+                'paymentMethod'      => $order->get_payment_method(),
+                'paymentMethodTitle' => $order->get_payment_method_title(),
+                'statusLabel'        => wc_get_order_status_name($order->get_status()),
+                'total'              => number_format((float) $order->get_total(), 2, ',', '.') . ' ' . $currencySymbol,
+            ],
             'i18n' => [
-                'savingLocal' => __('Čuvanje i štampa...', 'dexpress-woocommerce'),
-                'sending' => __('Slanje...', 'dexpress-woocommerce'),
-                'sendToDexpress' => __('Pošalji u D-Express', 'dexpress-woocommerce'),
-                'error' => __('Došlo je do greške.', 'dexpress-woocommerce'),
+                'creating'      => __('Kreiranje...', 'dexpress-woocommerce'),
+                'sending'       => __('Slanje...', 'dexpress-woocommerce'),
+                'sendToDexpress'=> __('Pošalji u D-Express', 'dexpress-woocommerce'),
+                'error'         => __('Došlo je do greške.', 'dexpress-woocommerce'),
             ],
         ]);
     }
@@ -133,190 +174,513 @@ final class OrderShipmentMetabox
         if (!$order instanceof \WC_Order) {
             return;
         }
-        $manualEmailMessage = $this->maybeHandleManualPackageShopEmailAction($order);
+
+        $manualEmailMsg = $this->maybeHandleManualPackageShopEmail($order);
         $latest = $this->shipments->findLatestByOrderId($order->get_id());
         $sendStatus = ($latest instanceof Shipment && $latest->id() !== null)
             ? $this->shipments->getSendStatus((int) $latest->id())
             : '';
-        $editShipmentId = absint($_GET['dexpress_edit_shipment'] ?? 0);
 
-        echo '<div id="dex-shipment-root" class="dex-metabox">';
-        if ($manualEmailMessage !== null) {
-            echo '<div class="notice notice-info inline"><p>' . esc_html($manualEmailMessage) . '</p></div>';
+        echo '<div id="dex-mb-root">';
+
+        if ($manualEmailMsg !== null) {
+            echo '<div class="notice notice-info inline" style="margin:0 0 12px"><p>' . esc_html($manualEmailMsg) . '</p></div>';
         }
-        if ($latest instanceof Shipment && $sendStatus === 'pending_send' && (int) $latest->id() === $editShipmentId) {
-            $this->renderWizard($order, $this->locations->findAll(), $latest);
-        } elseif ($latest instanceof Shipment && $sendStatus === 'pending_send') {
-            $this->renderPendingSend($latest);
+
+        if ($latest instanceof Shipment && $sendStatus === 'pending_send') {
+            $this->renderPending($latest, $order);
         } elseif ($latest instanceof Shipment && $sendStatus === 'sent') {
             $this->renderCreated($latest, $order);
         } else {
             $this->renderWizard($order, $this->locations->findAll());
         }
+
+        echo '<div id="dex-mb-msg" class="dex-mb-msg" aria-live="polite"></div>';
         echo '</div>';
     }
 
-    /** @param array<int,array<string,mixed>> $senderLocations */
-    private function renderWizard(\WC_Order $order, array $senderLocations, ?Shipment $prefillShipment = null): void
+    // ── Wizard (State A + edit mode for State B) ──────────────────
+
+    /** @param array<int,array<string,mixed>> $locations */
+    private function renderWizard(\WC_Order $order, array $locations, bool $editMode = false): void
     {
-        if ($senderLocations === []) {
-            $settingsUrl = add_query_arg(
-                ['page' => 'dexpress-settings', 'tab' => 'sender_locations'],
-                admin_url('admin.php'),
-            );
-            echo '<div class="notice notice-warning inline"><p>'
-                . esc_html__('Niste podesili lokaciju pošiljaoca.', 'dexpress-woocommerce')
-                . ' <a href="' . esc_url($settingsUrl) . '">'
-                . esc_html__('Dodajte lokaciju ovde', 'dexpress-woocommerce')
-                . '</a> '
-                . esc_html__('pre kreiranja pošiljke.', 'dexpress-woocommerce')
-                . '</p></div>';
+        if ($locations === []) {
+            $url = add_query_arg(['page' => 'dexpress-settings', 'tab' => 'sender_locations'], admin_url('admin.php'));
+            echo '<div class="dex-mb-empty">';
+            echo '<span class="dashicons dashicons-location-alt dex-mb-empty__icon"></span>';
+            echo '<p class="dex-mb-empty__title">' . esc_html__('Lokacija pošiljaoca nije podešena', 'dexpress-woocommerce') . '</p>';
+            echo '<p class="dex-mb-empty__desc">' . esc_html__('Pre kreiranja pošiljke dodajte barem jednu lokaciju pošiljaoca.', 'dexpress-woocommerce') . '</p>';
+            echo '<a href="' . esc_url($url) . '" class="dex-mb-btn dex-mb-btn--primary">' . esc_html__('Dodaj lokaciju', 'dexpress-woocommerce') . '</a>';
+            echo '</div>';
             return;
         }
-        $defaults = $this->shipmentWizardDefaults($order);
-        $wizardTitle = $prefillShipment instanceof Shipment
-            ? __('Izmena podataka pošiljke', 'dexpress-woocommerce')
-            : __('Paketi', 'dexpress-woocommerce');
-        echo '<div class="dex-state dex-state--wizard" data-state="wizard"><div class="dex-steps">'
-            . '<span class="dex-step is-active" data-step="1">' . esc_html__('1. Paketi', 'dexpress-woocommerce') . '</span>'
-            . '<span class="dex-step" data-step="2">' . esc_html__('2. Opcije pošiljke', 'dexpress-woocommerce') . '</span>'
-            . '<span class="dex-step" data-step="3">' . esc_html__('3. Pregled i štampa', 'dexpress-woocommerce') . '</span></div>';
-        echo '<section class="dex-step-panel" data-step="1"><h4>' . esc_html($wizardTitle) . '</h4><div id="dex-package-cards" class="dex-package-cards"></div><div class="dex-package-actions"><button type="button" class="button" id="dex-remove-package">− ' . esc_html__('Ukloni paket', 'dexpress-woocommerce') . '</button><button type="button" class="button button-secondary" id="dex-add-package">+ ' . esc_html__('Dodaj paket', 'dexpress-woocommerce') . '</button></div></section>';
-        echo '<section class="dex-step-panel" data-step="2" hidden><h4>' . esc_html__('Opcije pošiljke', 'dexpress-woocommerce') . '</h4>';
+
+        $defaults = $this->wizardDefaults($order);
+        $isPackageShop = DexpressPackageShopShippingMethod::orderUsesDexpressPackageShop($order);
         $destination = $this->destinationLine($order);
-        if (DexpressPackageShopShippingMethod::orderUsesDexpressPackageShop($order) && $destination !== '') {
-            echo '<p class="dex-package-shop-destination">' . esc_html__('Dostava na:', 'dexpress-woocommerce') . ' <strong>' . esc_html($destination) . '</strong></p>';
+
+        echo '<div class="dex-mb-wizard" id="dex-mb-wizard">';
+
+        // Step indicator
+        $steps = [
+            1 => ['icon' => 'dashicons-archive', 'label' => __('Paketi', 'dexpress-woocommerce')],
+            2 => ['icon' => 'dashicons-admin-settings', 'label' => __('Opcije', 'dexpress-woocommerce')],
+            3 => ['icon' => 'dashicons-visibility', 'label' => __('Pregled', 'dexpress-woocommerce')],
+        ];
+        echo '<div class="dex-mb-stepper" id="dex-mb-stepper">';
+        foreach ($steps as $n => $s) {
+            $activeClass = $n === 1 ? ' is-active' : '';
+            echo '<div class="dex-mb-stepper__step' . $activeClass . '" data-step="' . $n . '">';
+            echo '<div class="dex-mb-stepper__circle">' . $n . '</div>';
+            echo '<span class="dex-mb-stepper__label">' . esc_html($s['label']) . '</span>';
+            echo '</div>';
+            if ($n < 3) {
+                echo '<div class="dex-mb-stepper__line"></div>';
+            }
         }
-        echo '<p><label class="dex-field-label" for="dex-sender-location">' . esc_html__('Lokacija pošiljaoca', 'dexpress-woocommerce') . '</label><select id="dex-sender-location" class="widefat">';
-        foreach ($senderLocations as $loc) {
-            $selected = !empty($loc['is_default']) ? ' selected' : '';
-            echo '<option value="' . esc_attr((string) $loc['id']) . '"' . $selected . '>' . esc_html((string) $loc['name']) . '</option>';
+        echo '</div>';
+
+        // ── Panel 1: Paketi ──────────────────────────────────────
+        echo '<div class="dex-mb-panel" data-panel="1">';
+        echo '<div class="dex-mb-panel__header">';
+        echo '<div class="dex-mb-panel__icon"><span class="dashicons dashicons-archive"></span></div>';
+        echo '<div class="dex-mb-panel__header-text"><h3>' . esc_html__('Paketi', 'dexpress-woocommerce') . '</h3>';
+        echo '<p>' . esc_html__('Svaka kutija ili paket koji šaljete je jedan unos. Možete dodati više paketa za istu pošiljku.', 'dexpress-woocommerce') . '</p></div>';
+        echo '</div>';
+
+        if ($isPackageShop && $destination !== '') {
+            echo '<div class="dex-mb-notice dex-mb-notice--info">';
+            echo '<span class="dashicons dashicons-location"></span>';
+            echo ' <strong>' . esc_html__('Dostava na Paket Shop:', 'dexpress-woocommerce') . '</strong> ' . esc_html($destination);
+            echo '</div>';
         }
-        echo '</select></p>';
-        echo '<p><label class="dex-field-label" for="dex-delivery-type">' . esc_html__('Tip dostave', 'dexpress-woocommerce') . '</label><select id="dex-delivery-type" class="widefat">';
-        foreach (DeliveryType::cases() as $type) {
-            $selected = (string) $type->value === $defaults['delivery_type'] ? ' selected' : '';
-            echo '<option value="' . esc_attr((string) $type->value) . '"' . $selected . '>' . esc_html($type->label()) . '</option>';
+
+        echo '<div id="dex-mb-pkg-list"></div>';
+        echo '<button type="button" id="dex-mb-add-pkg" class="dex-mb-add-btn">';
+        echo '<span class="dashicons dashicons-plus-alt2"></span> ' . esc_html__('Dodaj još jedan paket', 'dexpress-woocommerce');
+        echo '</button>';
+        echo '<div class="dex-mb-panel__nav">';
+        echo '<span></span>';
+        echo '<button type="button" id="dex-mb-next-1" class="dex-mb-btn dex-mb-btn--primary">';
+        echo esc_html__('Dalje', 'dexpress-woocommerce') . ' <span class="dashicons dashicons-arrow-right-alt"></span>';
+        echo '</button>';
+        echo '</div>';
+        echo '</div>'; // panel 1
+
+        // ── Panel 2: Opcije ──────────────────────────────────────
+        echo '<div class="dex-mb-panel" data-panel="2" hidden>';
+        echo '<div class="dex-mb-panel__header">';
+        echo '<div class="dex-mb-panel__icon"><span class="dashicons dashicons-admin-settings"></span></div>';
+        echo '<div class="dex-mb-panel__header-text"><h3>' . esc_html__('Opcije pošiljke', 'dexpress-woocommerce') . '</h3>';
+        echo '<p>' . esc_html__('Vrednosti su automatski popunjene prema vašim podešavanjima. Promenite samo ako je potrebno.', 'dexpress-woocommerce') . '</p></div>';
+        echo '</div>';
+
+        // Hidden system inputs (delivery type from defaults, not editable)
+        echo '<input type="hidden" id="dex-mb-delivery-type" value="' . esc_attr($defaults['delivery_type']) . '">';
+
+        // Resolve default location
+        $defaultLocId = 0;
+        foreach ($locations as $loc) {
+            if (!empty($loc['is_default'])) {
+                $defaultLocId = (int) $loc['id'];
+                break;
+            }
         }
-        echo '</select></p>';
-        echo '<p><label class="dex-field-label" for="dex-payment-type">' . esc_html__('Način plaćanja', 'dexpress-woocommerce') . '</label><select id="dex-payment-type" class="widefat">';
+        if ($defaultLocId === 0 && !empty($locations)) {
+            $defaultLocId = (int) $locations[0]['id'];
+        }
+        $selfDropOff = !empty($defaults['self_drop_off']) ? 1 : 0;
+
+        // 6-field 2-column grid
+        echo '<div class="dex-mb-options-grid">';
+
+        // 1. Lokacija pošiljaoca
+        echo '<div class="dex-mb-field">';
+        echo '<label class="dex-mb-field__label"><span class="dashicons dashicons-store"></span> ';
+        echo esc_html__('Lokacija pošiljaoca', 'dexpress-woocommerce') . ' <span class="dex-mb-req">*</span></label>';
+        echo '<div class="dex-mb-location-list" id="dex-mb-location-wrap">';
+        foreach ($locations as $loc) {
+            $locId  = (int) $loc['id'];
+            $active = $locId === $defaultLocId ? ' is-selected' : '';
+            echo '<button type="button" class="dex-mb-location-option' . $active . '" data-id="' . $locId . '">';
+            echo '<span class="dashicons dashicons-store"></span>';
+            echo '<span class="dex-mb-location-name">' . esc_html((string) $loc['name']) . '</span>';
+            echo '<span class="dex-mb-location-check dashicons dashicons-yes"></span>';
+            echo '</button>';
+        }
+        echo '</div>';
+        echo '<input type="hidden" id="dex-mb-location" value="' . esc_attr((string) $defaultLocId) . '">';
+        echo '</div>';
+
+        // 2. Predaja pošiljke
+        echo '<div class="dex-mb-field">';
+        echo '<label class="dex-mb-field__label"><span class="dashicons dashicons-car"></span> ';
+        echo esc_html__('Predaja pošiljke', 'dexpress-woocommerce') . '</label>';
+        echo '<div class="dex-mb-dropoff-toggle" id="dex-mb-segment-dropoff">';
+        echo '<button type="button" class="dex-mb-dropoff-btn' . ($selfDropOff === 0 ? ' is-active' : '') . '" data-value="0">';
+        echo '<span class="dashicons dashicons-car"></span>';
+        echo '<span>' . esc_html__('Kurir dolazi', 'dexpress-woocommerce') . '</span>';
+        echo '</button>';
+        echo '<button type="button" class="dex-mb-dropoff-btn' . ($selfDropOff === 1 ? ' is-active' : '') . '" data-value="1">';
+        echo '<span class="dashicons dashicons-businessman"></span>';
+        echo '<span>' . esc_html__('Sam donosim', 'dexpress-woocommerce') . '</span>';
+        echo '</button>';
+        echo '</div>';
+        echo '<input type="hidden" id="dex-mb-self-drop-off" value="' . $selfDropOff . '">';
+        echo '</div>';
+
+        // 3. Naplata
+        echo '<div class="dex-mb-field">';
+        echo '<label class="dex-mb-field__label" for="dex-mb-payment-type">';
+        echo '<span class="dashicons dashicons-money-alt"></span> ' . esc_html__('Naplata', 'dexpress-woocommerce');
+        echo '</label>';
+        echo '<select id="dex-mb-payment-type" class="dex-mb-select">';
         foreach (PaymentType::cases() as $type) {
-            $selected = (string) $type->value === $defaults['payment_type'] ? ' selected' : '';
-            echo '<option value="' . esc_attr((string) $type->value) . '"' . $selected . '>' . esc_html($type->label()) . '</option>';
+            $sel = (string) $type->value === $defaults['payment_type'] ? ' selected' : '';
+            echo '<option value="' . esc_attr((string) $type->value) . '"' . $sel . '>' . esc_html($type->label()) . '</option>';
         }
-        echo '</select></p>';
-        echo '<p><label class="dex-field-label" for="dex-return-doc">' . esc_html__('Povraćaj dokumenta', 'dexpress-woocommerce') . '</label><select id="dex-return-doc" class="widefat">';
+        echo '</select></div>';
+
+        // 4. Povraćaj dokumenta
+        echo '<div class="dex-mb-field">';
+        echo '<label class="dex-mb-field__label" for="dex-mb-return-doc">';
+        echo '<span class="dashicons dashicons-undo"></span> ' . esc_html__('Povraćaj dokumenta', 'dexpress-woocommerce');
+        echo '</label>';
+        echo '<select id="dex-mb-return-doc" class="dex-mb-select">';
         foreach (ReturnDoc::cases() as $doc) {
-            $selected = (string) $doc->value === $defaults['return_doc'] ? ' selected' : '';
-            echo '<option value="' . esc_attr((string) $doc->value) . '"' . $selected . '>' . esc_html($doc->label()) . '</option>';
+            $sel = (string) $doc->value === $defaults['return_doc'] ? ' selected' : '';
+            echo '<option value="' . esc_attr((string) $doc->value) . '"' . $sel . '>' . esc_html($doc->label()) . '</option>';
         }
-        $checked = !empty($defaults['self_drop_off']) ? ' checked' : '';
-        echo '</select></p><p><label><input type="checkbox" id="dex-self-drop-off" value="1"' . $checked . '> ' . esc_html__('Lično predajem kuriru (self drop-off)', 'dexpress-woocommerce') . '</label></p>';
-        echo '<p><label class="dex-field-label" for="dex-content">' . esc_html__('Sadržaj pošiljke', 'dexpress-woocommerce') . ' <span class="dex-req">*</span></label><input type="text" id="dex-content" class="widefat" maxlength="50"></p>';
-        echo '<p><label class="dex-field-label" for="dex-note">' . esc_html__('Napomena', 'dexpress-woocommerce') . '</label><input type="text" id="dex-note" class="widefat" maxlength="150"></p></section>';
-        echo '<section class="dex-step-panel" data-step="3" hidden><h4>' . esc_html__('Pregled i štampa', 'dexpress-woocommerce') . '</h4><div id="dex-step3-summary" class="dex-step3-summary"></div></section>';
-        echo '<div id="dex-wizard-error" class="dex-wizard-error" role="alert" hidden></div><div id="dex-wizard-result" class="dex-wizard-result" aria-live="polite"></div><div class="dex-wizard-nav"><button type="button" class="button" id="dex-step-back" hidden>' . esc_html__('Nazad', 'dexpress-woocommerce') . '</button><button type="button" class="button button-primary" id="dex-step-next">' . esc_html__('Dalje', 'dexpress-woocommerce') . '</button><button type="button" class="button button-primary" id="dex-print-label" hidden>' . esc_html__('Štampaj nalepnicu', 'dexpress-woocommerce') . '</button></div></div>';
+        echo '</select></div>';
+
+        // 5. Sadržaj (required)
+        echo '<div class="dex-mb-field">';
+        echo '<label class="dex-mb-field__label" for="dex-mb-content">';
+        echo '<span class="dashicons dashicons-tag"></span> ' . esc_html__('Sadržaj pošiljke', 'dexpress-woocommerce');
+        echo ' <span class="dex-mb-req">*</span></label>';
+        echo '<input type="text" id="dex-mb-content" class="dex-mb-input" maxlength="50" placeholder="' . esc_attr__('npr. Odeća, Elektronika, Knjige...', 'dexpress-woocommerce') . '">';
+        echo '<span class="dex-mb-field__hint">' . esc_html__('Auto-popunjava se iz stavki. Maks. 50 kar.', 'dexpress-woocommerce') . '</span>';
+        echo '</div>';
+
+        // 6. Napomena kuriru
+        echo '<div class="dex-mb-field">';
+        echo '<label class="dex-mb-field__label" for="dex-mb-note">';
+        echo '<span class="dashicons dashicons-edit-page"></span> ' . esc_html__('Napomena kuriru', 'dexpress-woocommerce');
+        echo '</label>';
+        echo '<input type="text" id="dex-mb-note" class="dex-mb-input" maxlength="150" placeholder="' . esc_attr__('Opciono — vidljivo kuriru', 'dexpress-woocommerce') . '">';
+        echo '</div>';
+
+        echo '</div>'; // options-grid
+
+        echo '<div class="dex-mb-panel__nav">';
+        echo '<button type="button" id="dex-mb-back-2" class="dex-mb-btn dex-mb-btn--ghost">';
+        echo '<span class="dashicons dashicons-arrow-left-alt"></span> ' . esc_html__('Nazad', 'dexpress-woocommerce');
+        echo '</button>';
+        echo '<button type="button" id="dex-mb-next-2" class="dex-mb-btn dex-mb-btn--primary">';
+        echo esc_html__('Dalje', 'dexpress-woocommerce') . ' <span class="dashicons dashicons-arrow-right-alt"></span>';
+        echo '</button>';
+        echo '</div>';
+        echo '</div>'; // panel 2
+
+        // ── Panel 3: Pregled ─────────────────────────────────────
+        echo '<div class="dex-mb-panel" data-panel="3" hidden>';
+        echo '<div class="dex-mb-panel__header">';
+        echo '<div class="dex-mb-panel__icon"><span class="dashicons dashicons-visibility"></span></div>';
+        echo '<div class="dex-mb-panel__header-text"><h3>' . esc_html__('Pregled i kreiranje', 'dexpress-woocommerce') . '</h3>';
+        echo '<p>' . esc_html__('Proverite detalje. Kliknite Kreiraj da dobijete TT kod i nalepnicu za štampu.', 'dexpress-woocommerce') . '</p></div>';
+        echo '</div>';
+
+        echo '<div id="dex-mb-summary"></div>';
+
+        echo '<div class="dex-mb-notice dex-mb-notice--tip">';
+        echo '<span class="dashicons dashicons-info-outline"></span> ';
+        echo esc_html__('Nakon kreiranja: odštampajte nalepnicu, zalepite je na paket i spakujte. Tek tada pošaljite u D-Express.', 'dexpress-woocommerce');
+        echo '</div>';
+
+        echo '<div id="dex-mb-wizard-error" class="dex-mb-error" hidden></div>';
+
+        echo '<div class="dex-mb-panel__nav">';
+        echo '<button type="button" id="dex-mb-back-3" class="dex-mb-btn dex-mb-btn--ghost">';
+        echo '<span class="dashicons dashicons-arrow-left-alt"></span> ' . esc_html__('Izmeni', 'dexpress-woocommerce');
+        echo '</button>';
+        echo '<button type="button" id="dex-mb-create" class="dex-mb-btn dex-mb-btn--primary dex-mb-btn--create">';
+        echo '<span class="dashicons dashicons-printer"></span> ' . esc_html__('Pakuj i štampaj nalepnicu', 'dexpress-woocommerce');
+        echo '</button>';
+        echo '</div>';
+        echo '</div>'; // panel 3
+
+        echo '</div>'; // wizard
     }
 
-    private function renderPendingSend(Shipment $shipment): void
+    // ── State B: Pending send ─────────────────────────────────────
+
+    private function renderPending(Shipment $shipment, \WC_Order $order): void
     {
-        echo '<div class="dex-state dex-state--draft" data-state="pending_send" data-shipment-id="' . esc_attr((string) $shipment->id()) . '" data-label-url="' . esc_url($this->labelUrlForShipment($shipment)) . '">';
-        echo '<h4>' . esc_html__('Pošiljka čeka slanje', 'dexpress-woocommerce') . '</h4>';
-        echo '<p class="dex-draft-warning">' . esc_html__('Nalepnica je odštampana. Spakujte pošiljku, zalepite nalepnicu i kliknite Pošalji.', 'dexpress-woocommerce') . '</p>';
-        echo '<p><strong>' . esc_html__('Kod za praćenje:', 'dexpress-woocommerce') . '</strong> <code>' . esc_html($shipment->trackingCode()) . '</code></p>';
-        echo '<div id="dex-wizard-result" class="dex-wizard-result" aria-live="polite"></div><div class="dex-wizard-nav"><button type="button" class="button" id="dex-edit-shipment">' . esc_html__('Izmeni podatke', 'dexpress-woocommerce') . '</button><button type="button" class="button" id="dex-reprint-label">' . esc_html__('Štampaj ponovo', 'dexpress-woocommerce') . '</button><button type="button" class="button button-primary" id="dex-send-shipment">' . esc_html__('Pošalji u D-Express', 'dexpress-woocommerce') . '</button></div></div>';
+        $labelUrl = $this->labelUrlForShipment($shipment);
+        $allocations = $this->packageItemAllocations((int) $shipment->id());
+        $isPackageShop = DexpressPackageShopShippingMethod::orderUsesDexpressPackageShop($order);
+        $destination = $this->destinationLine($order);
+
+        // ── Pending view (visible by default) ────────────────────
+        echo '<div id="dex-mb-pending-view">';
+
+        // Banner
+        echo '<div class="dex-mb-pending-banner">';
+        echo '<span class="dex-mb-pulse-dot" aria-hidden="true"></span>';
+        echo '<div class="dex-mb-pending-banner__left">';
+        echo '<div class="dex-mb-pending-banner__title">' . esc_html__('Pošiljka čeka slanje u D-Express', 'dexpress-woocommerce') . '</div>';
+        echo '<code class="dex-mb-code">' . esc_html($shipment->trackingCode()) . '</code>';
+        echo '</div>';
+        echo '<div class="dex-mb-pending-banner__actions">';
+        echo '<a href="' . esc_url($labelUrl) . '" target="_blank" rel="noopener" class="dex-mb-btn dex-mb-btn--outline">';
+        echo '<span class="dashicons dashicons-printer"></span> ' . esc_html__('Štampaj nalepnicu', 'dexpress-woocommerce');
+        echo '</a>';
+        echo '<button type="button" id="dex-mb-edit-pending" class="dex-mb-btn dex-mb-btn--ghost">';
+        echo '<span class="dashicons dashicons-edit"></span> ' . esc_html__('Izmeni pošiljku', 'dexpress-woocommerce');
+        echo '</button>';
+        echo '<button type="button" id="dex-mb-delete-pending" class="dex-mb-btn dex-mb-btn--ghost" style="color:var(--dex-red)">';
+        echo '<span class="dashicons dashicons-trash"></span> ' . esc_html__('Obriši pošiljku', 'dexpress-woocommerce');
+        echo '</button>';
+        echo '<button type="button" id="dex-mb-send" class="dex-mb-btn dex-mb-btn--danger">';
+        echo '<span class="dashicons dashicons-share"></span> ' . esc_html__('Pošalji u D-Express', 'dexpress-woocommerce');
+        echo '</button>';
+        echo '</div>';
+        echo '</div>'; // banner
+
+        // Packages summary
+        echo '<div class="dex-mb-pending-packages">';
+        echo '<p class="dex-mb-pending-packages__header">' . sprintf(esc_html__('%d paket(a)', 'dexpress-woocommerce'), count($shipment->packages)) . '</p>';
+        echo '<ul class="dex-mb-pkg-summary-list">';
+        foreach ($shipment->packages as $pkg) {
+            $massLabel = $pkg->mass !== null ? number_format($pkg->mass->value() / 1000, 2, ',', '') . ' kg' : '—';
+            $dims = ($pkg->dimX && $pkg->dimY && $pkg->dimZ) ? $pkg->dimX . '×' . $pkg->dimY . '×' . $pkg->dimZ . ' cm' : '';
+            $itemLabel = '';
+            $pkgKey = $pkg->id ?? 0;
+            if (!empty($allocations[$pkgKey])) {
+                $itemLabel = implode(', ', $allocations[$pkgKey]);
+            }
+            echo '<li class="dex-mb-pkg-summary-item">';
+            echo '<div class="dex-mb-pkg-summary-icon"><span class="dashicons dashicons-archive"></span></div>';
+            echo '<div class="dex-mb-pkg-summary-meta">';
+            echo '<span class="dex-mb-pkg-summary-code">' . esc_html($pkg->code->value()) . '</span>';
+            echo '<span>' . esc_html($massLabel) . ($dims !== '' ? ' · ' . esc_html($dims) : '') . '</span>';
+            if ($itemLabel !== '') {
+                echo '<span class="dex-mb-pkg-summary-items">' . esc_html($itemLabel) . '</span>';
+            }
+            echo '</div>';
+            echo '</li>';
+        }
+        echo '</ul>';
+        echo '</div>'; // packages summary
+
+        // Shipment info row
+        echo '<div class="dex-mb-pending-info">';
+        echo '<div class="dex-mb-info-item"><span class="dex-mb-info-label">' . esc_html__('Tip dostave', 'dexpress-woocommerce') . '</span><span>' . esc_html($shipment->deliveryType->label()) . '</span></div>';
+        echo '<div class="dex-mb-info-item"><span class="dex-mb-info-label">' . esc_html__('Naplata', 'dexpress-woocommerce') . '</span><span>' . esc_html($shipment->paymentType->label()) . '</span></div>';
+        if ($isPackageShop && $destination !== '') {
+            echo '<div class="dex-mb-info-item"><span class="dex-mb-info-label">' . esc_html__('Primalac', 'dexpress-woocommerce') . '</span><span>' . esc_html($destination) . '</span></div>';
+        }
+        if ($shipment->content !== '') {
+            echo '<div class="dex-mb-info-item"><span class="dex-mb-info-label">' . esc_html__('Sadržaj', 'dexpress-woocommerce') . '</span><span>' . esc_html($shipment->content) . '</span></div>';
+        }
+        echo '</div>';
+
+        echo '</div>'; // pending-view
+
+        // ── Edit wizard (hidden, shown when "Izmeni" is clicked) ──
+        echo '<div id="dex-mb-edit-view" hidden>';
+        echo '<div class="dex-mb-edit-back-bar">';
+        echo '<button type="button" id="dex-mb-cancel-edit" class="dex-mb-btn dex-mb-btn--ghost">';
+        echo '<span class="dashicons dashicons-arrow-left-alt"></span> ' . esc_html__('Otkaži izmene', 'dexpress-woocommerce');
+        echo '</button>';
+        echo '</div>';
+        $this->renderWizard($order, $this->locations->findAll(), true);
+        echo '</div>';
     }
+
+    // ── State C: Sent ─────────────────────────────────────────────
 
     private function renderCreated(Shipment $shipment, \WC_Order $order): void
     {
-        $trackingCode = $shipment->trackingCode();
-        $labelUrl = $this->labelUrlForShipment($shipment);
-        $isTest = strtoupper((string) $shipment->apiResponse()) === 'TEST';
-        $senderLocation = $this->locations->findById($shipment->senderLocationId);
+        $trackingCode       = $shipment->trackingCode();
+        $labelUrl           = $this->labelUrlForShipment($shipment);
+        $apiResp            = strtoupper((string) $shipment->apiResponse());
+        $isTest             = $apiResp === 'TEST';
+        $isDryRun           = $apiResp === 'DRYRUN';
+        $senderLocation     = $this->locations->findById($shipment->senderLocationId);
         $isPackageShopOrder = DexpressPackageShopShippingMethod::orderUsesDexpressPackageShop($order);
-        $packageShopLocationName = trim((string) $order->get_meta('_dexpress_package_shop_location_name'));
-        $packageShopLocationType = trim((string) ($order->get_meta('_dexpress_package_shop_location_type_label') ?: __('Paket Shop', 'dexpress-woocommerce')));
-        $senderText = $this->senderLocationDisplay($senderLocation);
-        $recipientText = $this->recipientDisplay($order, $isPackageShopOrder);
+        $packageShopName    = trim((string) $order->get_meta('_dexpress_package_shop_location_name'));
+        $packageShopTypeLabel = trim((string) ($order->get_meta('_dexpress_package_shop_location_type_label') ?: __('Paket Shop', 'dexpress-woocommerce')));
+        $recipientText      = $this->recipientDisplay($order, $isPackageShopOrder);
+        $senderText         = $this->senderLocationDisplay($senderLocation);
+        $manualEmailUrl     = $this->manualPackageShopEmailUrl($order);
+        $allocations        = $this->packageItemAllocationsWithImages((int) $shipment->id());
 
-        $packageCount = count($shipment->packages);
-        $totalMassGrams = 0;
-        foreach ($shipment->packages as $pkg) {
-            $totalMassGrams += $pkg->mass?->value() ?? 0;
-        }
-        if ($totalMassGrams <= 0) {
-            $totalMassGrams = $shipment->totalMass->value();
-        }
-
-        $timeline = $this->statusTimelineForOrder($order->get_id(), $shipment->currentSid(), $shipment->displayStatusLabel());
+        $timeline = $this->statusTimeline($order->get_id(), $shipment->currentSid(), $shipment->displayStatusLabel());
         if ($timeline === []) {
             $timeline[] = [
-                'label' => $shipment->displayStatusLabel() !== '' ? $shipment->displayStatusLabel() : __('Pošiljka je kreirana', 'dexpress-woocommerce'),
+                'label'       => $shipment->displayStatusLabel() ?: __('Pošiljka je kreirana', 'dexpress-woocommerce'),
                 'occurred_at' => $shipment->createdAt->format('Y-m-d H:i:s'),
-                'state' => 'current',
+                'state'       => 'current',
             ];
         }
 
-        echo '<div class="dex-state dex-state--created" data-state="created">';
-        echo '<div class="dex-sent-banner"><span class="dex-env-badge ' . ($isTest ? 'is-test' : 'is-production') . '">' . esc_html($isTest ? 'TEST' : 'PRODUCTION') . '</span> ' . esc_html__('Pošiljka uspešno poslata u D-Express', 'dexpress-woocommerce') . '</div>';
+        echo '<div class="dex-mb-created">';
 
-        echo '<div class="dex-sent-body">';
-        echo '<div class="dex-sent-parties">';
-        echo '<div class="dex-sent-party"><span class="dex-sent-label">' . esc_html__('Kod', 'dexpress-woocommerce') . ':</span> <code>' . esc_html($trackingCode) . '</code></div>';
-        echo '<div class="dex-sent-party"><span class="dex-sent-label">' . esc_html__('Od', 'dexpress-woocommerce') . ':</span> <span>' . esc_html($senderText) . '</span></div>';
-        echo '<div class="dex-sent-party"><span class="dex-sent-label">' . esc_html__('Za', 'dexpress-woocommerce') . ':</span> <span>' . esc_html($recipientText) . '</span>';
+        // ── Header: TT code + date/env left, action buttons right
+        echo '<div class="dex-mb-created-header">';
+        echo '<div class="dex-mb-created-header__left">';
+        echo '<code class="dex-mb-code dex-mb-code--xl">' . esc_html($trackingCode) . '</code>';
+        echo '<div class="dex-mb-created-header__meta">';
+        echo '<span>' . esc_html(date_i18n('d.m.Y · H:i', $shipment->createdAt->getTimestamp())) . '</span>';
+        $badgeKey   = $isDryRun ? 'dryrun' : ($isTest ? 'test' : 'prod');
+        $badgeLabel = $isDryRun ? __('Probni rad', 'dexpress-woocommerce') : ($isTest ? 'TEST' : 'PROD');
+        echo '<span class="dex-mb-env-badge dex-mb-env-badge--' . esc_attr($badgeKey) . '">' . esc_html($badgeLabel) . '</span>';
+        echo '</div></div>'; // header left
+        echo '<div class="dex-mb-created-header__actions">';
+        echo '<button type="button" class="dex-mb-btn dex-mb-btn--outline dex-mb-copy-track" data-track="' . esc_attr($trackingCode) . '">';
+        echo '<span class="dashicons dashicons-clipboard"></span> ' . esc_html__('Kopiraj kod', 'dexpress-woocommerce');
+        echo '</button>';
+        echo '<a class="dex-mb-btn dex-mb-btn--primary" href="' . esc_url($labelUrl) . '" target="_blank" rel="noopener">';
+        echo '<span class="dashicons dashicons-printer"></span> ' . esc_html__('Štampaj nalepnicu', 'dexpress-woocommerce');
+        echo '</a>';
+        echo '</div></div>'; // header actions + header
+
+        // ── Od / Za
+        echo '<div class="dex-mb-created-parties">';
+        echo '<div class="dex-mb-created-party">';
+        echo '<div class="dex-mb-created-party__label">' . esc_html__('Od', 'dexpress-woocommerce') . '</div>';
+        echo '<div class="dex-mb-created-party__value">' . esc_html($senderText) . '</div>';
+        echo '</div>';
+        echo '<div class="dex-mb-created-party">';
+        echo '<div class="dex-mb-created-party__label">' . esc_html__('Za', 'dexpress-woocommerce') . '</div>';
+        echo '<div class="dex-mb-created-party__value">' . esc_html($recipientText);
         if ($isPackageShopOrder) {
-            echo ' <span class="dex-pill">' . esc_html($packageShopLocationType) . '</span>';
-            if ($packageShopLocationName !== '') {
-                echo ' <span>' . esc_html($packageShopLocationName) . '</span>';
+            echo ' <span class="dex-mb-pill">' . esc_html($packageShopTypeLabel) . '</span>';
+            if ($packageShopName !== '') {
+                echo '<br><small>' . esc_html($packageShopName) . '</small>';
             }
         }
-        echo '</div>';
-        echo '<div class="dex-sent-party"><span class="dex-sent-label">' . esc_html__('Detalji', 'dexpress-woocommerce') . ':</span> <span>' . esc_html((string) $packageCount . ' / ' . number_format($totalMassGrams / 1000, 2, ',', '') . ' kg · ' . $shipment->deliveryType->label() . ' · ' . $shipment->paymentType->label()) . '</span></div>';
-        echo '</div>';
+        echo '</div></div></div>'; // parties
 
-        $allocations = $this->packageItemAllocations((int) $shipment->id());
-        echo '<div class="dex-sent-packages"><ul>';
-        foreach ($shipment->packages as $pkg) {
+        // ── Packages with items
+        echo '<div class="dex-mb-created-packages">';
+        foreach ($shipment->packages as $pkgIdx => $pkg) {
+            $pkgKey    = $pkg->id ?? 0;
             $massLabel = $pkg->mass !== null ? number_format($pkg->mass->value() / 1000, 2, ',', '') . ' kg' : '—';
-            $packageKey = $pkg->id ?? 0;
-            $items = $allocations[$packageKey] ?? [];
-            $itemLabel = $items !== [] ? implode(', ', $items) : '—';
-            echo '<li><code>' . esc_html($pkg->code->value()) . '</code> | ' . esc_html($massLabel) . ' | ' . esc_html($itemLabel) . '</li>';
-        }
-        echo '</ul></div>';
+            $dims      = ($pkg->dimX && $pkg->dimY && $pkg->dimZ) ? $pkg->dimX . '×' . $pkg->dimY . '×' . $pkg->dimZ . ' cm' : '';
+            $items     = $allocations[$pkgKey] ?? [];
 
-        echo '<div class="dex-sent-timeline">';
-        echo '<h4>' . esc_html__('Status pošiljke', 'dexpress-woocommerce') . '</h4>';
-        echo '<ol class="dex-status-timeline">';
+            echo '<div class="dex-mb-created-pkg">';
+            echo '<div class="dex-mb-created-pkg__head">';
+            echo '<span class="dashicons dashicons-archive"></span>';
+            echo ' <strong>' . sprintf(esc_html__('Paket %d', 'dexpress-woocommerce'), $pkgIdx + 1) . '</strong>';
+            echo '<code class="dex-mb-code">' . esc_html($pkg->code->value()) . '</code>';
+            echo '<span class="dex-mb-created-pkg__weight">' . esc_html($massLabel) . '</span>';
+            if ($dims !== '') {
+                echo '<span class="dex-mb-created-pkg__dims">' . esc_html($dims) . '</span>';
+            }
+            echo '</div>'; // head
+
+            if ($items !== []) {
+                echo '<div class="dex-mb-created-pkg__items">';
+                foreach ($items as $item) {
+                    $img = $item['image_url'] !== ''
+                        ? '<img src="' . esc_url($item['image_url']) . '" width="32" height="32" class="dex-mb-created-pkg__item-img" alt="">'
+                        : '<span class="dex-mb-created-pkg__item-img dex-mb-created-pkg__item-img--placeholder dashicons dashicons-cart"></span>';
+                    echo '<div class="dex-mb-created-pkg__item">';
+                    echo $img;
+                    echo '<span class="dex-mb-created-pkg__item-name">' . esc_html($item['name']) . '</span>';
+                    echo '<span class="dex-mb-created-pkg__item-qty">×' . (int) $item['qty'] . '</span>';
+                    echo '</div>';
+                }
+                echo '</div>';
+            }
+            echo '</div>'; // pkg
+        }
+        echo '</div>'; // packages
+
+        // ── Timeline
+        echo '<div class="dex-mb-timeline">';
+        echo '<h4 class="dex-mb-timeline__title"><span class="dashicons dashicons-location"></span> ' . esc_html__('Status pošiljke', 'dexpress-woocommerce') . '</h4>';
+        echo '<ol class="dex-mb-timeline__list">';
         foreach ($timeline as $step) {
-            $stateClass = $step['state'] === 'current'
-                ? 'is-current'
-                : ($step['state'] === 'completed' ? 'is-completed' : 'is-pending');
-            $date = $step['occurred_at'] !== ''
-                ? date_i18n('d.m.Y H:i', strtotime($step['occurred_at']))
-                : '';
-            echo '<li class="dex-status-step ' . esc_attr($stateClass) . '"><span class="dex-status-dot" aria-hidden="true"></span><div class="dex-status-content"><strong>' . esc_html($step['label']) . '</strong>';
+            $cls  = $step['state'] === 'current' ? 'is-current' : ($step['state'] === 'completed' ? 'is-completed' : 'is-pending');
+            $date = $step['occurred_at'] !== '' ? date_i18n('d.m.Y H:i', strtotime($step['occurred_at'])) : '';
+            echo '<li class="dex-mb-timeline__item ' . esc_attr($cls) . '">';
+            echo '<span class="dex-mb-timeline__dot" aria-hidden="true"></span>';
+            echo '<div class="dex-mb-timeline__content">';
+            echo '<strong>' . esc_html($step['label']) . '</strong>';
             if ($date !== '') {
-                echo '<small>' . esc_html($date) . '</small>';
+                echo '<span>' . esc_html($date) . '</span>';
             }
             echo '</div></li>';
         }
-        echo '</ol>';
-        echo '</div>';
-        echo '</div>';
+        echo '</ol></div>';
 
-        $manualEmailUrl = $this->manualPackageShopEmailUrl($order);
-        echo '<div class="dex-created-actions">';
-        echo '<a class="button button-primary" href="' . esc_url($labelUrl) . '" target="_blank" rel="noopener">' . esc_html__('Štampaj nalepnicu', 'dexpress-woocommerce') . '</a>';
-        echo '<button type="button" class="button dex-copy-track" data-track="' . esc_attr($trackingCode) . '">' . esc_html__('Kopiraj kod za praćenje', 'dexpress-woocommerce') . '</button>';
+        // ── Package Shop email (optional)
         if ($isPackageShopOrder && $manualEmailUrl !== '') {
-            echo '<a class="button" href="' . esc_url($manualEmailUrl) . '">' . esc_html__('Pošalji email kupcu', 'dexpress-woocommerce') . '</a>';
+            echo '<div>';
+            echo '<a class="dex-mb-btn dex-mb-btn--ghost" href="' . esc_url($manualEmailUrl) . '">';
+            echo '<span class="dashicons dashicons-email-alt"></span> ' . esc_html__('Pošalji email kupcu', 'dexpress-woocommerce');
+            echo '</a></div>';
         }
-        echo '</div>';
-        echo '<div id="dex-wizard-result" class="dex-wizard-result" aria-live="polite"></div>';
-        echo '</div>';
+
+        echo '</div>'; // created
     }
+
+    /** @return array<int,list<array{name:string,qty:int,image_url:string}>> */
+    private function packageItemAllocationsWithImages(int $shipmentId): array
+    {
+        if ($shipmentId <= 0) {
+            return [];
+        }
+        global $wpdb;
+        $piTable  = $wpdb->prefix . 'dexpress_package_items';
+        $pkgTable = $wpdb->prefix . 'dexpress_packages';
+        $oiTable  = $wpdb->prefix . 'woocommerce_order_items';
+        $oimTable = $wpdb->prefix . 'woocommerce_order_itemmeta';
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        $rows = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT pi.package_id, pi.quantity, oi.order_item_name,
+                        oim.meta_value AS product_id
+                 FROM `{$piTable}` pi
+                 INNER JOIN `{$pkgTable}` p ON p.id = pi.package_id
+                 LEFT JOIN `{$oiTable}` oi ON oi.order_item_id = pi.order_item_id
+                 LEFT JOIN `{$oimTable}` oim ON oim.order_item_id = pi.order_item_id AND oim.meta_key = '_product_id'
+                 WHERE p.shipment_id = %d
+                 ORDER BY pi.package_id ASC, pi.id ASC",
+                $shipmentId,
+            ),
+            ARRAY_A,
+        );
+        if (!is_array($rows)) {
+            return [];
+        }
+        $out = [];
+        foreach ($rows as $row) {
+            $pid = (int) ($row['package_id'] ?? 0);
+            if ($pid <= 0) {
+                continue;
+            }
+            $name      = trim((string) ($row['order_item_name'] ?? '')) ?: __('Stavka', 'dexpress-woocommerce');
+            $qty       = max(1, (int) ($row['quantity'] ?? 0));
+            $imageUrl  = '';
+            $productId = (int) ($row['product_id'] ?? 0);
+            if ($productId > 0) {
+                $imgId = (int) get_post_thumbnail_id($productId);
+                if ($imgId > 0) {
+                    $src = wp_get_attachment_image_src($imgId, [48, 48]);
+                    $imageUrl = $src ? (string) $src[0] : '';
+                }
+            }
+            $out[$pid][] = ['name' => $name, 'qty' => $qty, 'image_url' => $imageUrl];
+        }
+        return $out;
+    }
+
+    // ── Private helpers ───────────────────────────────────────────
 
     private function destinationLine(\WC_Order $order): string
     {
@@ -326,21 +690,37 @@ final class OrderShipmentMetabox
     }
 
     /** @return array{delivery_type:string,payment_type:string,return_doc:string,self_drop_off:bool} */
-    private function shipmentWizardDefaults(\WC_Order $order): array
+    private function wizardDefaults(\WC_Order $order): array
     {
         return [
-            'delivery_type' => $this->firstNonEmpty((string) $order->get_meta('_dexpress_delivery_type'), $this->options->getString('shipment.default_delivery_type'), (string) DeliveryType::Regular->value),
-            'payment_type' => $this->firstNonEmpty((string) $order->get_meta('_dexpress_payment_type'), $this->options->getString('shipment.default_payment_type'), (string) PaymentType::Invoice->value),
-            'return_doc' => $this->firstNonEmpty((string) $order->get_meta('_dexpress_return_doc'), $this->options->getString('shipment.default_return_doc'), (string) ReturnDoc::None->value),
-            'self_drop_off' => (bool) ((int) $this->firstNonEmpty((string) $order->get_meta('_dexpress_self_drop_off'), $this->options->getString('shipment.default_self_drop_off'), '0')),
+            'delivery_type' => $this->firstNonEmpty(
+                (string) $order->get_meta('_dexpress_delivery_type'),
+                $this->options->getString('shipment.default_delivery_type'),
+                (string) DeliveryType::Regular->value,
+            ),
+            'payment_type' => $this->firstNonEmpty(
+                (string) $order->get_meta('_dexpress_payment_type'),
+                $this->options->getString('shipment.default_payment_type'),
+                (string) PaymentType::Invoice->value,
+            ),
+            'return_doc' => $this->firstNonEmpty(
+                (string) $order->get_meta('_dexpress_return_doc'),
+                $this->options->getString('shipment.default_return_doc'),
+                (string) ReturnDoc::None->value,
+            ),
+            'self_drop_off' => (bool) ((int) $this->firstNonEmpty(
+                (string) $order->get_meta('_dexpress_self_drop_off'),
+                $this->options->getString('shipment.default_self_drop_off'),
+                '0',
+            )),
         ];
     }
 
     private function firstNonEmpty(string ...$values): string
     {
-        foreach ($values as $value) {
-            if ($value !== '') {
-                return $value;
+        foreach ($values as $v) {
+            if ($v !== '') {
+                return $v;
             }
         }
         return '';
@@ -364,8 +744,8 @@ final class OrderShipmentMetabox
         return $order instanceof \WC_Order ? $order : null;
     }
 
-    /** @return array<int, array{label:string,occurred_at:string,state:string}> */
-    private function statusTimelineForOrder(int $orderId, int $currentSid, string $snapshot): array
+    /** @return array<int,array{label:string,occurred_at:string,state:string}> */
+    private function statusTimeline(int $orderId, int $currentSid, string $snapshot): array
     {
         global $wpdb;
         $historyTable = $wpdb->prefix . 'dexpress_shipment_statuses';
@@ -374,7 +754,8 @@ final class OrderShipmentMetabox
         // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
         $rows = $wpdb->get_results(
             $wpdb->prepare(
-                "SELECT h.sid, h.status_label_snapshot, h.occurred_at, COALESCE(NULLIF(sc.name_sr,''), NULLIF(sc.name_en,''), '') AS official_label
+                "SELECT h.sid, h.status_label_snapshot, h.occurred_at,
+                        COALESCE(NULLIF(sc.name_sr,''), NULLIF(sc.name_en,''), '') AS official_label
                  FROM `{$historyTable}` h
                  INNER JOIN `{$shipmentsTable}` s ON s.id = h.shipment_id
                  LEFT JOIN `{$codesTable}` sc ON sc.sid = h.sid
@@ -392,21 +773,14 @@ final class OrderShipmentMetabox
         $currentIdx = -1;
         foreach ($rows as $idx => $row) {
             $sid = (int) ($row['sid'] ?? 0);
-            $label = trim((string) ($row['official_label'] ?? ''));
-            if ($label === '') {
-                $label = trim((string) ($row['status_label_snapshot'] ?? ''));
-            }
+            $label = trim((string) ($row['official_label'] ?? '')) ?: trim((string) ($row['status_label_snapshot'] ?? ''));
             if ($label === '') {
                 $label = sprintf(__('Status (sID: %d)', 'dexpress-woocommerce'), $sid);
             }
             if ($sid === $currentSid) {
                 $currentIdx = $idx;
             }
-            $timeline[] = [
-                'label' => $label,
-                'occurred_at' => (string) ($row['occurred_at'] ?? ''),
-                'state' => 'pending',
-            ];
+            $timeline[] = ['label' => $label, 'occurred_at' => (string) ($row['occurred_at'] ?? ''), 'state' => 'pending'];
         }
 
         if ($timeline === []) {
@@ -418,7 +792,6 @@ final class OrderShipmentMetabox
                 $timeline[$currentIdx]['label'] = $snapshot;
             }
         }
-
         foreach ($timeline as $idx => &$step) {
             $step['state'] = $idx < $currentIdx ? 'completed' : ($idx === $currentIdx ? 'current' : 'pending');
         }
@@ -427,102 +800,23 @@ final class OrderShipmentMetabox
         return $timeline;
     }
 
-    private function manualPackageShopEmailUrl(\WC_Order $order): string
-    {
-        if (!DexpressPackageShopShippingMethod::orderUsesDexpressPackageShop($order)) {
-            return '';
-        }
-        $args = [
-            'post' => $order->get_id(),
-            'action' => 'edit',
-            'dexpress_ps_ready_email' => 1,
-        ];
-
-        return wp_nonce_url(add_query_arg($args, admin_url('post.php')), 'dexpress_ps_ready_email_' . $order->get_id());
-    }
-
-    private function maybeHandleManualPackageShopEmailAction(\WC_Order $order): ?string
-    {
-        $trigger = absint($_GET['dexpress_ps_ready_email'] ?? 0);
-        if ($trigger !== 1) {
-            return null;
-        }
-        if (!DexpressPackageShopShippingMethod::orderUsesDexpressPackageShop($order)) {
-            return __('Paket Shop email može da se pošalje samo za Paket Shop porudžbine.', 'dexpress-woocommerce');
-        }
-        if (!wp_verify_nonce((string) ($_GET['_wpnonce'] ?? ''), 'dexpress_ps_ready_email_' . $order->get_id())) {
-            return __('Nevažeći zahtev za slanje emaila.', 'dexpress-woocommerce');
-        }
-
-        do_action('woocommerce_order_action_dexpress_send_package_shop_ready_email', $order);
-        return __('Paket Shop email je obrađen. Proverite order napomene za rezultat.', 'dexpress-woocommerce');
-    }
-
-    /** @param array<string,mixed>|null $senderLocation */
-    private function senderLocationDisplay(?array $senderLocation): string
-    {
-        if (!is_array($senderLocation)) {
-            return __('Nije dostupno', 'dexpress-woocommerce');
-        }
-        $name = trim((string) ($senderLocation['name'] ?? ''));
-        $street = trim((string) ($senderLocation['street_name'] ?? ''));
-        $number = trim((string) ($senderLocation['street_number'] ?? ''));
-        $townName = '';
-        foreach ($this->locations->findAll() as $loc) {
-            if ((int) ($loc['id'] ?? 0) === (int) ($senderLocation['id'] ?? 0)) {
-                $townName = trim((string) ($loc['town_name'] ?? ''));
-                break;
-            }
-        }
-        $parts = array_filter([
-            $name,
-            trim($street . ($number !== '' ? ' ' . $number : '')),
-            $townName,
-        ]);
-
-        return $parts !== [] ? implode(', ', $parts) : __('Nije dostupno', 'dexpress-woocommerce');
-    }
-
-    private function recipientDisplay(\WC_Order $order, bool $isPackageShopOrder): string
-    {
-        if ($isPackageShopOrder) {
-            $name = trim((string) $order->get_meta('_dexpress_package_shop_location_name'));
-            $address = trim((string) $order->get_meta('_dexpress_package_shop_location_address'));
-            $city = trim((string) $order->get_meta('_dexpress_package_shop_location_city'));
-            $parts = array_filter([$name, $address, $city]);
-            return $parts !== [] ? implode(', ', $parts) : __('Paket Shop lokacija nije dostupna', 'dexpress-woocommerce');
-        }
-
-        $name = trim((string) $order->get_formatted_shipping_full_name());
-        if ($name === '') {
-            $name = trim((string) $order->get_formatted_billing_full_name());
-        }
-        $address = trim((string) $order->get_shipping_address_1());
-        if ($address === '') {
-            $address = trim((string) $order->get_billing_address_1());
-        }
-        $city = trim((string) ($order->get_shipping_city() ?: $order->get_billing_city()));
-        $parts = array_filter([$name, $address, $city]);
-        return $parts !== [] ? implode(', ', $parts) : __('Primalac nije dostupan', 'dexpress-woocommerce');
-    }
-
-    /** @return array<int, list<string>> */
+    /** @return array<int,list<string>> */
     private function packageItemAllocations(int $shipmentId): array
     {
         if ($shipmentId <= 0) {
             return [];
         }
         global $wpdb;
-        $packageItemsTable = $wpdb->prefix . 'dexpress_package_items';
-        $packagesTable = $wpdb->prefix . 'dexpress_packages';
-        $orderItemsTable = $wpdb->prefix . 'woocommerce_order_items';
+        $piTable = $wpdb->prefix . 'dexpress_package_items';
+        $pkgTable = $wpdb->prefix . 'dexpress_packages';
+        $oiTable = $wpdb->prefix . 'woocommerce_order_items';
         // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
         $rows = $wpdb->get_results(
             $wpdb->prepare(
                 "SELECT pi.package_id, pi.quantity, oi.order_item_name
-                 FROM `{$packageItemsTable}` pi
-                 INNER JOIN `{$packagesTable}` p ON p.id = pi.package_id
-                 LEFT JOIN `{$orderItemsTable}` oi ON oi.order_item_id = pi.order_item_id
+                 FROM `{$piTable}` pi
+                 INNER JOIN `{$pkgTable}` p ON p.id = pi.package_id
+                 LEFT JOIN `{$oiTable}` oi ON oi.order_item_id = pi.order_item_id
                  WHERE p.shipment_id = %d
                  ORDER BY pi.package_id ASC, pi.id ASC",
                 $shipmentId,
@@ -532,39 +826,32 @@ final class OrderShipmentMetabox
         if (!is_array($rows)) {
             return [];
         }
-
         $out = [];
         foreach ($rows as $row) {
             $pid = (int) ($row['package_id'] ?? 0);
             if ($pid <= 0) {
                 continue;
             }
-            $name = trim((string) ($row['order_item_name'] ?? ''));
-            if ($name === '') {
-                $name = __('Stavka', 'dexpress-woocommerce');
-            }
-            $qty = max(1, (int) ($row['quantity'] ?? 0));
-            $out[$pid][] = $name . ' × ' . $qty;
+            $name = trim((string) ($row['order_item_name'] ?? '')) ?: __('Stavka', 'dexpress-woocommerce');
+            $out[$pid][] = $name . ' ×' . max(1, (int) ($row['quantity'] ?? 0));
         }
-
         return $out;
     }
 
-    /** @return array{options: array<string, mixed>, packages: array<int, array<string, mixed>>} */
-    private function buildInitialDraftFromShipment(Shipment $shipment): array
+    /** @return array{options:array<string,mixed>,packages:array<int,array<string,mixed>>} */
+    private function buildDraftFromShipment(Shipment $shipment): array
     {
         $packages = [];
-        foreach ($shipment->packages as $package) {
+        foreach ($shipment->packages as $pkg) {
             $packages[] = [
-                'mass' => $package->mass?->value() ?? 0,
-                'dim_x' => $package->dimX,
-                'dim_y' => $package->dimY,
-                'dim_z' => $package->dimZ,
-                'content' => $package->contentNote ?? '',
+                'mass' => $pkg->mass?->value() ?? 500,
+                'dim_x' => $pkg->dimX,
+                'dim_y' => $pkg->dimY,
+                'dim_z' => $pkg->dimZ,
+                'content' => $pkg->contentNote ?? '',
                 'items' => [],
             ];
         }
-
         return [
             'options' => [
                 'sender_location_id' => $shipment->senderLocationId,
@@ -577,5 +864,67 @@ final class OrderShipmentMetabox
             ],
             'packages' => $packages,
         ];
+    }
+
+    /** @param array<string,mixed>|null $loc */
+    private function senderLocationDisplay(?array $loc): string
+    {
+        if (!is_array($loc)) {
+            return __('Nije dostupno', 'dexpress-woocommerce');
+        }
+        $name = trim((string) ($loc['name'] ?? ''));
+        $street = trim((string) ($loc['street_name'] ?? ''));
+        $number = trim((string) ($loc['street_number'] ?? ''));
+        $town = '';
+        foreach ($this->locations->findAll() as $l) {
+            if ((int) ($l['id'] ?? 0) === (int) ($loc['id'] ?? 0)) {
+                $town = trim((string) ($l['town_name'] ?? ''));
+                break;
+            }
+        }
+        $parts = array_filter([$name, trim($street . ($number !== '' ? ' ' . $number : '')), $town]);
+        return $parts !== [] ? implode(', ', $parts) : __('Nije dostupno', 'dexpress-woocommerce');
+    }
+
+    private function recipientDisplay(\WC_Order $order, bool $isPackageShop): string
+    {
+        if ($isPackageShop) {
+            $name = trim((string) $order->get_meta('_dexpress_package_shop_location_name'));
+            $address = trim((string) $order->get_meta('_dexpress_package_shop_location_address'));
+            $city = trim((string) $order->get_meta('_dexpress_package_shop_location_city'));
+            $parts = array_filter([$name, $address, $city]);
+            return $parts !== [] ? implode(', ', $parts) : __('Lokacija nije dostupna', 'dexpress-woocommerce');
+        }
+        $name = trim((string) $order->get_formatted_shipping_full_name()) ?: trim((string) $order->get_formatted_billing_full_name());
+        $address = trim((string) $order->get_shipping_address_1()) ?: trim((string) $order->get_billing_address_1());
+        $city = trim((string) ($order->get_shipping_city() ?: $order->get_billing_city()));
+        $parts = array_filter([$name, $address, $city]);
+        return $parts !== [] ? implode(', ', $parts) : __('Primalac nije dostupan', 'dexpress-woocommerce');
+    }
+
+    private function manualPackageShopEmailUrl(\WC_Order $order): string
+    {
+        if (!DexpressPackageShopShippingMethod::orderUsesDexpressPackageShop($order)) {
+            return '';
+        }
+        return wp_nonce_url(
+            add_query_arg(['post' => $order->get_id(), 'action' => 'edit', 'dexpress_ps_ready_email' => 1], admin_url('post.php')),
+            'dexpress_ps_ready_email_' . $order->get_id(),
+        );
+    }
+
+    private function maybeHandleManualPackageShopEmail(\WC_Order $order): ?string
+    {
+        if (absint($_GET['dexpress_ps_ready_email'] ?? 0) !== 1) {
+            return null;
+        }
+        if (!DexpressPackageShopShippingMethod::orderUsesDexpressPackageShop($order)) {
+            return __('Paket Shop email može da se pošalje samo za Paket Shop porudžbine.', 'dexpress-woocommerce');
+        }
+        if (!wp_verify_nonce((string) ($_GET['_wpnonce'] ?? ''), 'dexpress_ps_ready_email_' . $order->get_id())) {
+            return __('Nevažeći zahtev za slanje emaila.', 'dexpress-woocommerce');
+        }
+        do_action('woocommerce_order_action_dexpress_send_package_shop_ready_email', $order);
+        return __('Paket Shop email je obrađen. Proverite order napomene za rezultat.', 'dexpress-woocommerce');
     }
 }

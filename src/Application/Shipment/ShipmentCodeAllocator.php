@@ -97,9 +97,8 @@ final class ShipmentCodeAllocator
             return;
         }
 
-        $maxNumeric = $this->shipments->maxAllocatedNumericForPrefix($prefix);
-        $used       = $maxNumeric === null ? 0 : max(0, $maxNumeric - $rangeStart + 1);
-        $ratio      = $used / $capacity;
+        $used  = $this->shipments->countAllocatedCodesInRange($prefix, $rangeStart, $rangeEnd);
+        $ratio = $used / $capacity;
 
         if ($ratio >= 1.0) {
             delete_transient(self::USAGE_WARNING_TRANSIENT);
@@ -132,6 +131,27 @@ final class ShipmentCodeAllocator
         } else {
             delete_transient(self::USAGE_WARNING_TRANSIENT);
         }
+    }
+
+    /**
+     * Formatted next free code ready for display (e.g. "ZS0000083331"), or null if exhausted / not configured.
+     */
+    public function nextFreeCodeInConfiguredRange(): ?string
+    {
+        $prefix     = $this->normalizedPrefix();
+        $rangeStart = $this->rangeStart();
+        $rangeEnd   = $this->rangeEnd();
+
+        if ($prefix === '' || $rangeStart <= 0 || $rangeEnd < $rangeStart) {
+            return null;
+        }
+
+        $n = $this->shipments->firstFreeNumericInRange($prefix, $rangeStart, $rangeEnd);
+        if ($n === null) {
+            return null;
+        }
+
+        return $prefix . str_pad((string) $n, 10, '0', STR_PAD_LEFT);
     }
 
     public static function consumeUsageWarningTransient(): ?string

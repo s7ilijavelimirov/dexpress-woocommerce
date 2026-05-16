@@ -63,7 +63,7 @@ final class ShipmentEmailRenderContextFactory
         $isTest   = false;
         foreach ($list as $shipment) {
             $rows[] = $this->rowFromShipment($shipment);
-            if ($shipment->apiResponse() === 'TEST') {
+            if (in_array($shipment->apiResponse(), ['TEST', 'DRYRUN'], true)) {
                 $isTest = true;
             }
         }

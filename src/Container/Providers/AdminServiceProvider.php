@@ -40,7 +40,9 @@ use S7codedesign\DExpress\Presentation\Admin\Ajax\BulkShipmentController;
 use S7codedesign\DExpress\Presentation\Admin\Ajax\PackageProfileController;
 use S7codedesign\DExpress\Presentation\Admin\Pages\PackageProfilesPage;
 use S7codedesign\DExpress\Infrastructure\Persistence\Sync\StatusCodeRepository;
+use S7codedesign\DExpress\Presentation\Admin\Ajax\ShipmentWorkflowController;
 use S7codedesign\DExpress\Presentation\Admin\Hooks\OrdersListDeliveryStatusColumn;
+use S7codedesign\DExpress\Presentation\Admin\Metabox\OrderShipmentMetabox;
 use S7codedesign\DExpress\Presentation\Admin\Pages\OnboardingPage;
 use S7codedesign\DExpress\Presentation\Admin\Pages\ShipmentsPage;
 
@@ -201,6 +203,23 @@ final class AdminServiceProvider implements ServiceProvider
             static fn (Container $c) => new OrdersListDeliveryStatusColumn(
                 $c->get(ShipmentRepository::class),
                 $c->get(StatusCodeRepository::class),
+            ),
+        );
+
+        $container->singleton(
+            OrderShipmentMetabox::class,
+            static fn (Container $c) => new OrderShipmentMetabox(
+                $c->get(WpdbShipmentRepository::class),
+                $c->get(WpdbSenderLocationRepository::class),
+                $c->get(OptionsRepository::class),
+            ),
+        );
+
+        $container->singleton(
+            ShipmentWorkflowController::class,
+            static fn (Container $c) => new ShipmentWorkflowController(
+                $c->get(CreateShipmentService::class),
+                $c->get(WpdbShipmentRepository::class),
             ),
         );
 

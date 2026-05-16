@@ -256,6 +256,37 @@ Plugin header (`dexpress-woocommerce.php`) is locked at **2.0.1** until a public
 
 ---
 
+## [2.8.0] — 2026-05-16
+
+### Added
+- `src/Domain/Shipment/ShipmentRepository.php` — Two new interface methods: `countAllocatedCodesInRange(string $prefix, int $rangeStart, int $rangeEnd): int` and `firstFreeNumericInRange(string $prefix, int $rangeStart, int $rangeEnd): ?int`. These replace the old `maxAllocatedNumericForPrefix` approximation with accurate per-range queries.
+- `src/Application/Shipment/ShipmentCodeAllocator.php` — New public method `nextFreeCodeInConfiguredRange(): ?string`. Returns the next available code formatted for display (e.g. `ZS0000083330`), or `null` if the range is exhausted or not configured.
+- `templates/admin/tab-api.php` — Live code preview section: shows first and last code in the configured range (e.g. `ZS0000083330 → ZS0000083430`) with total count, updates in real time as admin types prefix/range values. Added "Sledeći slobodni kod" badge row displaying the actual next allocatable code after page load or save.
+- `assets/css/admin.css` — `.dex-code-preview` (flex row, monospace code display, hidden by default via `.is-hidden`), `.dex-next-code-row` (blue-tinted card row for next-free-code display).
+- `src/Presentation/Admin/Pages/OnboardingPage.php` (`renderPanel2()`) — Same live preview and next-free-code badge as the API tab. `handleSaveCredentials()` now includes `nextFreeCode` in the AJAX success payload.
+- `assets/js/admin-onboarding.js` — `updateObCodePreview()` function: updates live preview in onboarding Step 2. Called on page load (pre-filled fields render immediately), on input change to any code field, and from `mergeSettingsSnapshotFromAjax()` after a successful save. `nextFreeCode` from AJAX response populates and reveals `#dex-ob-next-code-row`.
+
+### Changed
+- `src/Infrastructure/Persistence/WpdbShipmentRepository.php` — `allocatePackageCode()` replaced MAX+1 strategy with first-free-slot iteration. Queries all active codes with the configured prefix, builds an occupied-set, then iterates from `rangeStart` to find the first gap. When a `pending_send` shipment is deleted, its package row is hard-deleted — the freed numeric slot is now correctly reused rather than wasted. Previously, deleting 10 codes and recreating them would allocate 10 new codes beyond the old MAX; now they fill the vacated slots.
+- `src/Infrastructure/Persistence/WpdbShipmentRepository.php` — Implemented `countAllocatedCodesInRange()`: counts rows in `packages` where the numeric suffix of `code` falls within `[rangeStart, rangeEnd]`. Implemented `firstFreeNumericInRange()`: same query, then iterates from `rangeStart` to find the first missing integer.
+- `src/Application/Shipment/ShipmentCodeAllocator.php` — `evaluateRangeUsageAfterSettingsSaved()` now calls `countAllocatedCodesInRange()` for the usage ratio (was: `maxAllocatedNumericForPrefix() - rangeStart + 1`, which over-counted when gaps existed).
+- `src/Presentation/Admin/Pages/SettingsPage.php` — `shipmentCodeRangeStatusForTemplate()` updated: `$used` from `countAllocatedCodesInRange()` (accurate count), `$nextFree` from `firstFreeNumericInRange()`. Return shape updated: removed `max_numeric`, added `next_free`. Exhausted tier now based on `$nextFree === null || $remaining <= 0`.
+- `templates/admin/tab-api.php` — Range description updated to explain the D-Express model ("D Express vam dodeljuje dvoslovni prefiks i numerički opseg — svaki paket dobija jedinstveni kod. Kad se opseg popuni, pozovite D Express da vam prošire 'Do'."). Usage monitor copy improved: counter shows "X / Y kodova iskorišćeno (Z%)", warning copy explicitly says to contact D-Express, exhausted copy gives exact instruction.
+- `assets/js/admin-settings.js` — `buildAutocomplete()` town/street dropdowns now use `position: fixed` + `getBoundingClientRect()` (`positionBox()` function) so they escape the modal's `overflow: hidden` / `overflow-y: auto` container. Previously the dropdown was clipped inside the modal body. `close()` resets all inline CSS properties. Z-index set to 100001 (above modal's 100000).
+- `assets/js/admin-settings.js` — `openModal()`: street input is now enabled/disabled based on whether `data.townId` is present when the modal opens. Editing the town text field disables and clears the street immediately. Selecting a town from the dropdown enables the street and shifts focus to it. Placeholder switches between "Prvo izaberite grad…" (disabled) and "Počnite kucati naziv ulice…" (enabled).
+- `assets/js/admin-settings.js` — `#dex-save-location` handler: bank account (`#dex-loc-bank-account`) is now validated as required. Missing bank account blocks save with a focused error message.
+- `templates/admin/tab-sender-locations.php` — Street input now has `disabled` attribute in HTML (JS manages the enabled state at runtime). Bank account label gets `*` required marker; description updated from "Neobavezno. Popunite samo ako…" to "Račun na koji D Express uplaćuje otkupninu za ovu lokaciju."
+- `assets/js/admin-onboarding.js` — Rewrote `buildObAutocomplete()` to use `positionBox()` with `position: fixed` + `getBoundingClientRect()`, identical to the settings `buildAutocomplete()`. Switches from `.addClass('is-open')` / `.removeClass('is-open')` to jQuery `show()`/`hide()` with inline CSS positioning. Fixes the dropdown escaping its container in the wizard panel.
+- `assets/js/admin-onboarding.js` — Onboarding Step 4 street input starts disabled at page load. `obTownAC.onSelect` enables it and shifts focus. Town text `input` event disables and clears it. Bank account validated as required in the save-location handler.
+- `src/Presentation/Admin/Pages/OnboardingPage.php` (`renderPanel4()`) — Street input has `disabled` attribute and updated placeholder "Prvo izaberite grad…". Bank account label gets `*` required marker; description updated to match settings template.
+
+### Architecture Notes
+- Code allocation now behaves correctly under the two-step save/send flow: a `pending_send` shipment that is deleted frees its code because packages are hard-deleted with the shipment. The first-free-slot approach guarantees that slot is reused on the next allocation, keeping the range compact. This is important for production clients whose D-Express range is narrow (e.g. 100 codes).
+- The `position: fixed` dropdown fix applies to any autocomplete placed inside a CSS `overflow` container. Both `buildAutocomplete` (settings) and `buildObAutocomplete` (onboarding) now use the same pattern. Any future autocomplete should follow the same `positionBox()` approach when there is a risk of an overflow ancestor.
+- Bank account is now required at both entry points (onboarding and settings modal). This ensures the field is populated for every sender location, which is necessary for COD otkupnina reconciliation.
+
+---
+
 ## Unreleased
 
 ### Known Issues

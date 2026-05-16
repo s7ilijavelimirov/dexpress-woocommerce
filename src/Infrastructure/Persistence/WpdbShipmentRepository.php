@@ -239,29 +239,37 @@ final class WpdbShipmentRepository implements ShipmentRepository
      */
     public function allocatePackageCode(string $prefix, int $rangeStart, int $rangeEnd): PackageCode
     {
-        $like    = $this->wpdb->esc_like($prefix) . '%';
+        $like = $this->wpdb->esc_like($prefix) . '%';
 
+        // Lock all matching rows so concurrent allocations cannot race.
         // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-        $maxCode = $this->wpdb->get_var(
+        $activeCodes = $this->wpdb->get_col(
             $this->wpdb->prepare(
-                "SELECT MAX(code) FROM `{$this->packagesTable}` WHERE code LIKE %s FOR UPDATE",
+                "SELECT code FROM `{$this->packagesTable}` WHERE code LIKE %s FOR UPDATE",
                 $like,
             )
         );
 
-        if ($maxCode !== null) {
-            $next = (int) substr($maxCode, strlen($prefix)) + 1;
-        } else {
-            $next = $rangeStart;
+        // Build a fast lookup of occupied numbers within the configured range.
+        $occupied  = [];
+        $prefixLen = strlen($prefix);
+        foreach ($activeCodes ?: [] as $code) {
+            $n = (int) substr((string) $code, $prefixLen);
+            if ($n >= $rangeStart && $n <= $rangeEnd) {
+                $occupied[$n] = true;
+            }
         }
 
-        if ($next > $rangeEnd) {
-            throw new \RuntimeException(
-                'D Express code range exhausted. Please extend range in settings.',
-            );
+        // First free slot — respects gaps left by deleted pending_send shipments.
+        for ($n = $rangeStart; $n <= $rangeEnd; $n++) {
+            if (!isset($occupied[$n])) {
+                return PackageCode::fromPrefixAndIndex($prefix, $n);
+            }
         }
 
-        return PackageCode::fromPrefixAndIndex($prefix, $next);
+        throw new \RuntimeException(
+            'D Express code range exhausted. Please extend range in settings.',
+        );
     }
 
     public function maxAllocatedNumericForPrefix(string $prefix): ?int
@@ -286,6 +294,70 @@ final class WpdbShipmentRepository implements ShipmentRepository
         }
 
         return (int) substr((string) $maxCode, 2);
+    }
+
+    public function countAllocatedCodesInRange(string $prefix, int $rangeStart, int $rangeEnd): int
+    {
+        $prefix = strtoupper($prefix);
+        if ($prefix === '' || !preg_match('/^[A-Z]{2}$/', $prefix)) {
+            return 0;
+        }
+
+        $like      = $this->wpdb->esc_like($prefix) . '%';
+        $prefixLen = strlen($prefix);
+
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        $codes = $this->wpdb->get_col(
+            $this->wpdb->prepare(
+                "SELECT code FROM `{$this->packagesTable}` WHERE code LIKE %s",
+                $like,
+            )
+        );
+
+        $count = 0;
+        foreach ($codes ?: [] as $code) {
+            $n = (int) substr((string) $code, $prefixLen);
+            if ($n >= $rangeStart && $n <= $rangeEnd) {
+                $count++;
+            }
+        }
+
+        return $count;
+    }
+
+    public function firstFreeNumericInRange(string $prefix, int $rangeStart, int $rangeEnd): ?int
+    {
+        $prefix = strtoupper($prefix);
+        if ($prefix === '' || !preg_match('/^[A-Z]{2}$/', $prefix)) {
+            return null;
+        }
+
+        $like      = $this->wpdb->esc_like($prefix) . '%';
+        $prefixLen = strlen($prefix);
+
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        $codes = $this->wpdb->get_col(
+            $this->wpdb->prepare(
+                "SELECT code FROM `{$this->packagesTable}` WHERE code LIKE %s",
+                $like,
+            )
+        );
+
+        $occupied = [];
+        foreach ($codes ?: [] as $code) {
+            $n = (int) substr((string) $code, $prefixLen);
+            if ($n >= $rangeStart && $n <= $rangeEnd) {
+                $occupied[$n] = true;
+            }
+        }
+
+        for ($n = $rangeStart; $n <= $rangeEnd; $n++) {
+            if (!isset($occupied[$n])) {
+                return $n;
+            }
+        }
+
+        return null;
     }
 
     public function updateStatusPresentation(int $id, StatusEmailBucket $bucket, int $currentSid, string $labelSnapshot): void

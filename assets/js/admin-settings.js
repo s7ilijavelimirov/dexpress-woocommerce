@@ -100,11 +100,28 @@
         function spinOn()  { if ($spinner) $spinner.addClass('is-active'); }
         function spinOff() { if ($spinner) $spinner.removeClass('is-active'); }
 
-        function close() { $box.hide().empty(); }
+        function close() {
+            $box.hide().empty().css({ position: '', top: '', left: '', width: '', right: '', 'z-index': '' });
+        }
+
+        function positionBox() {
+            var el = $input[0];
+            if (!el) { return; }
+            var rect = el.getBoundingClientRect();
+            $box.css({
+                position: 'fixed',
+                top:      rect.bottom + 'px',
+                left:     rect.left + 'px',
+                width:    rect.width + 'px',
+                right:    'auto',
+                'z-index': 100001,
+            });
+        }
 
         function renderResults(items) {
             spinOff();
             $box.empty();
+            positionBox();
             if (!items.length) {
                 $box.append('<div class="dex-dropdown__item dex-dropdown__empty">Nema rezultata</div>');
             } else {
@@ -192,17 +209,19 @@
         onSelect: function (town) {
             $('#dex-loc-town-id').val(town.id);
             $('#dex-loc-town-name').val(town.name);
-            // Clear street when town changes.
-            $('#dex-loc-street-name').val('');
+            $('#dex-loc-street-name').val('').prop('disabled', false)
+                .attr('placeholder', 'Počnite kucati naziv ulice...');
             $('#dex-loc-street-id').val('');
             streetAC.close();
+            $('#dex-loc-street-name').trigger('focus');
         },
     });
 
     // Clear town-id + street when user edits the town text directly.
     $(document).on('input', '#dex-loc-town-name', function () {
         $('#dex-loc-town-id').val('');
-        $('#dex-loc-street-name').val('');
+        $('#dex-loc-street-name').val('').prop('disabled', true)
+            .attr('placeholder', 'Prvo izaberite grad...');
         $('#dex-loc-street-id').val('');
     });
 
@@ -288,6 +307,10 @@
 
         $('#dex-loc-town-id').val(data.townId || '');
         $('#dex-loc-town-name').val(data.townName || '');
+
+        var hasTown = !!(data.townId);
+        $('#dex-loc-street-name').prop('disabled', !hasTown)
+            .attr('placeholder', hasTown ? 'Počnite kucati naziv ulice...' : 'Prvo izaberite grad...');
 
         townAC.close();
         streetAC.close();
@@ -385,6 +408,13 @@
         if (!PHONE_RE.test(phoneVal)) {
             setResult($result, 'Telefon nije u ispravnom formatu. Primer: 381641234567', false);
             $('#dex-loc-contact-phone').trigger('focus');
+            return;
+        }
+
+        var bankAccount = $('#dex-loc-bank-account').val().trim();
+        if (!bankAccount) {
+            setResult($result, 'Tekući račun za otkupninu je obavezan.', false);
+            $('#dex-loc-bank-account').trigger('focus');
             return;
         }
 

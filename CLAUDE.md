@@ -240,6 +240,7 @@ Custom WooCommerce emails:
 - **2.5.0** — `ShipmentsPage` expanded with phone, shipping address, payment method, delivery type columns; HPOS-aware edit URLs; package profile dropdown in header. Package profiles page fully redesigned (card grid, centered modal, sidebar rules panel). Bulk back-button changed to point to Pošiljke page.
 - **2.6.0** — Bulk wizard refactored to 4 steps (Podešavanja → Pregled → Štampa → Slanje); print-before-send enforced in JS; weight field made optional (batch override); Step 2 table merged to 6 columns; error row visibility fixed; CSS specificity bugs fixed.
 - **2.7.0** — `DexpressShippingGate` checkout guard (skips all frontend hooks if no D-Express method enabled); bulk wizard Pregled step (snapshot preview before creation); persistent "Čekaju slanje" card on Pošiljke page (server-rendered, AJAX send); `BulkShipmentController` reads delivery/payment/return type defaults from options (removed hardcoded POST params); `shipment.default_self_drop_off` setting added; onboarding client_id fix (reads field value at completion time, pre-validates Step 2 without requiring clientIdInDb); label toolbar redesigned (logo, 2-up/4-up only, removed 1-up).
+- **2.8.0** — Shipment code allocation changed from MAX+1 to first-free-slot (deleted `pending_send` codes are reusable); `countAllocatedCodesInRange` + `firstFreeNumericInRange` added to repository interface; API tab code range UI redesigned (live preview, next-free-code badge, D-Express range model explained); same UI replicated in onboarding Step 2; autocomplete dropdowns use `position: fixed` (escapes modal overflow clipping) in both settings modal and onboarding wizard; street input disabled until town is selected in both sender location forms; bank account field made required in both forms.
 
 ### Currently In Progress
 
@@ -255,12 +256,23 @@ Custom WooCommerce emails:
 
 ## Active Tasks
 
-Unfinished items from `docs/DEV-LOG.md`, ordered by version:
+Planned work ordered by priority. All items below are unfinished and should be addressed in future sessions.
 
-- **`profile_id` pre-selection in bulk wizard** (`src/Presentation/Admin/Pages/BulkShipmentPage.php`) — `ShipmentsPage` passes `profile_id` as a URL query param when redirecting to the bulk page, but `BulkShipmentPage` ignores it. A JS one-liner on page load (`if (urlParam('profile_id')) { applyProfile(id) }`) would complete the wire-up. [2.5.0 tech debt]
-- **Checkout-time paketomat dimension validation** (`src/Application/Shipment/CreateShipmentService.php`, `src/Presentation/Frontend/Checkout/CheckoutValidator.php`) — Dimension limits (470×440×440mm) enforced at shipment creation but not at checkout. A customer can place an order with oversized items; the failure surfaces only when the admin creates the shipment. Requires reliable product dimension data at checkout. [2.2.0 tech debt]
-- **CSS design system migration** (`assets/css/`) — Full spec in `DESIGN.md`. Tasks: merge `admin-design-system.css` into `admin.css`; rename all `dexpress-` classes to `dex-`; delete `admin-shipments.css`; remove Google Fonts `@import` from `admin-diagnostics.css`; eliminate `!important` overrides; remove inline styles from PHP templates. JS selectors in `admin-settings.js` and `admin-metabox.js` must be updated in the same pass as the class renames.
-- **Package Shop tracking view** (`src/Presentation/Frontend/MyAccount/MyAccountTrackingTab.php`) — Package Shop orders use the same status display as standard orders; there is no contextually tailored view (e.g. "ready for pickup at location X"). [Unreleased / known issue]
+### Priority 1 — Pre-release blockers
+
+- **License / SaaS system** — No license validation exists anywhere in the codebase. Plan: Laravel license server + plugin key field in settings. Without this, the plugin cannot be sold/distributed commercially. Start with a simple API key check on `plugins_loaded` that calls the license server; block shipment creation (not the entire plugin) if the key is invalid or missing. [Not started]
+
+- **CSS design system migration** (`assets/css/`) — Full spec in `DESIGN.md`. This is a large refactor touching every admin page. Tasks in order: (1) delete empty `admin-shipments.css` and remove its `enqueueAdminAssets()` registration in `AdminMenu.php`; (2) remove Google Fonts `@import` from `admin-diagnostics.css`; (3) merge `admin-design-system.css` token layer into `admin.css`; (4) rename all remaining `dexpress-` class prefixes to `dex-` across all PHP templates and CSS files; (5) replace `!important` overrides with proper specificity; (6) replace inline styles in PHP templates with component classes. JS selectors in `admin-settings.js` and `admin-metabox.js` must be updated in the same pass as the class renames. Do the whole thing in one session — partial renames leave the codebase in a worse state than before.
+
+### Priority 2 — UX gaps
+
+- **Checkout-time paketomat dimension validation** (`src/Presentation/Frontend/Checkout/CheckoutValidator.php`, `src/Application/Shipment/CreateShipmentService.php`) — Limits (470×440×440mm, weight < 20kg) are enforced at shipment creation time only. A customer can successfully place an order with oversized items for a paketomat; the failure appears only when the admin tries to create the shipment. Fix requires reading WooCommerce product dimensions from cart items at checkout and comparing against paketomat limits. Only applies when `dexpress_package_shop` method is selected. [2.2.0 tech debt]
+
+- **Package Shop tracking view** (`src/Presentation/Frontend/MyAccount/MyAccountTrackingTab.php`) — Package Shop orders show the same generic status timeline as door-to-door orders. There is no contextual message like "Your package is ready for pickup at [location name], [address]". The data is available in order meta (`_dexpress_package_shop_location_*`). Should render a pickup location card above the status timeline when the order used `dexpress_package_shop` method. [Known gap since 2.2.0]
+
+### Priority 3 — Minor / polish
+
+- **`profile_id` pre-selection in bulk wizard** (`assets/js/admin-bulk-shipment.js`) — `ShipmentsPage` passes `profile_id` as a URL query param when redirecting to the bulk page, but the wizard ignores it. Fix: on page load, read `urlParam('profile_id')` and call `applyProfile(id)` if set. One-liner; low risk. [2.5.0 tech debt]
 
 ---
 

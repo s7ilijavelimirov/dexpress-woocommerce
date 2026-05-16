@@ -321,10 +321,19 @@ final class AdminMenu
             [$this->dashboardPage, 'render'],
         );
 
+        global $wpdb;
+        $shipmentsTable = $wpdb->prefix . 'dexpress_shipments';
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        $pendingCount = (int) $wpdb->get_var("SELECT COUNT(*) FROM `{$shipmentsTable}` WHERE send_status = 'pending_send'");
+        $shipmentsMenuLabel = __('Pošiljke', 'dexpress-woocommerce');
+        if ($pendingCount > 0) {
+            $shipmentsMenuLabel .= ' <span class="awaiting-mod count-' . $pendingCount . '"><span class="pending-count">' . $pendingCount . '</span></span>';
+        }
+
         add_submenu_page(
             self::MENU_SLUG,
             __('D Express — pošiljke', 'dexpress-woocommerce'),
-            __('Pošiljke', 'dexpress-woocommerce'),
+            $shipmentsMenuLabel,
             'manage_woocommerce',
             'dexpress-shipments',
             [$this->shipmentsPage, 'render'],

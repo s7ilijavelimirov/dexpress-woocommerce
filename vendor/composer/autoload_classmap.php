@@ -110,7 +110,6 @@ return array(
     'S7codedesign\\DExpress\\Presentation\\Admin\\Label\\PrintLabelController' => $baseDir . '/src/Presentation/Admin/Label/PrintLabelController.php',
     'S7codedesign\\DExpress\\Presentation\\Admin\\Menu\\AdminMenu' => $baseDir . '/src/Presentation/Admin/Menu/AdminMenu.php',
     'S7codedesign\\DExpress\\Presentation\\Admin\\Metabox\\OrderShipmentMetabox' => $baseDir . '/src/Presentation/Admin/Metabox/OrderShipmentMetabox.php',
-    'S7codedesign\\DExpress\\Presentation\\Admin\\Metabox\\PackageShopInfoMetabox' => $baseDir . '/src/Presentation/Admin/Metabox/PackageShopInfoMetabox.php',
     'S7codedesign\\DExpress\\Presentation\\Admin\\Pages\\DashboardPage' => $baseDir . '/src/Presentation/Admin/Pages/DashboardPage.php',
     'S7codedesign\\DExpress\\Presentation\\Admin\\Pages\\DiagnosticsPage' => $baseDir . '/src/Presentation/Admin/Pages/DiagnosticsPage.php',
     'S7codedesign\\DExpress\\Presentation\\Admin\\Pages\\OnboardingPage' => $baseDir . '/src/Presentation/Admin/Pages/OnboardingPage.php',

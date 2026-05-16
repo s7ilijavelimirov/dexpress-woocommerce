@@ -20,9 +20,6 @@ use S7codedesign\DExpress\Infrastructure\Persistence\WpdbPackageItemRepository;
 use S7codedesign\DExpress\Infrastructure\Persistence\WpdbPackageRepository;
 use S7codedesign\DExpress\Infrastructure\Persistence\WpdbSenderLocationRepository;
 use S7codedesign\DExpress\Infrastructure\Persistence\WpdbShipmentRepository;
-use S7codedesign\DExpress\Presentation\Admin\Ajax\ShipmentWorkflowController;
-use S7codedesign\DExpress\Presentation\Admin\Metabox\OrderShipmentMetabox;
-use S7codedesign\DExpress\Presentation\Admin\Metabox\PackageShopInfoMetabox;
 
 final class ShipmentServiceProvider implements ServiceProvider
 {
@@ -116,26 +113,5 @@ final class ShipmentServiceProvider implements ServiceProvider
             ),
         );
 
-        $container->singleton(
-            ShipmentWorkflowController::class,
-            static fn (Container $c): ShipmentWorkflowController => new ShipmentWorkflowController(
-                $c->get(CreateShipmentService::class),
-                $c->get(WpdbShipmentRepository::class),
-            ),
-        );
-
-        $container->singleton(
-            OrderShipmentMetabox::class,
-            static fn (Container $c): OrderShipmentMetabox => new OrderShipmentMetabox(
-                $c->get(WpdbShipmentRepository::class),
-                $c->get(WpdbSenderLocationRepository::class),
-                $c->get(OptionsRepository::class),
-            ),
-        );
-
-        $container->singleton(
-            PackageShopInfoMetabox::class,
-            static fn (): PackageShopInfoMetabox => new PackageShopInfoMetabox(),
-        );
     }
 }

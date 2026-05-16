@@ -22,7 +22,6 @@ use S7codedesign\DExpress\Container\Providers\WebhookServiceProvider;
 use S7codedesign\DExpress\Infrastructure\Cron\WpCronScheduler;
 use S7codedesign\DExpress\Infrastructure\Persistence\DatabaseInstaller;
 use S7codedesign\DExpress\Infrastructure\Logging\Logger;
-use S7codedesign\DExpress\Presentation\Admin\Ajax\ShipmentWorkflowController;
 use S7codedesign\DExpress\Presentation\Admin\Ajax\ManualSyncController;
 use S7codedesign\DExpress\Presentation\Admin\Label\PrintLabelController;
 use S7codedesign\DExpress\Presentation\Admin\Ajax\SenderLocationController;
@@ -31,10 +30,10 @@ use S7codedesign\DExpress\Presentation\Admin\Handlers\SettingsSaveHandler;
 use S7codedesign\DExpress\Presentation\Admin\Menu\AdminMenu;
 use S7codedesign\DExpress\Presentation\Admin\Ajax\BulkShipmentController;
 use S7codedesign\DExpress\Presentation\Admin\Ajax\PackageProfileController;
-use S7codedesign\DExpress\Presentation\Admin\Hooks\OrdersListDeliveryStatusColumn;
+use S7codedesign\DExpress\Presentation\Admin\Ajax\ShipmentWorkflowController;
 use S7codedesign\DExpress\Presentation\Admin\Metabox\OrderShipmentMetabox;
+use S7codedesign\DExpress\Presentation\Admin\Hooks\OrdersListDeliveryStatusColumn;
 use S7codedesign\DExpress\Presentation\Admin\Pages\OnboardingPage;
-use S7codedesign\DExpress\Presentation\Admin\Metabox\PackageShopInfoMetabox;
 use S7codedesign\DExpress\Presentation\Admin\Pages\SettingsPage;
 use S7codedesign\DExpress\Presentation\Frontend\Ajax\AutocompleteController;
 use S7codedesign\DExpress\Presentation\Frontend\Ajax\PackageShopDispenserController;
@@ -172,13 +171,12 @@ final class Plugin
         $this->container->get(TestConnectionController::class)->register();
         $this->container->get(SenderLocationController::class)->register();
         $this->container->get(ManualSyncController::class)->register();
-        $this->container->get(ShipmentWorkflowController::class)->register();
-        $this->container->get(OrderShipmentMetabox::class)->register();
-        $this->container->get(PackageShopInfoMetabox::class)->register();
         $this->container->get(PrintLabelController::class)->register();
         $this->container->get(OrdersListDeliveryStatusColumn::class)->register();
         $this->container->get(PackageProfileController::class)->register();
         $this->container->get(BulkShipmentController::class)->register();
+        $this->container->get(ShipmentWorkflowController::class)->register();
+        $this->container->get(OrderShipmentMetabox::class)->register();
     }
 
     private function loadTextDomain(): void

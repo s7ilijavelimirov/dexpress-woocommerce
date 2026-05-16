@@ -3,7 +3,7 @@
  * Plugin Name:       D Express WooCommerce Integration
  * Plugin URI:        https://s7codedesign.com/
  * Description:       D Express courier service integration for WooCommerce. Shipment creation, PDF labels, webhook status updates, and customer tracking.
- * Version:           2.0.1
+ * Version:           2.8.0
  * Author:            S7codedesign
  * Author URI:        https://s7codedesign.com/
  * License:           GPL-2.0-or-later
@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 defined('ABSPATH') || exit;
 
-define('DEXPRESS_VERSION', '2.0.1');
+define('DEXPRESS_VERSION', '2.8.0');
 define('DEXPRESS_PLUGIN_FILE', __FILE__);
 define('DEXPRESS_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('DEXPRESS_PLUGIN_URL', plugin_dir_url(__FILE__));

@@ -1,517 +1,1826 @@
 /* =============================================================================
-   D Express WooCommerce — Order Metabox (shipment + package shop info)
-   Handle: dexpress-admin-metabox · Page: WooCommerce order edit
+   D Express WooCommerce — Order Shipment Metabox
+   Version 2.7.0
+
+   Contents:
+     1. Root / Layout
+     2. Stepper
+     3. Panel
+     4. Package Card
+     5. Dims collapsible
+     6. Item allocation collapsible
+     7. Fields & Inputs
+     8. Segment control (self drop-off)
+     9. Options grid
+    10. Summary (Step 3)
+    11. Buttons
+    12. Notices & Errors
+    13. State B — Pending Send
+    14. State C — Created / Sent
+    15. Empty state
+    16. Edit back bar
    ============================================================================= */
 
 
-/* ── Base state container ────────────────────────────────────── */
+/* =============================================================================
+   1. ROOT / LAYOUT
+   ============================================================================= */
 
-#dex-shipment-root .dex-state {
-  border: var(--dex-border);
-  border-radius: var(--dex-radius);
-  padding: var(--dex-space-2) var(--dex-space-3);
-  background: var(--dex-white);
+#dexpress_shipment_metabox .inside {
+  padding: 0;
+  margin: 0;
 }
 
-#dex-shipment-root .dex-metabox-empty {
-  color: var(--dex-red);
-  margin: 0;
+/* flex/grid elements with the `hidden` attribute must still be hidden */
+#dex-mb-root [hidden] { display: none !important; }
+
+.dex-mb-root {
+  font-family: var(--dex-font);
+  font-size: var(--dex-text-base);
+  color: var(--dex-text);
+  background: var(--dex-white);
+  border-radius: 0 0 var(--dex-radius) var(--dex-radius);
+}
+
+.dex-mb-wizard {
+  padding: var(--dex-space-5) var(--dex-space-6);
+}
+
+.dex-mb-msg {
+  padding: var(--dex-space-5) var(--dex-space-6);
+  color: var(--dex-text-muted);
   font-size: var(--dex-text-sm);
 }
 
 
-/* ── STATE A — Wizard: step indicator ───────────────────────── */
+/* =============================================================================
+   2. STEPPER
+   ============================================================================= */
 
-#dex-shipment-root .dex-steps {
+.dex-mb-stepper {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin: 0 auto var(--dex-space-6);
+  padding: 0 var(--dex-space-2);
+  max-width: 380px; /* constrained — avoids stretching across full metabox width */
+}
+
+.dex-mb-stepper__step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--dex-space-1);
+  flex: 0 0 auto;
+  position: relative;
+}
+
+.dex-mb-stepper__circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--dex-text-sm);
+  font-weight: 700;
+  border: 2px solid var(--dex-gray-300);
+  background: var(--dex-white);
+  color: var(--dex-gray-500);
+  transition: border-color var(--dex-transition), background var(--dex-transition), color var(--dex-transition);
+  position: relative;
+  z-index: 1;
+}
+
+.dex-mb-stepper__step.is-active .dex-mb-stepper__circle {
+  border-color: var(--dex-red);
+  background: var(--dex-red);
+  color: var(--dex-white);
+}
+
+.dex-mb-stepper__step.is-done .dex-mb-stepper__circle {
+  border-color: var(--dex-green);
+  background: var(--dex-green);
+  color: transparent; /* hide number; checkmark via ::before */
+  position: relative;
+}
+
+.dex-mb-stepper__step.is-done .dex-mb-stepper__circle::before {
+  content: "\f147"; /* dashicons checkmark */
+  font-family: dashicons;
+  font-size: 16px;
+  font-weight: 400;
+  color: var(--dex-white);
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.dex-mb-stepper__label {
+  font-size: var(--dex-text-xs);
+  font-weight: 600;
+  color: var(--dex-gray-500);
+  white-space: nowrap;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.dex-mb-stepper__step.is-active .dex-mb-stepper__label {
+  color: var(--dex-red);
+}
+
+.dex-mb-stepper__step.is-done .dex-mb-stepper__label {
+  color: var(--dex-green);
+}
+
+.dex-mb-stepper__line {
+  flex: 1;
+  height: 2px;
+  background: var(--dex-gray-200);
+  margin: 0 var(--dex-space-2);
+  margin-bottom: var(--dex-space-4); /* align with circle centers */
+  position: relative;
+  top: -10px;
+}
+
+
+/* =============================================================================
+   3. PANEL
+   ============================================================================= */
+
+/* visibility controlled by the HTML `hidden` attribute (set/removed by JS showStep) */
+
+.dex-mb-panel__header {
+  display: flex;
+  align-items: center;
+  gap: var(--dex-space-3);
+  margin-bottom: var(--dex-space-5);
+  padding: var(--dex-space-3) var(--dex-space-4);
+  background: var(--dex-gray-50);
+  border: var(--dex-border);
+  border-left: 3px solid var(--dex-red);
+  border-radius: var(--dex-radius-sm);
+}
+
+.dex-mb-panel__icon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--dex-radius-sm);
+  background: var(--dex-red-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.dex-mb-panel__icon .dashicons {
+  color: var(--dex-red);
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+}
+
+.dex-mb-panel__header-text h3 {
+  margin: 0 0 1px;
+  font-size: var(--dex-text-base);
+  font-weight: 700;
+  color: var(--dex-text);
+  line-height: 1.2;
+}
+
+.dex-mb-panel__header-text p {
+  margin: 0;
+  font-size: var(--dex-text-xs);
+  color: var(--dex-text-muted);
+  line-height: 1.4;
+}
+
+.dex-mb-panel__nav {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--dex-space-3);
+  margin-top: var(--dex-space-6);
+  padding-top: var(--dex-space-4);
+  border-top: var(--dex-border);
+}
+
+
+/* =============================================================================
+   4. PACKAGE CARD
+   ============================================================================= */
+
+.dex-mb-pkg-card {
+  border: var(--dex-border);
+  border-radius: var(--dex-radius);
+  margin-bottom: var(--dex-space-3);
+  background: var(--dex-white);
+  box-shadow: var(--dex-shadow-xs);
+  overflow: hidden;
+}
+
+.dex-mb-pkg-card__head {
+  display: flex;
+  align-items: center;
+  gap: var(--dex-space-3);
+  padding: var(--dex-space-3) var(--dex-space-4);
+  background: var(--dex-gray-50);
+  border-bottom: var(--dex-border);
+}
+
+.dex-mb-pkg-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--dex-radius-sm);
+  background: var(--dex-red-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.dex-mb-pkg-icon .dashicons {
+  color: var(--dex-red);
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+}
+
+.dex-mb-pkg-card__title {
+  flex: 1;
+  font-size: var(--dex-text-sm);
+  font-weight: 700;
+  color: var(--dex-text);
+  margin: 0;
+}
+
+.dex-mb-pkg-remove {
+  background: none;
+  border: 1px solid var(--dex-gray-200);
+  cursor: pointer;
+  padding: 4px var(--dex-space-2);
+  color: var(--dex-gray-500);
+  border-radius: var(--dex-radius-sm);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--dex-text-xs);
+  font-weight: 600;
+  font-family: var(--dex-font);
+  transition: color var(--dex-transition), background var(--dex-transition), border-color var(--dex-transition);
+}
+
+.dex-mb-pkg-remove:hover {
+  color: var(--dex-red);
+  background: var(--dex-red-light);
+  border-color: var(--dex-red);
+}
+
+.dex-mb-pkg-remove .dashicons {
+  font-size: 14px;
+  width: 14px;
+  height: 14px;
+}
+
+.dex-mb-pkg-card__body {
+  padding: var(--dex-space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--dex-space-3);
+}
+
+.dex-mb-pkg-fields-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--dex-space-3);
+}
+
+.dex-mb-field__optional {
+  font-weight: 400;
+  text-transform: none;
+  font-size: var(--dex-text-xs);
+  color: var(--dex-text-muted);
+  letter-spacing: 0;
+}
+
+
+/* =============================================================================
+   5. DIMS COLLAPSIBLE
+   ============================================================================= */
+
+.dex-mb-pkg-dims {
+  border: var(--dex-border);
+  border-radius: var(--dex-radius-sm);
+  overflow: hidden;
+}
+
+.dex-mb-pkg-dims-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--dex-space-2);
+  padding: var(--dex-space-2) var(--dex-space-3);
+  background: var(--dex-gray-50);
+  cursor: pointer;
+  font-size: var(--dex-text-sm);
+  font-weight: 600;
+  color: var(--dex-text-muted);
+  user-select: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+  transition: color var(--dex-transition);
+}
+
+.dex-mb-pkg-dims-toggle:hover {
+  color: var(--dex-text);
+}
+
+.dex-mb-pkg-dims-toggle .dashicons {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  color: var(--dex-gray-500);
+}
+
+.dex-mb-pkg-dims-caret {
+  margin-left: auto;
+  transition: transform var(--dex-transition);
+}
+
+.dex-mb-pkg-dims-toggle[aria-expanded="true"] .dex-mb-pkg-dims-caret {
+  transform: rotate(180deg);
+}
+
+.dex-mb-pkg-dims-body {
+  padding: var(--dex-space-3) var(--dex-space-3) var(--dex-space-3);
+  /* visibility controlled by the HTML `hidden` attribute */
+}
+
+.dex-mb-dims-row {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
   gap: var(--dex-space-1);
-  margin-bottom: var(--dex-space-3);
 }
 
-#dex-shipment-root .dex-step {
-  display: inline-block;
-  text-align: center;
+
+/* =============================================================================
+   6. ITEM ALLOCATION BLOCK (always open)
+   ============================================================================= */
+
+.dex-mb-items-block {
+  border: var(--dex-border);
+  border-radius: var(--dex-radius-sm);
+  overflow: hidden;
+}
+
+.dex-mb-items-block__head {
+  display: flex;
+  align-items: center;
+  gap: var(--dex-space-2);
+  padding: var(--dex-space-2) var(--dex-space-3);
+  background: var(--dex-gray-50);
+  border-bottom: var(--dex-border);
   font-size: var(--dex-text-xs);
-  font-weight: 600;
-  padding: var(--dex-space-1) var(--dex-space-1);
-  border-radius: var(--dex-radius);
+  font-weight: 700;
+  color: var(--dex-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.dex-mb-items-block__head .dashicons {
+  font-size: 14px;
+  width: 14px;
+  height: 14px;
+}
+
+/* Item allocation list (flex rows, no table) */
+
+.dex-mb-items-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.dex-mb-item-row {
+  display: flex;
+  align-items: center;
+  gap: var(--dex-space-2);
+  padding: var(--dex-space-2) var(--dex-space-3);
+  border-bottom: 1px solid var(--dex-gray-100);
+}
+
+.dex-mb-item-row:last-child {
+  border-bottom: none;
+}
+
+.dex-mb-item-thumb {
+  flex-shrink: 0;
+  width: 40px;
+}
+
+.dex-mb-item-img {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--dex-radius-sm);
+  object-fit: cover;
+  display: block;
+  border: var(--dex-border);
   background: var(--dex-gray-100);
-  color: var(--dex-gray-700);
+}
+
+.dex-mb-item-img--placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--dex-gray-300);
+  font-size: 20px !important;
+  width: 40px !important;
+  height: 40px !important;
+}
+
+.dex-mb-item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.dex-mb-item-title {
+  display: block;
+  font-weight: 600;
+  font-size: var(--dex-text-sm);
+  color: var(--dex-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dex-mb-item-cat {
+  display: block;
+  font-size: var(--dex-text-xs);
+  color: var(--dex-text-muted);
+}
+
+.dex-mb-item-right {
+  display: flex;
+  align-items: center;
+  gap: var(--dex-space-2);
+  flex-shrink: 0;
+}
+
+.dex-mb-item-price {
+  white-space: nowrap;
+  color: var(--dex-text-muted);
+  font-size: var(--dex-text-sm);
+  font-weight: 500;
+  min-width: 60px;
+  text-align: right;
+}
+
+.dex-mb-qty-ctrl {
+  display: inline-flex;
+  align-items: center;
+  border: var(--dex-border);
+  border-radius: var(--dex-radius-sm);
+  overflow: hidden;
+}
+
+.dex-mb-qty-btn {
+  width: 28px;
+  height: 28px;
+  background: var(--dex-gray-50);
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--dex-text-muted);
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: background var(--dex-transition), color var(--dex-transition);
 }
 
-#dex-shipment-root .dex-step.is-active {
-  background: var(--dex-red);
-  color: var(--dex-white);
-}
-
-#dex-shipment-root .dex-step-panel h4 {
-  margin: var(--dex-space-1) 0 var(--dex-space-2);
-  font-size: var(--dex-text-base);
-}
-
-
-/* ── STATE A — Wizard: package cards ────────────────────────── */
-
-#dex-shipment-root .dex-package-actions {
-  display: flex;
-  justify-content: space-between;
-  gap: var(--dex-space-1);
-  margin-top: var(--dex-space-2);
-}
-
-#dex-shipment-root .dex-package-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: var(--dex-space-2);
-}
-
-#side-sortables #dex-shipment-root .dex-package-cards {
-  grid-template-columns: 1fr;
-}
-
-@media (min-width: 1200px) {
-  #normal-sortables #dex-shipment-root .dex-package-cards {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-
-#dex-shipment-root .dex-package-card {
-  border: var(--dex-border);
-  border-radius: var(--dex-radius-lg);
-  background: var(--dex-white);
-  box-shadow: var(--dex-shadow-sm);
-}
-
-#dex-shipment-root .dex-package-card-head {
-  display: flex;
-  align-items: center;
-  gap: var(--dex-space-1);
-  padding: var(--dex-space-2) var(--dex-space-3);
-  border-bottom: var(--dex-border);
-  font-size: var(--dex-text-sm);
-  font-weight: 700;
-}
-
-#dex-shipment-root .dex-package-card-body {
-  padding: var(--dex-space-3);
-}
-
-#dex-shipment-root .dex-package-icon {
-  font-size: var(--dex-text-lg);
-  color: var(--dex-red);
-  width: var(--dex-text-lg);
-  height: var(--dex-text-lg);
-}
-
-
-/* ── STATE A — Wizard: form fields ──────────────────────────── */
-
-#dex-shipment-root .dex-field-label {
-  display: block;
-  margin-bottom: 3px;
-  font-weight: 600;
-  font-size: var(--dex-text-sm);
-  color: var(--dex-gray-700);
-}
-
-#dex-shipment-root .dex-req {
-  color: var(--dex-red);
-}
-
-#dex-shipment-root .dex-dims-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: var(--dex-space-1);
-}
-
-#dex-shipment-root .dex-item-allocation {
-  margin-top: var(--dex-space-2);
-}
-
-#dex-shipment-root .dex-item-allocation table td {
-  vertical-align: middle;
-}
-
-#dex-shipment-root .dex-item-allocation .small-text {
-  width: 70px;
-}
-
-
-/* ── STATE A — Package shop destination notice ───────────────── */
-
-#dex-shipment-root .dex-package-shop-destination {
-  position: relative;
-  margin: 0 0 var(--dex-space-3);
-  padding: var(--dex-space-2) var(--dex-space-3) var(--dex-space-2) 28px;
-  border-left: 3px solid var(--dex-blue);
-  background: var(--dex-blue-light);
-  border-radius: 0 var(--dex-radius-sm) var(--dex-radius-sm) 0;
-  font-size: var(--dex-text-sm);
-  color: var(--dex-gray-700);
-}
-
-#dex-shipment-root .dex-package-shop-destination::before {
-  content: '\f230'; /* dashicons-location */
-  font-family: dashicons;
-  position: absolute;
-  left: 7px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 16px;
-  line-height: 1;
-  color: var(--dex-blue);
-}
-
-
-/* ── STATE A — Wizard navigation ────────────────────────────── */
-
-#dex-shipment-root .dex-wizard-nav {
-  display: flex;
-  gap: var(--dex-space-2);
-  margin-top: var(--dex-space-3);
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-#dex-shipment-root .dex-wizard-error {
-  margin-top: var(--dex-space-2);
-  color: var(--dex-red);
+.dex-mb-qty-btn:hover {
   background: var(--dex-red-light);
-  border-left: 3px solid var(--dex-red);
-  border-radius: 0 var(--dex-radius-sm) var(--dex-radius-sm) 0;
-  padding: var(--dex-space-1) var(--dex-space-2);
-  font-size: var(--dex-text-sm);
-}
-
-#dex-shipment-root .dex-wizard-result {
-  margin-top: var(--dex-space-2);
-  font-size: var(--dex-text-sm);
-}
-
-#dex-shipment-root .dex-wizard-result.is-error {
   color: var(--dex-red);
 }
 
-#dex-shipment-root .dex-wizard-result.is-success {
-  color: var(--dex-green);
-}
-
-
-/* Step 3 summary mount (content filled by JS) */
-
-#dex-shipment-root .dex-step3-summary {
-  min-height: 0;
-}
-
-
-/* ── STATE A — Step 3 summary ───────────────────────────────── */
-
-#dex-shipment-root .dex-summary-table {
-  margin: 0 0 var(--dex-space-2);
-}
-
-#dex-shipment-root .dex-summary-packages {
-  margin: 0;
-  padding-left: 18px;
-}
-
-#dex-shipment-root .dex-summary-packages li {
-  margin: var(--dex-space-1) 0;
-}
-
-
-/* ── STATE B — Pending send: warning banner ──────────────────── */
-
-#dex-shipment-root .dex-draft-warning {
-  margin: 0 0 var(--dex-space-3);
-  padding: var(--dex-space-2) var(--dex-space-3);
-  border-left: 3px solid var(--dex-amber);
-  background: var(--dex-amber-light);
-  border-radius: 0 var(--dex-radius-sm) var(--dex-radius-sm) 0;
-  font-size: var(--dex-text-base);
-  color: var(--dex-gray-700);
-}
-
-/* "Pošalji u D-Express" — ID specificity (1,0,0) overrides WP .button-primary (0,1,0) */
-#dex-send-shipment {
-  background: var(--dex-red);
-  border-color: var(--dex-red-hover);
-  color: var(--dex-white);
-  box-shadow: 0 1px 0 var(--dex-red-hover);
-  transition: background var(--dex-transition), border-color var(--dex-transition);
-}
-
-#dex-send-shipment:hover,
-#dex-send-shipment:focus {
-  background: var(--dex-red-hover);
-  border-color: var(--dex-red-hover);
-  color: var(--dex-white);
-}
-
-#dex-send-shipment:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-
-/* ── STATE C — Created: success indicator ────────────────────── */
-
-#dex-shipment-root .dex-success-indicator {
-  margin: 0 0 var(--dex-space-3);
-  padding: var(--dex-space-2) var(--dex-space-3);
-  background: var(--dex-green-light);
-  border-left: 3px solid var(--dex-green);
-  border-radius: 0 var(--dex-radius-sm) var(--dex-radius-sm) 0;
-  color: var(--dex-green);
-  font-weight: 700;
+.dex-mb-item-qty {
+  width: 36px;
+  height: 28px;
+  text-align: center;
+  border: none;
+  border-left: var(--dex-border);
+  border-right: var(--dex-border);
   font-size: var(--dex-text-sm);
+  font-family: var(--dex-font);
+  font-weight: 600;
+  color: var(--dex-text);
+  background: var(--dex-white);
+  outline: none;
+  box-shadow: none;
+  padding: 0;
+  -moz-appearance: textfield;
+}
+
+.dex-mb-item-qty::-webkit-outer-spin-button,
+.dex-mb-item-qty::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 
-/* ── STATE C — Environment badge ────────────────────────────── */
-
-#dex-shipment-root .dex-env-badge {
-  border-radius: 999px;
-  padding: 2px var(--dex-space-2);
-  font-size: var(--dex-text-xs);
-  font-weight: 700;
-  border: 1px solid transparent;
-}
-
-#dex-shipment-root .dex-env-badge.is-test {
-  background: var(--dex-amber-light);
-  color: var(--dex-amber);
-  border-color: rgba(217, 119, 6, 0.3);
-}
-
-#dex-shipment-root .dex-env-badge.is-production {
-  background: var(--dex-blue-light);
-  color: var(--dex-blue);
-  border-color: rgba(29, 111, 164, 0.25);
-}
-
-
-/* ── STATE C — Shipment detail layout ───────────────────────── */
-
-#dex-shipment-root .dex-sent-banner {
+.dex-mb-add-btn {
   display: flex;
   align-items: center;
   gap: var(--dex-space-2);
   padding: var(--dex-space-2) var(--dex-space-3);
-  background: var(--dex-blue-light);
+  background: none;
+  border: 2px dashed var(--dex-gray-300);
   border-radius: var(--dex-radius);
-  font-weight: 600;
+  color: var(--dex-text-muted);
   font-size: var(--dex-text-sm);
-}
-
-#dex-shipment-root .dex-sent-body {
-  margin-top: var(--dex-space-3);
-  padding: var(--dex-space-3);
-  background: var(--dex-gray-50);
-  border-radius: var(--dex-radius);
-}
-
-#dex-shipment-root .dex-sent-parties {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--dex-space-2) var(--dex-space-4);
-}
-
-#dex-shipment-root .dex-sent-party {
-  font-size: var(--dex-text-base);
-  line-height: 1.55;
-}
-
-#dex-shipment-root .dex-sent-party code {
-  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
-  color: var(--dex-gray-900);
-  font-weight: 700;
-}
-
-#dex-shipment-root .dex-sent-label {
-  margin: 0;
-  font-size: var(--dex-text-xs);
   font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+  justify-content: center;
+  transition: border-color var(--dex-transition), color var(--dex-transition);
+  margin-top: var(--dex-space-2);
+}
+
+.dex-mb-add-btn:hover {
+  border-color: var(--dex-red);
+  color: var(--dex-red);
+}
+
+.dex-mb-add-btn .dashicons {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+}
+
+
+/* =============================================================================
+   7. FIELDS & INPUTS
+   ============================================================================= */
+
+.dex-mb-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dex-space-1);
+}
+
+.dex-mb-field--full {
+  grid-column: 1 / -1;
+}
+
+.dex-mb-field__label {
+  display: flex;
+  align-items: center;
+  gap: var(--dex-space-1);
+  font-size: var(--dex-text-xs);
+  font-weight: 700;
   color: var(--dex-text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
 }
 
-#dex-shipment-root .dex-sent-packages {
-  margin-top: var(--dex-space-3);
+.dex-mb-field__label .dashicons {
+  font-size: 14px;
+  width: 14px;
+  height: 14px;
+  color: var(--dex-red);
 }
 
-#dex-shipment-root .dex-sent-packages ul {
-  margin: 0;
-  padding-left: 18px;
+.dex-mb-req {
+  color: var(--dex-red);
+  font-weight: 700;
+  margin-left: 1px;
 }
 
-#dex-shipment-root .dex-sent-packages li {
-  margin: var(--dex-space-1) 0;
+.dex-mb-field__hint {
+  font-size: var(--dex-text-xs);
+  color: var(--dex-text-muted);
+  line-height: 1.5;
+}
+
+.dex-mb-input {
+  height: 36px;
+  padding: 0 var(--dex-space-3);
+  border: var(--dex-border);
+  border-radius: var(--dex-radius-sm);
   font-size: var(--dex-text-base);
+  font-family: var(--dex-font);
+  color: var(--dex-text);
+  background: var(--dex-white);
+  width: 100%;
+  transition: border-color var(--dex-transition), box-shadow var(--dex-transition);
+  outline: none;
+  /* override WP */
+  box-shadow: none;
 }
 
-#dex-shipment-root .dex-sent-packages code {
-  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+.dex-mb-input:focus {
+  border-color: var(--dex-red);
+  box-shadow: 0 0 0 3px rgba(227, 30, 37, 0.12);
+}
+
+.dex-mb-input--sm {
+  height: 30px;
   font-size: var(--dex-text-sm);
-  color: var(--dex-gray-900);
+  padding: 0 var(--dex-space-2);
 }
 
-#dex-shipment-root .dex-sent-timeline {
-  margin-top: var(--dex-space-3);
+.dex-mb-input-group {
+  display: flex;
+  align-items: stretch;
+  border: var(--dex-border);
+  border-radius: var(--dex-radius-sm);
+  overflow: hidden;
 }
 
-@media (max-width: 782px) {
-  #dex-shipment-root .dex-sent-parties {
+.dex-mb-input-group .dex-mb-input {
+  border: none;
+  border-radius: 0;
+  flex: 1;
+}
+
+.dex-mb-input-group .dex-mb-input:focus {
+  box-shadow: none;
+}
+
+.dex-mb-input-group:focus-within {
+  border-color: var(--dex-red);
+  box-shadow: 0 0 0 3px rgba(227, 30, 37, 0.12);
+}
+
+.dex-mb-input-group__suffix {
+  display: flex;
+  align-items: center;
+  padding: 0 var(--dex-space-3);
+  background: var(--dex-gray-50);
+  border-left: var(--dex-border);
+  font-size: var(--dex-text-sm);
+  color: var(--dex-text-muted);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.dex-mb-select {
+  height: 36px;
+  padding: 0 var(--dex-space-3);
+  border: var(--dex-border);
+  border-radius: var(--dex-radius-sm);
+  font-size: var(--dex-text-base);
+  font-family: var(--dex-font);
+  color: var(--dex-text);
+  background: var(--dex-white);
+  width: 100%;
+  cursor: pointer;
+  outline: none;
+  transition: border-color var(--dex-transition);
+  /* override WP */
+  box-shadow: none;
+}
+
+.dex-mb-select:focus {
+  border-color: var(--dex-red);
+  box-shadow: 0 0 0 3px rgba(227, 30, 37, 0.12);
+}
+
+
+/* =============================================================================
+   8. SEGMENT CONTROL (self drop-off)
+   ============================================================================= */
+
+.dex-mb-segment {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--dex-space-2);
+  margin-bottom: var(--dex-space-2);
+}
+
+.dex-mb-segment__btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--dex-space-2);
+  padding: var(--dex-space-4) var(--dex-space-3);
+  border: 2px solid var(--dex-gray-200);
+  border-radius: var(--dex-radius);
+  background: var(--dex-white);
+  cursor: pointer;
+  text-align: center;
+  transition: border-color var(--dex-transition), background var(--dex-transition);
+}
+
+.dex-mb-segment__btn:hover {
+  border-color: var(--dex-gray-400, #9CA3AF);
+}
+
+.dex-mb-segment__btn.is-active {
+  border-color: var(--dex-red);
+  background: var(--dex-red-light);
+}
+
+.dex-mb-segment__btn .dashicons {
+  font-size: 28px;
+  width: 28px;
+  height: 28px;
+  color: var(--dex-gray-500);
+  transition: color var(--dex-transition);
+}
+
+.dex-mb-segment__btn.is-active .dashicons {
+  color: var(--dex-red);
+}
+
+.dex-mb-segment__title {
+  font-size: var(--dex-text-sm);
+  font-weight: 700;
+  color: var(--dex-text);
+  line-height: 1.2;
+}
+
+.dex-mb-segment__desc {
+  font-size: var(--dex-text-xs);
+  color: var(--dex-text-muted);
+  line-height: 1.4;
+}
+
+/* Compact inline variant */
+.dex-mb-segment--compact {
+  display: inline-flex;
+  border: var(--dex-border);
+  border-radius: var(--dex-radius);
+  overflow: hidden;
+  background: var(--dex-gray-50);
+}
+
+.dex-mb-segment--compact .dex-mb-segment__btn {
+  flex-direction: row;
+  padding: var(--dex-space-2) var(--dex-space-3);
+  border: none;
+  border-radius: 0;
+  gap: var(--dex-space-1);
+  font-size: var(--dex-text-sm);
+  font-weight: 600;
+  font-family: var(--dex-font);
+  background: transparent;
+  color: var(--dex-text-muted);
+  cursor: pointer;
+  transition: background var(--dex-transition), color var(--dex-transition);
+}
+
+.dex-mb-segment--compact .dex-mb-segment__btn + .dex-mb-segment__btn {
+  border-left: var(--dex-border);
+}
+
+.dex-mb-segment--compact .dex-mb-segment__btn.is-active {
+  background: var(--dex-red);
+  color: var(--dex-white);
+}
+
+.dex-mb-segment--compact .dex-mb-segment__btn:hover:not(.is-active) {
+  background: var(--dex-gray-100);
+  color: var(--dex-text);
+}
+
+.dex-mb-segment--compact .dex-mb-segment__btn .dashicons {
+  font-size: 15px;
+  width: 15px;
+  height: 15px;
+  color: inherit;
+}
+
+
+/* =============================================================================
+   8b. LOCATION RADIO CARDS
+   ============================================================================= */
+
+.dex-mb-location-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dex-space-2);
+  margin-top: var(--dex-space-1);
+}
+
+.dex-mb-location-option {
+  display: flex;
+  align-items: center;
+  gap: var(--dex-space-2);
+  padding: var(--dex-space-2) var(--dex-space-3);
+  border: 2px solid var(--dex-gray-200);
+  border-radius: var(--dex-radius-sm);
+  background: var(--dex-white);
+  cursor: pointer;
+  font-size: var(--dex-text-sm);
+  font-family: var(--dex-font);
+  font-weight: 500;
+  color: var(--dex-text);
+  text-align: left;
+  transition: border-color var(--dex-transition), background var(--dex-transition);
+  width: 100%;
+}
+
+.dex-mb-location-option:hover {
+  border-color: var(--dex-gray-400, #9CA3AF);
+}
+
+.dex-mb-location-option.is-selected {
+  border-color: var(--dex-red);
+  background: var(--dex-red-light);
+}
+
+.dex-mb-location-option .dashicons:first-child {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  color: var(--dex-gray-500);
+  flex-shrink: 0;
+}
+
+.dex-mb-location-option.is-selected .dashicons:first-child {
+  color: var(--dex-red);
+}
+
+.dex-mb-location-name {
+  flex: 1;
+}
+
+.dex-mb-location-check {
+  font-size: 18px !important;
+  width: 18px !important;
+  height: 18px !important;
+  color: var(--dex-red);
+  opacity: 0;
+  transition: opacity var(--dex-transition);
+  flex-shrink: 0;
+}
+
+.dex-mb-location-option.is-selected .dex-mb-location-check {
+  opacity: 1;
+}
+
+
+/* =============================================================================
+   8c. DROPOFF TOGGLE (Predaja pošiljke inline buttons)
+   ============================================================================= */
+
+.dex-mb-dropoff-toggle {
+  display: flex;
+  border: var(--dex-border);
+  border-radius: var(--dex-radius);
+  overflow: hidden;
+  background: var(--dex-gray-50);
+  width: 100%;
+}
+
+.dex-mb-dropoff-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: var(--dex-space-1);
+  padding: var(--dex-space-2) var(--dex-space-3);
+  border: none;
+  border-radius: 0;
+  font-size: var(--dex-text-sm);
+  font-weight: 600;
+  font-family: var(--dex-font);
+  background: transparent;
+  color: var(--dex-text-muted);
+  cursor: pointer;
+  transition: background var(--dex-transition), color var(--dex-transition);
+  white-space: nowrap;
+}
+
+.dex-mb-dropoff-btn + .dex-mb-dropoff-btn {
+  border-left: var(--dex-border);
+}
+
+.dex-mb-dropoff-btn.is-active {
+  background: var(--dex-red);
+  color: var(--dex-white);
+}
+
+.dex-mb-dropoff-btn:hover:not(.is-active) {
+  background: var(--dex-gray-100);
+  color: var(--dex-text);
+}
+
+.dex-mb-dropoff-btn .dashicons {
+  font-size: 15px;
+  width: 15px;
+  height: 15px;
+  color: inherit;
+}
+
+
+/* =============================================================================
+   9. OPTIONS GRID
+   ============================================================================= */
+
+.dex-mb-options-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--dex-space-4);
+}
+
+@media (max-width: 900px) {
+  .dex-mb-options-grid {
     grid-template-columns: 1fr;
   }
 }
 
 
-/* ── STATE C — Tracking pill ────────────────────────────────── */
+/* =============================================================================
+   10. SUMMARY (Step 3)
+   ============================================================================= */
 
-#dex-shipment-root .dex-pill {
-  display: inline-block;
+.dex-mb-summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dex-space-4);
+}
+
+/* Opcije + Porudžbina side by side */
+.dex-mb-summary-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--dex-space-4);
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .dex-mb-summary-cols {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Tip notice below summary gets top spacing */
+#dex-mb-wizard .dex-mb-notice--tip {
+  margin-top: var(--dex-space-4);
+}
+
+.dex-mb-summary-section {
+  border: var(--dex-border);
+  border-radius: var(--dex-radius);
+  overflow: hidden;
+}
+
+.dex-mb-summary-section__title {
+  display: flex;
+  align-items: center;
+  gap: var(--dex-space-2);
+  padding: var(--dex-space-3) var(--dex-space-4);
+  background: var(--dex-gray-50);
+  border-bottom: var(--dex-border);
   font-size: var(--dex-text-xs);
   font-weight: 700;
-  border-radius: 999px;
+  color: var(--dex-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0;
+}
+
+.dex-mb-summary-section__title .dashicons {
+  font-size: 14px;
+  width: 14px;
+  height: 14px;
+  color: var(--dex-red);
+}
+
+.dex-mb-summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: var(--dex-space-2) var(--dex-space-4);
+  font-size: var(--dex-text-sm);
+  border-bottom: 1px solid var(--dex-gray-100);
+}
+
+.dex-mb-summary-row:last-child {
+  border-bottom: none;
+}
+
+.dex-mb-summary-row span:first-child {
+  color: var(--dex-text-muted);
+  font-weight: 500;
+}
+
+.dex-mb-summary-row span:last-child {
+  color: var(--dex-text);
+  font-weight: 600;
+  text-align: right;
+}
+
+.dex-mb-summary-pkg {
+  padding: var(--dex-space-3) var(--dex-space-4);
+  border-bottom: 1px solid var(--dex-gray-100);
+}
+
+.dex-mb-summary-pkg:last-child {
+  border-bottom: none;
+}
+
+.dex-mb-summary-pkg__head {
+  display: flex;
+  align-items: center;
+  gap: var(--dex-space-2);
+  font-size: var(--dex-text-sm);
+  font-weight: 700;
+  color: var(--dex-text);
+  margin-bottom: var(--dex-space-2);
+}
+
+.dex-mb-summary-pkg__head .dashicons {
+  font-size: 15px;
+  width: 15px;
+  height: 15px;
+  color: var(--dex-red);
+}
+
+.dex-mb-summary-pkg__weight {
+  font-size: var(--dex-text-xs);
+  font-weight: 600;
+  color: var(--dex-text);
+  background: var(--dex-gray-100);
+  border-radius: 100px;
   padding: 1px 7px;
+}
+
+.dex-mb-summary-pkg__dims {
+  font-size: var(--dex-text-xs);
+  color: var(--dex-text-muted);
+}
+
+.dex-mb-summary-pkg__price {
+  font-size: var(--dex-text-xs);
+  font-weight: 700;
+  color: var(--dex-green);
+  margin-left: auto;
+}
+
+.dex-mb-summary-pkg__items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--dex-space-2);
+  padding-left: var(--dex-space-4);
+}
+
+.dex-mb-summary-pkg__items--empty {
+  font-size: var(--dex-text-xs);
+  color: var(--dex-text-muted);
+  font-style: italic;
+}
+
+.dex-mb-summary-item-img {
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  object-fit: cover;
+  vertical-align: middle;
+  border: var(--dex-border);
+  margin-right: 4px;
+}
+
+.dex-mb-summary-pkg__items span,
+.dex-mb-summary-pkg__items div {
+  display: inline-flex;
+  align-items: center;
+  font-size: var(--dex-text-xs);
+  color: var(--dex-text);
+  background: var(--dex-gray-50);
+  border: var(--dex-border);
+  border-radius: var(--dex-radius-sm);
+  padding: 3px var(--dex-space-2);
+  gap: 4px;
+}
+
+
+/* =============================================================================
+   11. BUTTONS
+   ============================================================================= */
+
+.dex-mb-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--dex-space-2);
+  height: 36px;
+  padding: 0 var(--dex-space-4);
+  border-radius: var(--dex-radius-sm);
+  font-size: var(--dex-text-sm);
+  font-family: var(--dex-font);
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  text-decoration: none;
+  transition: background var(--dex-transition), color var(--dex-transition), border-color var(--dex-transition);
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.dex-mb-btn .dashicons {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+}
+
+.dex-mb-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.dex-mb-btn--primary {
+  background: var(--dex-red);
+  color: var(--dex-white);
+}
+
+.dex-mb-btn--primary:hover:not(:disabled) {
+  background: var(--dex-red-hover);
+  color: var(--dex-white);
+}
+
+.dex-mb-btn--ghost {
+  background: transparent;
+  color: var(--dex-text-muted);
+  border: none;
+}
+
+.dex-mb-btn--ghost:hover:not(:disabled) {
+  color: var(--dex-text);
+  background: var(--dex-gray-100);
+}
+
+.dex-mb-btn--outline {
+  background: transparent;
+  color: var(--dex-text);
+  border: var(--dex-border);
+}
+
+.dex-mb-btn--outline:hover:not(:disabled) {
+  background: var(--dex-gray-50);
+  border-color: var(--dex-gray-400, #9CA3AF);
+}
+
+.dex-mb-btn--danger {
+  background: transparent;
+  color: var(--dex-red);
+  border: 1px solid var(--dex-red);
+}
+
+.dex-mb-btn--danger:hover:not(:disabled) {
+  background: var(--dex-red-light);
+}
+
+.dex-mb-btn--create {
+  background: var(--dex-green);
+  color: var(--dex-white);
+  height: 40px;
+  padding: 0 var(--dex-space-6);
+  font-size: var(--dex-text-base);
+}
+
+.dex-mb-btn--create:hover:not(:disabled) {
+  background: #158a4e;
+  color: var(--dex-white);
+}
+
+
+/* =============================================================================
+   12. NOTICES & ERRORS
+   ============================================================================= */
+
+.dex-mb-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--dex-space-2);
+  padding: var(--dex-space-3) var(--dex-space-4);
+  border-radius: var(--dex-radius-sm);
+  font-size: var(--dex-text-sm);
+  line-height: 1.5;
+}
+
+.dex-mb-notice .dashicons {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.dex-mb-notice--info {
   background: var(--dex-blue-light);
   color: var(--dex-blue);
-  margin-right: var(--dex-space-1);
+  border: 1px solid rgba(29, 111, 164, 0.2);
+}
+
+.dex-mb-notice--info .dashicons {
+  color: var(--dex-blue);
+}
+
+.dex-mb-notice--tip {
+  background: var(--dex-amber-light);
+  color: var(--dex-amber);
+  border: 1px solid rgba(217, 119, 6, 0.2);
+}
+
+.dex-mb-notice--tip .dashicons {
+  color: var(--dex-amber);
+}
+
+.dex-mb-error {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--dex-space-2);
+  padding: var(--dex-space-3) var(--dex-space-4);
+  border-radius: var(--dex-radius-sm);
+  background: var(--dex-red-light);
+  color: var(--dex-red);
+  font-size: var(--dex-text-sm);
+  font-weight: 600;
+  border: 1px solid rgba(227, 30, 37, 0.2);
+  margin-top: var(--dex-space-4);
+}
+
+.dex-mb-error .dashicons {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  margin-top: 1px;
 }
 
 
-/* ── STATE C — Status timeline ───────────────────────────────── */
+/* =============================================================================
+   13. STATE B — PENDING SEND
+   ============================================================================= */
 
-#dex-shipment-root .dex-status-timeline {
-  margin: 0;
-  padding: 0 0 0 20px;
-  list-style: none;
+.dex-mb-pending-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--dex-space-4);
+  padding: var(--dex-space-4) var(--dex-space-6);
+  background: var(--dex-amber-light);
+  border-bottom: 1px solid rgba(217, 119, 6, 0.2);
 }
 
-#dex-shipment-root .dex-status-step {
-  position: relative;
-  padding: 0 0 var(--dex-space-3) var(--dex-space-1);
-}
-
-/* Vertical connector line */
-#dex-shipment-root .dex-status-step::before {
-  content: '';
-  position: absolute;
-  left: -10px;
-  top: 14px;
-  width: 2px;
-  height: calc(100% - 4px);
-  background: var(--dex-gray-200);
-}
-
-#dex-shipment-root .dex-status-step:last-child::before {
-  display: none;
-}
-
-/* Default dot */
-#dex-shipment-root .dex-status-dot {
-  position: absolute;
-  left: -14px;
-  top: 4px;
+.dex-mb-pulse-dot {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: var(--dex-gray-300);
+  background: var(--dex-amber);
+  flex-shrink: 0;
+  animation: dex-pulse 2s infinite;
 }
 
-/* Completed dot */
-#dex-shipment-root .dex-status-step.is-completed .dex-status-dot {
-  background: var(--dex-green);
+@keyframes dex-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.5; transform: scale(0.85); }
+}
+
+.dex-mb-pending-banner__left {
+  flex: 1;
+  min-width: 0;
+}
+
+.dex-mb-pending-banner__title {
+  font-size: var(--dex-text-base);
+  font-weight: 700;
+  color: var(--dex-amber);
+  margin: 0 0 2px;
+  line-height: 1.2;
+}
+
+.dex-mb-pending-banner__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--dex-space-2);
+  flex-shrink: 0;
+}
+
+.dex-mb-code {
+  display: inline-block;
+  font-family: monospace;
+  font-size: var(--dex-text-sm);
+  background: rgba(217, 119, 6, 0.12);
+  color: var(--dex-amber);
+  border-radius: var(--dex-radius-sm);
+  padding: 1px var(--dex-space-2);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.dex-mb-code--lg {
+  font-size: var(--dex-text-base);
+  padding: var(--dex-space-1) var(--dex-space-3);
+}
+
+.dex-mb-pending-packages {
+  padding: var(--dex-space-4) var(--dex-space-6);
+}
+
+.dex-mb-pending-packages__header {
+  font-size: var(--dex-text-xs);
+  font-weight: 700;
+  color: var(--dex-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0 0 var(--dex-space-3);
+}
+
+.dex-mb-pkg-summary-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dex-space-2);
+}
+
+.dex-mb-pkg-summary-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--dex-space-3);
+  padding: var(--dex-space-3);
+  border: var(--dex-border);
+  border-radius: var(--dex-radius-sm);
+  background: var(--dex-gray-50);
+}
+
+.dex-mb-pkg-summary-list--created .dex-mb-pkg-summary-item {
+  background: var(--dex-green-light);
+  border-color: rgba(26, 158, 92, 0.2);
+}
+
+.dex-mb-pkg-summary-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--dex-radius-sm);
+  background: var(--dex-white);
+  border: var(--dex-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.dex-mb-pkg-summary-icon .dashicons {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  color: var(--dex-gray-500);
+}
+
+.dex-mb-pkg-summary-list--created .dex-mb-pkg-summary-icon .dashicons {
+  color: var(--dex-green);
+}
+
+.dex-mb-pkg-summary-code {
+  font-family: monospace;
+  font-size: var(--dex-text-sm);
+  font-weight: 700;
+  color: var(--dex-text);
+  display: block;
+  margin-bottom: 2px;
+}
+
+.dex-mb-pkg-summary-meta {
+  flex: 1;
+}
+
+.dex-mb-pkg-summary-meta > span {
+  display: block;
+}
+
+.dex-mb-pkg-summary-items {
+  font-size: var(--dex-text-xs);
+  color: var(--dex-text-muted);
+  margin-top: 2px;
+  line-height: 1.5;
+}
+
+.dex-mb-pending-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--dex-space-1) var(--dex-space-6);
+  padding: 0 var(--dex-space-6) var(--dex-space-4);
+}
+
+.dex-mb-info-item {
+  display: flex;
+  align-items: baseline;
+  gap: var(--dex-space-1);
+  font-size: var(--dex-text-sm);
+}
+
+.dex-mb-info-label {
+  font-size: var(--dex-text-xs);
+  font-weight: 700;
+  color: var(--dex-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.dex-mb-edit-back-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--dex-space-3);
+  padding: var(--dex-space-3) var(--dex-space-4);
+  background: var(--dex-amber-light);
+  border-bottom: 1px solid rgba(217, 119, 6, 0.2);
+  font-size: var(--dex-text-sm);
+  font-weight: 600;
+  color: var(--dex-amber);
+}
+
+.dex-mb-edit-back-bar .dashicons {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+}
+
+
+/* =============================================================================
+   14. STATE C — CREATED / SENT
+   ============================================================================= */
+
+.dex-mb-created {
+  padding: var(--dex-space-5) var(--dex-space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--dex-space-5);
+}
+
+/* Header: TT code left, action buttons right */
+.dex-mb-created-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--dex-space-4);
+  flex-wrap: wrap;
+}
+
+.dex-mb-created-header__left {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dex-space-2);
+}
+
+.dex-mb-created-header__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--dex-space-3);
+  font-size: var(--dex-text-sm);
+  color: var(--dex-text-muted);
+}
+
+.dex-mb-created-header__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--dex-space-2);
+  flex-wrap: wrap;
+  padding-top: var(--dex-space-1);
+}
+
+.dex-mb-code--xl {
+  font-size: 20px;
+  padding: var(--dex-space-2) var(--dex-space-4);
+  letter-spacing: 0.08em;
+  border-radius: var(--dex-radius-sm);
+}
+
+/* Env badge */
+.dex-mb-env-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px var(--dex-space-2);
+  border-radius: 100px;
+  font-size: var(--dex-text-xs);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.dex-mb-env-badge--test {
+  background: var(--dex-amber-light);
+  color: var(--dex-amber);
+  border: 1px solid rgba(217, 119, 6, 0.3);
+}
+
+.dex-mb-env-badge--prod {
+  background: var(--dex-green-light);
+  color: var(--dex-green);
+  border: 1px solid rgba(26, 158, 92, 0.3);
+}
+
+.dex-mb-env-badge--dryrun {
+  background: #f0f4ff;
+  color: #3b5bdb;
+  border: 1px solid rgba(59, 91, 219, 0.3);
+}
+
+/* Od / Za parties */
+.dex-mb-created-parties {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--dex-space-2);
+}
+
+.dex-mb-created-party {
+  padding: var(--dex-space-3) var(--dex-space-4);
+  border: var(--dex-border);
+  border-radius: var(--dex-radius-sm);
+  background: var(--dex-gray-50);
+}
+
+.dex-mb-created-party__label {
+  font-size: var(--dex-text-xs);
+  font-weight: 700;
+  color: var(--dex-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: var(--dex-space-1);
+}
+
+.dex-mb-created-party__value {
+  font-size: var(--dex-text-sm);
+  font-weight: 600;
+  color: var(--dex-text);
+  line-height: 1.5;
+}
+
+/* Package cards with items */
+.dex-mb-created-packages {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dex-space-2);
+}
+
+.dex-mb-created-pkg {
+  border: var(--dex-border);
+  border-radius: var(--dex-radius-sm);
+  overflow: hidden;
+}
+
+.dex-mb-created-pkg__head {
+  display: flex;
+  align-items: center;
+  gap: var(--dex-space-2);
+  padding: var(--dex-space-2) var(--dex-space-3);
+  background: var(--dex-gray-50);
+  border-bottom: var(--dex-border);
+  font-size: var(--dex-text-sm);
+  font-weight: 700;
+  color: var(--dex-text);
+  flex-wrap: wrap;
+}
+
+.dex-mb-created-pkg__head .dashicons {
+  font-size: 15px;
+  width: 15px;
+  height: 15px;
+  color: var(--dex-green);
+  flex-shrink: 0;
+}
+
+.dex-mb-created-pkg__weight {
+  font-size: var(--dex-text-xs);
+  font-weight: 600;
+  background: var(--dex-gray-100);
+  border-radius: 100px;
+  padding: 1px 7px;
+  color: var(--dex-text);
+}
+
+.dex-mb-created-pkg__dims {
+  font-size: var(--dex-text-xs);
+  color: var(--dex-text-muted);
+}
+
+.dex-mb-created-pkg__items {
+  padding: var(--dex-space-2) var(--dex-space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--dex-space-2);
+}
+
+.dex-mb-created-pkg__item {
+  display: flex;
+  align-items: center;
+  gap: var(--dex-space-2);
+  font-size: var(--dex-text-sm);
+}
+
+.dex-mb-created-pkg__item-img {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--dex-radius-sm);
+  object-fit: cover;
+  border: var(--dex-border);
+  flex-shrink: 0;
+  display: block;
+  background: var(--dex-gray-100);
+}
+
+.dex-mb-created-pkg__item-img--placeholder {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  color: var(--dex-gray-400);
+  font-size: 16px !important;
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: var(--dex-radius-sm);
+  background: var(--dex-gray-100);
+  border: var(--dex-border);
+}
+
+.dex-mb-created-pkg__item-name {
+  flex: 1;
+  color: var(--dex-text);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dex-mb-created-pkg__item-qty {
+  font-size: var(--dex-text-xs);
+  font-weight: 700;
+  color: var(--dex-text-muted);
+  background: var(--dex-gray-100);
+  padding: 1px 6px;
+  border-radius: 100px;
+  flex-shrink: 0;
+}
+
+/* Generic pill (Paket Shop type label) */
+.dex-mb-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px var(--dex-space-2);
+  border-radius: 100px;
+  font-size: var(--dex-text-xs);
+  font-weight: 600;
+  background: var(--dex-gray-100);
+  color: var(--dex-text);
+}
+
+/* Timeline */
+.dex-mb-timeline__title {
+  display: flex;
+  align-items: center;
+  gap: var(--dex-space-2);
+  font-size: var(--dex-text-xs);
+  font-weight: 700;
+  color: var(--dex-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0 0 var(--dex-space-4);
+}
+
+.dex-mb-timeline__title .dashicons {
+  font-size: 14px;
   width: 14px;
   height: 14px;
-  left: -16px;
-  top: 3px;
+  color: var(--dex-red);
+}
+
+.dex-mb-timeline__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.dex-mb-timeline__item {
+  display: flex;
+  gap: var(--dex-space-3);
+  position: relative;
+  padding-bottom: var(--dex-space-3);
+}
+
+.dex-mb-timeline__item:last-child {
+  padding-bottom: 0;
+}
+
+.dex-mb-timeline__item:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  left: 9px;
+  top: 20px;
+  bottom: 0;
+  width: 2px;
+  background: var(--dex-gray-200);
+}
+
+.dex-mb-timeline__dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--dex-gray-200);
+  border: 2px solid var(--dex-white);
+  box-shadow: 0 0 0 2px var(--dex-gray-300);
+  flex-shrink: 0;
+  margin-top: 2px;
+  position: relative;
+  z-index: 1;
+}
+
+.dex-mb-timeline__item.is-completed .dex-mb-timeline__dot {
+  background: var(--dex-gray-400, #9CA3AF);
+  box-shadow: 0 0 0 2px var(--dex-gray-200);
+}
+
+.dex-mb-timeline__item.is-current .dex-mb-timeline__dot {
+  background: var(--dex-green);
+  box-shadow: 0 0 0 3px rgba(26, 158, 92, 0.25);
+}
+
+.dex-mb-timeline__item.is-pending .dex-mb-timeline__dot {
+  background: var(--dex-gray-100);
+  box-shadow: 0 0 0 2px var(--dex-gray-200);
+}
+
+.dex-mb-timeline__content {
+  flex: 1;
+  padding-top: 1px;
+}
+
+.dex-mb-timeline__content strong {
+  display: block;
+  font-size: var(--dex-text-sm);
+  font-weight: 600;
+  color: var(--dex-text);
+}
+
+.dex-mb-timeline__item.is-current .dex-mb-timeline__content strong {
+  color: var(--dex-green);
+  font-weight: 700;
+}
+
+.dex-mb-timeline__item.is-pending .dex-mb-timeline__content strong {
+  color: var(--dex-text-muted);
+  font-weight: 400;
+}
+
+.dex-mb-timeline__content span,
+.dex-mb-timeline__content small {
+  display: block;
+  font-size: var(--dex-text-xs);
+  color: var(--dex-text-muted);
+  margin-top: 1px;
+}
+
+
+/* =============================================================================
+   15. EMPTY STATE
+   ============================================================================= */
+
+.dex-mb-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--dex-space-10) var(--dex-space-6);
+  gap: var(--dex-space-3);
+}
+
+.dex-mb-empty__icon {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--dex-radius-lg);
+  background: var(--dex-red-light);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-#dex-shipment-root .dex-status-step.is-completed .dex-status-dot::before {
-  content: '\f147'; /* dashicons-yes-alt */
-  font-family: dashicons;
-  font-size: 10px;
-  line-height: 1;
-  color: var(--dex-white);
-  display: block;
-}
-
-/* Current dot */
-#dex-shipment-root .dex-status-step.is-current .dex-status-dot {
-  background: var(--dex-red);
-  box-shadow: 0 0 0 3px rgba(227, 30, 37, 0.15);
-}
-
-
-/* ── STATE C — Status text ───────────────────────────────────── */
-
-#dex-shipment-root .dex-status-content strong {
-  display: block;
-  font-size: var(--dex-text-base);
-}
-
-#dex-shipment-root .dex-status-content small {
-  color: var(--dex-text-muted);
-}
-
-
-/* ── STATE C — Actions row ───────────────────────────────────── */
-
-#dex-shipment-root .dex-created-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--dex-space-2);
-  margin-top: var(--dex-space-3);
-}
-
-
-/* ── Package shop info metabox ───────────────────────────────── */
-
-.dex-ps-card {
-  border: var(--dex-border);
-  border-radius: var(--dex-radius);
-  padding: var(--dex-space-3);
-  background: var(--dex-white);
-}
-
-.dex-ps-title {
-  margin: 0 0 var(--dex-space-2);
-  font-size: var(--dex-text-base);
-  font-weight: 700;
-  color: var(--dex-gray-900);
-}
-
-.dex-ps-icon {
-  margin-right: var(--dex-space-1);
+.dex-mb-empty__icon .dashicons {
+  font-size: 28px;
+  width: 28px;
+  height: 28px;
   color: var(--dex-red);
 }
 
-.dex-ps-list {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: var(--dex-space-1);
+.dex-mb-empty__title {
+  font-size: var(--dex-text-lg);
+  font-weight: 700;
+  color: var(--dex-text);
   margin: 0;
 }
 
-.dex-ps-list dt {
-  margin: var(--dex-space-1) 0 0;
-  font-weight: 600;
-  font-size: var(--dex-text-xs);
+.dex-mb-empty__desc {
+  font-size: var(--dex-text-sm);
   color: var(--dex-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  margin: 0;
+  max-width: 360px;
+  line-height: 1.6;
 }
 
-.dex-ps-list dd {
-  margin: 0;
-  font-size: var(--dex-text-base);
-  color: var(--dex-gray-700);
-}
+
+/* =============================================================================
+   16. EDIT BACK BAR (State B edit mode header)
+   ============================================================================= */
+
+/* Defined above in §13 as part of State B styles */

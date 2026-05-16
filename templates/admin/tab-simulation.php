@@ -2,6 +2,8 @@
 /**
  * Admin settings tab: Simulacija statusa
  *
+ * Prikazuje se samo kada je mod rada "Probni rad" (dry_run).
+ *
  * Available variables:
  * @var \S7codedesign\DExpress\Infrastructure\Options\OptionsRepository $options
  * @var array{quick: list<array<string, mixed>>, real: list<array<string, mixed>>, flow_labels: list<string>}|null $simulation_timeline
@@ -9,9 +11,11 @@
 
 defined('ABSPATH') || exit;
 
-$simulation_enabled = (bool) $options->get('simulation.enabled', false);
+$api_mode           = isset($api_mode) && is_string($api_mode) ? $api_mode : 'dry_run';
+$isLive             = $api_mode === 'live';
+$simulation_enabled = !$isLive && (bool) $options->get('simulation.enabled', false);
 $quick_timeline     = (bool) $options->get('simulation.quick_timeline', true);
-$timing_wrap_hidden = $simulation_enabled ? '' : ' is-hidden';
+$timing_wrap_hidden = ($isLive || !$simulation_enabled) ? ' is-hidden' : '';
 
 $sim_tl = is_array($simulation_timeline ?? null) ? $simulation_timeline : ['quick' => [], 'real' => [], 'flow_labels' => []];
 $flow   = isset($sim_tl['flow_labels']) && is_array($sim_tl['flow_labels']) ? $sim_tl['flow_labels'] : [];
@@ -21,7 +25,7 @@ $stepsR = isset($sim_tl['real']) && is_array($sim_tl['real']) ? $sim_tl['real'] 
 
 <div class="dex-notice dex-notice--info dex-tab-intro">
     <div class="dex-notice__content">
-        <p class="dex-notice__body"><?php esc_html_e('Simulacija je dostupna samo u test okruženju. Kreira lažne webhook događaje da biste testirali tok pošiljke bez pravog kurira.', 'dexpress-woocommerce'); ?></p>
+        <p class="dex-notice__body"><?php esc_html_e('Simulacija automatski menja statuse vaših test pošiljki — kao da kurir zaista preuzima i dostavlja paket. Koristite je da proverite da li stižu email obaveštenja i da sve radi ispravno pre nego što pređete na produkciju.', 'dexpress-woocommerce'); ?></p>
     </div>
 </div>
 
@@ -32,16 +36,22 @@ $stepsR = isset($sim_tl['real']) && is_array($sim_tl['real']) ? $sim_tl['real'] 
 
     <div id="dex-section-simulation" class="dex-card">
         <div class="dex-card__header">
-            <h2 class="dex-card__title"><?php esc_html_e('Simulacija (test okruženje)', 'dexpress-woocommerce'); ?></h2>
+            <h2 class="dex-card__title"><?php esc_html_e('Simulacija', 'dexpress-woocommerce'); ?></h2>
         </div>
+        <?php if ($isLive) : ?>
         <div class="dex-card__body">
-            <?php if ($simulation_enabled) : ?>
+            <p class="description"><?php esc_html_e('U Produkciji D-Express kurir zaista preuzima pakete — simulacija nije potrebna niti dostupna. Prebacite se na Probni rad ako želite da testirate tok bez stvarnog slanja.', 'dexpress-woocommerce'); ?></p>
+            <input type="hidden" name="simulation_enabled" value="0">
+        </div>
+        <?php else : ?>
+        <div class="dex-card__body">
+            <?php if (!$isLive && $simulation_enabled) : ?>
                 <div class="dex-notice dex-notice--success">
                     <div class="dex-notice__content">
                         <p class="dex-notice__body"><?php esc_html_e('Simulacija je aktivna. Test pošiljke će automatski menjati status.', 'dexpress-woocommerce'); ?></p>
                     </div>
                 </div>
-            <?php else : ?>
+            <?php elseif (!$isLive) : ?>
                 <div class="dex-notice dex-notice--info">
                     <div class="dex-notice__content">
                         <p class="dex-notice__body"><?php esc_html_e('Simulacija je isključena. Statusi se neće automatski menjati.', 'dexpress-woocommerce'); ?></p>
@@ -59,14 +69,21 @@ $stepsR = isset($sim_tl['real']) && is_array($sim_tl['real']) ? $sim_tl['real'] 
                         <label for="dex-simulation-enabled"><?php esc_html_e('Uključi simulaciju', 'dexpress-woocommerce'); ?></label>
                     </th>
                     <td>
-                        <label>
-                            <input type="checkbox"
-                                   name="simulation_enabled"
-                                   id="dex-simulation-enabled"
-                                   value="1"
-                                   <?php checked($simulation_enabled); ?>>
-                            <?php esc_html_e('Omogućava automatsku simulaciju promene statusa za test pošiljke.', 'dexpress-woocommerce'); ?>
-                        </label>
+                        <?php if ($isLive) : ?>
+                            <p class="description" style="margin:0">
+                                <?php esc_html_e('U Produkciji D-Express kurir zaista preuzima pakete — simulacija nije potrebna niti dostupna. Prebacite se na Probni rad ako želite da testirate tok bez stvarnog slanja.', 'dexpress-woocommerce'); ?>
+                            </p>
+                            <input type="hidden" name="simulation_enabled" value="0">
+                        <?php else : ?>
+                            <label>
+                                <input type="checkbox"
+                                       name="simulation_enabled"
+                                       id="dex-simulation-enabled"
+                                       value="1"
+                                       <?php checked($simulation_enabled); ?>>
+                                <?php esc_html_e('Automatski menja statuse test pošiljki, kao da kurir zaista preuzima i dostavlja paket.', 'dexpress-woocommerce'); ?>
+                            </label>
+                        <?php endif; ?>
                     </td>
                 </tr>
             </table>
@@ -152,6 +169,7 @@ $stepsR = isset($sim_tl['real']) && is_array($sim_tl['real']) ? $sim_tl['real'] 
                 ?>
             </div>
         </div>
+        <?php endif; ?>
     </div>
 
     <?php submit_button(__('Sačuvaj podešavanja', 'dexpress-woocommerce')); ?>

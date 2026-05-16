@@ -52,6 +52,23 @@
         }
     }());
 
+    function updateObCodePreview() {
+        var pfx   = $('#dex-ob-shipment-prefix').val().trim().toUpperCase();
+        var start = parseInt($('#dex-ob-shipment-range-start').val(), 10);
+        var end   = parseInt($('#dex-ob-shipment-range-end').val(), 10);
+        var $preview = $('#dex-ob-code-preview');
+        if (!pfx || pfx.length !== 2 || isNaN(start) || isNaN(end) || start < 1 || end < start) {
+            $preview.addClass('is-hidden');
+            return;
+        }
+        function pad(n) { var s = String(Math.max(0, n)); while (s.length < 10) { s = '0' + s; } return s; }
+        var total = end - start + 1;
+        $('#dex-ob-code-preview-first').text(pfx + pad(start));
+        $('#dex-ob-code-preview-last').text(pfx + pad(end));
+        $('#dex-ob-code-preview-total').text('(' + total.toLocaleString('sr-RS') + ' kodova)');
+        $preview.removeClass('is-hidden');
+    }
+
     function mergeSettingsSnapshotFromAjax(d) {
         d = d || {};
         ob.settingsSnapshot = ob.settingsSnapshot || {};
@@ -72,6 +89,7 @@
             ob.settingsSnapshot.shipmentRangeEnd = d.shipmentRangeEnd;
             $('#dex-ob-shipment-range-end').val(d.shipmentRangeEnd > 0 ? String(d.shipmentRangeEnd) : '');
         }
+        updateObCodePreview();
     }
 
     function syncClientIdWarningOnStep6() {
@@ -231,8 +249,12 @@
         }
     });
 
+    // Street is disabled until a town is selected.
+    $('#dex-ob-loc-street-name').prop('disabled', true);
+
     // Initialize progress bar on load
     setStep(1);
+    updateObCodePreview();
 
     // -----------------------------------------------------------------------
     // Step 2 — Field state management
@@ -270,7 +292,7 @@
         syncStep2ButtonState();
     });
 
-    // Shipment code fields: always persist on „Sačuvaj i nastavi“ — mark as stale until saved again.
+    // Shipment code fields: always persist on „Sačuvaj i nastavi” — mark as stale until saved again.
     $(document).on('input change', '#dex-ob-shipment-prefix, #dex-ob-shipment-range-start, #dex-ob-shipment-range-end', function () {
         if ($(this).attr('id') === 'dex-ob-shipment-prefix') {
             var clean = $(this).val().replace(/[^A-Za-z]/g, '').toUpperCase().slice(0, 2);
@@ -279,6 +301,8 @@
             }
         }
         state.credentialsPersisted = false;
+        updateObCodePreview();
+        $('#dex-ob-next-code-row').attr('hidden', true);
     });
 
     // Client ID change only affects persistence, not the connection test itself.
@@ -356,6 +380,13 @@
                 state.credentialsPersisted = true;
                 mergeSettingsSnapshotFromAjax(response.data || {});
                 state.clientIdSaved = !!(ob.settingsSnapshot && ob.settingsSnapshot.clientIdInDb);
+                var nextFree = (response.data || {}).nextFreeCode;
+                if (nextFree) {
+                    $('#dex-ob-next-code').text(nextFree);
+                    $('#dex-ob-next-code-row').removeAttr('hidden');
+                } else {
+                    $('#dex-ob-next-code-row').attr('hidden', true);
+                }
                 if (!ob.credentialsSaved) {
                     ob.credentialsSaved = {};
                 }
@@ -546,11 +577,29 @@
 
         function spinOn()  { if ($spin) $spin.addClass('is-active'); }
         function spinOff() { if ($spin) $spin.removeClass('is-active'); }
-        function close()   { $box.removeClass('is-open').empty(); }
+
+        function close() {
+            $box.hide().empty().css({ position: '', top: '', left: '', width: '', right: '', 'z-index': '' });
+        }
+
+        function positionBox() {
+            var el = $input[0];
+            if (!el) { return; }
+            var rect = el.getBoundingClientRect();
+            $box.css({
+                position: 'fixed',
+                top:      rect.bottom + 'px',
+                left:     rect.left + 'px',
+                width:    rect.width + 'px',
+                right:    'auto',
+                'z-index': 100001,
+            });
+        }
 
         function renderItems(items) {
             spinOff();
             $box.empty();
+            positionBox();
             if (!items.length) {
                 $('<div class="dex-dropdown__empty">').text('Nema rezultata').appendTo($box);
             } else {
@@ -561,7 +610,7 @@
                         .appendTo($box);
                 });
             }
-            $box.addClass('is-open');
+            $box.show();
         }
 
         $(document).on('input', '#' + opts.inputId, function () {
@@ -628,17 +677,19 @@
         onSelect: function (town) {
             $('#dex-ob-loc-town-id').val(town.id);
             $('#dex-ob-loc-town-name').val(town.name);
-            // Reset street when town changes
-            $('#dex-ob-loc-street-name').val('');
+            $('#dex-ob-loc-street-name').val('').prop('disabled', false)
+                .attr('placeholder', 'Kucajte ulicu…');
             $('#dex-ob-loc-street-id').val('');
             if (obStreetAC) { obStreetAC.close(); }
+            $('#dex-ob-loc-street-name').trigger('focus');
         },
     });
 
     // Clear town-id when user edits town text directly
     $(document).on('input', '#dex-ob-loc-town-name', function () {
         $('#dex-ob-loc-town-id').val('');
-        $('#dex-ob-loc-street-name').val('');
+        $('#dex-ob-loc-street-name').val('').prop('disabled', true)
+            .attr('placeholder', 'Prvo izaberite grad…');
         $('#dex-ob-loc-street-id').val('');
     });
 
@@ -704,6 +755,12 @@
         var phoneNorm = normalizePhone(phone);
         if (!PHONE_RE.test(phoneNorm)) {
             setInlineResult($result, 'Telefon nije u ispravnom formatu. Primer: 381641234567', false);
+            return;
+        }
+
+        var bankAccount = $('#dex-ob-loc-bank-account').val().trim();
+        if (!bankAccount) {
+            setInlineResult($result, 'Tekući račun za otkupninu je obavezan.', false);
             return;
         }
 
